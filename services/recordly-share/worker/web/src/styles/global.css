@@ -335,6 +335,7 @@
   height: 440px;
 }
 .video-shell {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -351,10 +352,8 @@
   place-items: center;
 }
 .video-area > .video-shell {
-  width: max(
-    min(100cqw, 560px),
-    min(100cqw, calc((100cqh - var(--toolbar-h, 88px)) * var(--video-ratio, 16 / 9)))
-  );
+  /* Hug the recording; spare space is page background, never bars. */
+  width: min(100cqw, calc((100cqh - var(--toolbar-h, 0px)) * var(--video-ratio, 16 / 9)));
   max-height: 100cqh;
 }
 .video-stage {
@@ -380,7 +379,9 @@
   width: 100%;
   height: 100%;
   display: block;
-  object-fit: contain;
+  /* The frame already has the video's shape; this only stops a slightly
+     different preview image from showing bars. */
+  object-fit: cover;
 }
 /* Title cover over the poster until the first play. */
 .video-cover {
@@ -496,6 +497,11 @@
   right: 8%;
   text-align: center;
   pointer-events: none;
+  transition: bottom 200ms ease;
+}
+/* Lift captions clear of the controls while they show. */
+.video-shell.controls-shown .video-caption {
+  bottom: 96px;
 }
 .video-caption span {
   background: rgb(0 0 0 / 0.8);
@@ -507,28 +513,97 @@
   line-height: 1.8;
 }
 .video-toolbar {
-  flex-shrink: 0;
-  padding: 8px 12px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  padding: 40px 12px 8px;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  background: var(--surface);
+  color: white;
+  background: linear-gradient(to top, rgb(0 0 0 / 0.7), rgb(0 0 0 / 0.35) 55%, rgb(0 0 0 / 0));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease;
+}
+.video-shell.controls-shown .video-toolbar,
+.video-toolbar:hover,
+.video-toolbar:focus-within {
+  opacity: 1;
+  pointer-events: auto;
+}
+.video-shell.controls-hidden .video-stage {
+  cursor: none;
+}
+.video-toolbar .button {
+  color: white;
+}
+.video-toolbar .button:hover,
+.video-toolbar .button[data-hovered='true'] {
+  background: rgb(255 255 255 / 0.14);
 }
 .video-controls {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 4px;
 }
 .video-controls .volume-control {
-  width: 72px;
+  width: 88px;
   margin: 0 8px;
 }
+.volume-control .slider__track {
+  height: 4px;
+  border-inline-width: 0;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.3);
+}
+.volume-control .slider__fill {
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.55);
+}
+.volume-control .slider__thumb {
+  width: 14px;
+  height: 14px;
+  top: 50%;
+  border-radius: 999px;
+  background: white;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.35);
+}
+.volume-control .slider__thumb::after {
+  display: none;
+}
+/* Centred across the full control row, like a classic player. */
 .video-time {
-  font-size: 12px;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px;
   font-variant-numeric: tabular-nums;
-  color: var(--muted);
-  margin: 0 8px;
+  color: rgb(255 255 255 / 0.85);
   white-space: nowrap;
+  pointer-events: none;
+}
+.video-toolbar {
+  container-type: inline-size;
+}
+/* Too narrow to centre: the time sits after the buttons and the volume bar hides. */
+@container (max-width: 620px) {
+  .video-time {
+    position: static;
+    transform: none;
+    margin: 0 8px;
+  }
+  .video-controls .volume-control {
+    display: none;
+  }
+}
+@container (max-width: 400px) {
+  .video-controls .skip-control {
+    display: none;
+  }
 }
 .control-spacer {
   flex: 1;

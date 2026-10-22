@@ -64,15 +64,15 @@ export default function SharePlayer({
   const [videoRatio, setVideoRatio] = useState(() =>
     data.video.width > 0 && data.video.height > 0 ? data.video.width / data.video.height : null,
   );
-  const toolbar = useRef<HTMLDivElement>(null);
-  const [toolbarHeight, setToolbarHeight] = useState(88);
-  useEffect(() => {
-    const element = toolbar.current;
-    if (!element) return;
-    const observer = new ResizeObserver(() => setToolbarHeight(element.offsetHeight));
-    observer.observe(element);
-    return () => observer.disconnect();
+  // Controls sit over the video and fade out while playing with the pointer still.
+  const [pointerActive, setPointerActive] = useState(false);
+  const idleTimer = useRef<number | undefined>(undefined);
+  const wakeControls = useCallback(() => {
+    setPointerActive(true);
+    window.clearTimeout(idleTimer.current);
+    idleTimer.current = window.setTimeout(() => setPointerActive(false), 2500);
   }, []);
+  useEffect(() => () => window.clearTimeout(idleTimer.current), []);
   const [poster, setPoster] = useState<string>();
   useEffect(() => {
     let active = true;
@@ -99,6 +99,7 @@ export default function SharePlayer({
   const [pip, setPip] = useState(false);
   const [error, setError] = useState(false);
   const savedVolume = useRef(1);
+  const controlsShown = started && (!playing || pointerActive);
   const caption = data.segments.find((s) => time >= s.start_time && time < s.end_time);
   const cta =
     data.video.cta_url && /^https?:\/\//i.test(data.video.cta_url) ? data.video.cta_url : null;
@@ -199,12 +200,19 @@ export default function SharePlayer({
       className="video-area"
       style={
         {
-          '--toolbar-h': `${toolbarHeight}px`,
+          '--toolbar-h': '0px',
           ...(videoRatio ? { '--video-ratio': videoRatio } : {}),
         } as CSSProperties
       }
     >
-    <Card ref={shell} className="video-shell">
+    <Card
+      ref={shell}
+      className={`video-shell${controlsShown ? ' controls-shown' : ''}${started && !controlsShown ? ' controls-hidden' : ''}`}
+      onPointerMove={wakeControls}
+      onPointerDown={wakeControls}
+      onPointerLeave={() => setPointerActive(false)}
+      onFocus={wakeControls}
+    >
       <div className="video-stage">
         <div className="video-frame">
         <video
@@ -363,7 +371,7 @@ export default function SharePlayer({
           </div>
         )}
       </div>
-      <div ref={toolbar} className="video-toolbar">
+      <div className="video-toolbar">
         <div ref={markers} className="timeline-markers" aria-label="Comments and reactions on the timeline">
           {clusterTimeline([
             ...comments.map((item): TimelineItem => ({ timestamp: item.timestamp, kind: 'comment', label: `${item.author_name}: ${item.text}` })),
