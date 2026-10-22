@@ -372,6 +372,17 @@ export function refreshProjectThumbnail(projectPath: string, revision: Stats) {
 	return task;
 }
 
+async function getProjectRecordingBytes(projectPath: string): Promise<number | undefined> {
+	try {
+		const project = parseJsonWithByteOrderMark(await fs.readFile(projectPath, "utf-8"));
+		const media = await resolveProjectMediaSources(project);
+		if (!media.success) return undefined;
+		return (await fs.stat(media.videoPath)).size;
+	} catch {
+		return undefined;
+	}
+}
+
 export async function buildProjectLibraryEntry(
 	projectPath: string,
 	projectsDir: string,
@@ -416,6 +427,7 @@ export async function buildProjectLibraryEntry(
 				currentProjectPath && normalizePath(currentProjectPath) === normalizedPath,
 			),
 			isInProjectsDirectory: path.dirname(normalizedPath) === normalizePath(projectsDir),
+			bytes: await getProjectRecordingBytes(normalizedPath),
 		};
 	} catch {
 		return null;

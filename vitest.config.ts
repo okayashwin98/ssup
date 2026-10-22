@@ -5,6 +5,8 @@ export default defineConfig({
 	test: {
 		globals: true,
 		environment: "node",
+		// Keep personal settings from a developer's .env.local out of test results.
+		env: { VITE_CLOUD_SHARE_SECRET: "", VITE_CLOUD_SHARE_ENDPOINT: "", VITE_PROFILE_NAME: "" },
 		include: [
 			"src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}",
 			"electron/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}",

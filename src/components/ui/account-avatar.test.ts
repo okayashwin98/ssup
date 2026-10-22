@@ -1,4 +1,4 @@
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import type { User } from "@supabase/supabase-js";
 import { getAccountProfile } from "./account-avatar";
 it("uses OAuth profile photos and falls back to name or email initials", () => {
@@ -20,5 +20,16 @@ it("uses OAuth profile photos and falls back to name or email initials", () => {
 		initials: "A",
 		picture: undefined,
 	});
+	vi.stubEnv("VITE_PROFILE_NAME", "");
 	expect(getAccountProfile(null).initials).toBe("LP");
+	vi.unstubAllEnvs();
+});
+
+it("names the local profile from the build setting when no one is signed in", () => {
+	vi.stubEnv("VITE_PROFILE_NAME", "Jane Doe");
+	expect(getAccountProfile(null)).toMatchObject({ name: "Jane Doe", initials: "JD" });
+	expect(
+		getAccountProfile({ email: "alex@example.com", user_metadata: {} } as User).initials,
+	).toBe("A");
+	vi.unstubAllEnvs();
 });

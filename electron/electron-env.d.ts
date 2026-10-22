@@ -894,6 +894,7 @@ interface Window {
 				thumbnailPath: string | null;
 				isCurrent: boolean;
 				isInProjectsDirectory: boolean;
+				bytes?: number;
 			}>;
 			error?: string;
 		}>;

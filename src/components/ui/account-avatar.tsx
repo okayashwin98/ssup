@@ -5,9 +5,15 @@ import type { User } from "@supabase/supabase-js";
 export const AccountProfileContext = createContext<User | null>(null);
 export function getAccountProfile(user: User | null, fallback?: string) {
 	const metadata = user?.user_metadata;
-	const name = [metadata?.full_name, metadata?.name, user?.email, fallback, "Local profile"].find(
-		(value) => typeof value === "string" && value.trim(),
-	) as string;
+	const name = [
+		metadata?.full_name,
+		metadata?.name,
+		user?.email,
+		fallback,
+		// Without an account, a personal build can name its local profile.
+		import.meta.env.VITE_PROFILE_NAME,
+		"Local profile",
+	].find((value) => typeof value === "string" && value.trim()) as string;
 	const initials = name
 		.split("@")[0]
 		.split(/[\s._-]+/)

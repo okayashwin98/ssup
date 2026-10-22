@@ -6,6 +6,7 @@ import { Dropdown } from "@heroui/react";
 import { Check, DotsThree, FolderSimple, Plus } from "@/components/ui/icons";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { formatFileSize } from "@/lib/fileSize";
 import { getProjectShareLink, moveProjectShareLink } from "../cloud/projectShareLinks";
 import type { ProjectLibraryEntry } from "../ProjectBrowserDialog";
 import { ProjectThumbnail } from "./ProjectThumbnail";
@@ -52,6 +53,7 @@ export function ProjectCard({
 	const assignedFolders = folders.filter((folder) => folder.paths.includes(entry.path));
 	const folder = assignedFolders[0];
 	const shareUrl = getProjectShareLink(entry.path);
+	const fileSize = formatFileSize(entry.bytes);
 	const rename = () => {
 		if (renaming.current) return;
 		renaming.current = true;
@@ -158,6 +160,7 @@ export function ProjectCard({
 								month: "short",
 								day: "numeric",
 							})}
+							{fileSize && ` · ${fileSize}`}
 						</p>
 						{webUrl && (
 							<Globe
@@ -256,7 +259,9 @@ export function ProjectCard({
 										id="rename"
 										onAction={() => {
 											setName(entry.name);
-											requestAnimationFrame(() => requestAnimationFrame(() => setEditing(true)));
+											requestAnimationFrame(() =>
+												requestAnimationFrame(() => setEditing(true)),
+											);
 										}}
 									>
 										Rename

@@ -47,6 +47,7 @@ export function useRawLibrary(enabled: boolean) {
 						thumbnailPath: null,
 						isCurrent: false,
 						isInProjectsDirectory: false,
+						bytes: rawSource.bytes,
 						rawSource,
 					})),
 			);

@@ -100,6 +100,7 @@ export type ProjectLibraryEntry = {
 	thumbnailPath: string | null;
 	isCurrent: boolean;
 	isInProjectsDirectory: boolean;
+	bytes?: number;
 };
 
 export type SystemCursorAsset = {

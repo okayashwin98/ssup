@@ -12,6 +12,7 @@ export type ProjectLibraryEntry = {
 	thumbnailPath: string | null;
 	isCurrent: boolean;
 	isInProjectsDirectory: boolean;
+	bytes?: number;
 };
 type ProjectBrowserDialogProps = {
 	open: boolean;

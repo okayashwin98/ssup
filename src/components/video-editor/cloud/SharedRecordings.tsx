@@ -103,6 +103,7 @@ export function SharedRecordings({
 					: null,
 				isCurrent: false,
 				isInProjectsDirectory: false,
+				bytes: recording.size,
 				recording,
 			}))
 			.filter(
