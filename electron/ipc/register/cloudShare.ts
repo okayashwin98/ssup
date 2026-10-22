@@ -555,7 +555,8 @@ export function registerCloudShareHandlers() {
 					throw new Error(`Download failed (${response.status}).`);
 				const baseName =
 					(typeof input.title === "string" ? input.title : "")
-						.replace(/[\\/:*?"<>|\u0000-\u001f]/g, " ")
+						.replace(/[\\/:*?"<>|]/g, " ")
+						.replace(/\p{Cc}/gu, " ")
 						.trim()
 						.slice(0, 120) || "Recordly recording";
 				const downloads = app.getPath("downloads");
