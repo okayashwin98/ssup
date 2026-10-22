@@ -134,6 +134,35 @@ export function useEditorPresets({
 		[currentSnapshot, editorPresets, setActivePresetId, setEditorPresets, t],
 	);
 
+	const handleUpdateEditorPreset = useCallback(
+		(presetId: string) => {
+			const preset = editorPresets.find((item) => item.id === presetId);
+			if (!preset) return;
+			const nextPresets = editorPresets.map((item) =>
+				item.id === presetId
+					? { ...item, snapshot: currentSnapshot, updatedAt: new Date().toISOString() }
+					: item,
+			);
+			if (!saveEditorPresets(nextPresets)) {
+				toast.error(
+					t(
+						"editor.presets.errors.updateFailed",
+						"Could not update that preset. Check your browser storage settings and try again.",
+					),
+				);
+				return;
+			}
+			setEditorPresets(nextPresets);
+			setActivePresetId(presetId);
+			toast.success(
+				t("editor.presets.toasts.updated", 'Updated preset "{{name}}"', {
+					name: preset.name,
+				}),
+			);
+		},
+		[currentSnapshot, editorPresets, setActivePresetId, setEditorPresets, t],
+	);
+
 	const handleDeleteEditorPreset = useCallback(
 		(presetId: string) => {
 			const preset = editorPresets.find((item) => item.id === presetId);
@@ -166,6 +195,7 @@ export function useEditorPresets({
 	return {
 		currentEditorPreset,
 		handleApplyEditorPreset,
+		handleUpdateEditorPreset,
 		handleDeleteEditorPreset,
 		handleSavePresetSubmit,
 	};

@@ -1,4 +1,4 @@
-import { BookmarkSimple, CaretDown, Check, X } from "@/components/ui/icons";
+import { ArrowClockwise, BookmarkSimple, CaretDown, Check, X } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -20,6 +20,7 @@ export function EditorPresetMenu({ t, presets }: Props) {
 		setPresetNameDraft,
 		currentEditorPreset,
 		handleApplyEditorPreset,
+		handleUpdateEditorPreset,
 		handleDeleteEditorPreset,
 		handleSavePresetSubmit,
 	} = presets;
@@ -106,6 +107,25 @@ export function EditorPresetMenu({ t, presets }: Props) {
 												{isActive ? (
 													<Check className="h-3.5 w-3.5 shrink-0 text-[#2563EB]" />
 												) : null}
+											</Button>
+											<Button
+												variant="ghost"
+												type="button"
+												onClick={() => handleUpdateEditorPreset(preset.id)}
+												size="icon"
+												className="inline-flex h-7 w-7 min-w-7 shrink-0 items-center justify-center p-0"
+												aria-label={t(
+													"editor.presets.updateAriaLabel",
+													"Update {{name}} with current settings",
+													{ name: preset.name },
+												)}
+												title={t(
+													"editor.presets.updateAriaLabel",
+													"Update {{name}} with current settings",
+													{ name: preset.name },
+												)}
+											>
+												<ArrowClockwise className="h-3.5 w-3.5" />
 											</Button>
 											<Button
 												variant="ghost"
