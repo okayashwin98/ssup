@@ -1030,6 +1030,7 @@ export function SettingsPanel({
 	const removeBackgroundStateRef = useRef<{
 		aspectRatio: AspectRatio;
 		padding: Padding;
+		borderRadius: number;
 	} | null>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const builtInWallpaperPaths = useMemo(
@@ -1151,7 +1152,9 @@ export function SettingsPanel({
 	const [gradient, setGradient] = useState<string>(
 		GRADIENTS.includes(selected) ? selected : GRADIENTS[0],
 	);
-	const removeBackgroundEnabled = aspectRatio === "native" && isZeroPadding(padding);
+	// Rounded corners show the background, so any radius counts as background on.
+	const removeBackgroundEnabled =
+		aspectRatio === "native" && isZeroPadding(padding) && borderRadius === 0;
 
 	const [backgroundTab, setBackgroundTab] = useState<BackgroundTab>(() =>
 		getBackgroundTabForWallpaper(selected),
@@ -1281,9 +1284,11 @@ export function SettingsPanel({
 			removeBackgroundStateRef.current = {
 				aspectRatio,
 				padding,
+				borderRadius,
 			};
 			onAspectRatioChange?.("native");
 			onPaddingChange?.({ top: 0, bottom: 0, left: 0, right: 0, linked: padding.linked });
+			onBorderRadiusChange?.(0);
 			return;
 		}
 
@@ -1291,6 +1296,7 @@ export function SettingsPanel({
 		if (previousState) {
 			onAspectRatioChange?.(previousState.aspectRatio);
 			onPaddingChange?.(previousState.padding);
+			onBorderRadiusChange?.(previousState.borderRadius);
 			removeBackgroundStateRef.current = null;
 			return;
 		}
@@ -1298,6 +1304,7 @@ export function SettingsPanel({
 		// Fallback if the project loaded in a "background removed" state already
 		onAspectRatioChange?.(initialEditorPreferences.aspectRatio);
 		onPaddingChange?.({ ...DEFAULT_PADDING });
+		onBorderRadiusChange?.(initialEditorPreferences.borderRadius);
 	};
 
 	const togglePaddingLink = () => {
