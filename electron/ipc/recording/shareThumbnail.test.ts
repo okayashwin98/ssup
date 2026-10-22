@@ -22,11 +22,11 @@ describe("shared recording preview", () => {
 				"-f",
 				"lavfi",
 				"-i",
-				"color=red:s=1280x720:d=0.1:r=30",
+				"color=red:s=2560x1440:d=0.1:r=30",
 				"-f",
 				"lavfi",
 				"-i",
-				"color=blue:s=1280x720:d=0.1:r=30",
+				"color=blue:s=2560x1440:d=0.1:r=30",
 				"-filter_complex",
 				"[0:v][1:v]concat=n=2:v=1:a=0",
 				"-c:v",
@@ -52,12 +52,12 @@ describe("shared recording preview", () => {
 						"rgb24",
 						"pipe:1",
 					],
-					{ encoding: "buffer", maxBuffer: 1024 * 1024 },
+					{ encoding: "buffer", maxBuffer: 16 * 1024 * 1024 },
 					(error, stdout) => (error ? reject(error) : resolve(stdout)),
 				);
 				child.stdin!.end(poster);
 			});
-			expect(decoded.length).toBe(640 * 360 * 3);
+			expect(decoded.length).toBe(1920 * 1080 * 3);
 			expect(decoded[0]).toBeGreaterThan(220);
 			expect(decoded[1]).toBeLessThan(30);
 			expect(decoded[2]).toBeLessThan(30);
