@@ -170,8 +170,8 @@ export async function handleShareData(request, env, shareCode) {
     }
   }
 
-  // View-count bump and the two reads are independent — run them together.
-  const [, segments, chapters] = await Promise.all([
+  // View-count bump and the reads are independent — run them together.
+  const [, segments, chapters, creator] = await Promise.all([
     env.DB.prepare('UPDATE videos SET view_count = view_count + 1 WHERE id = ?').bind(video.id).run(),
     env.DB.prepare(
       'SELECT start_time, end_time, text, speaker FROM transcript_segments WHERE video_id = ? ORDER BY start_time'
@@ -179,6 +179,7 @@ export async function handleShareData(request, env, shareCode) {
     env.DB.prepare(
       'SELECT timestamp, title FROM chapters WHERE video_id = ? ORDER BY timestamp'
     ).bind(video.id).all(),
+    getCreatorProfile(env),
   ]);
 
   return jsonResponse({
@@ -198,7 +199,7 @@ export async function handleShareData(request, env, shareCode) {
     segments: (segments.results || []),
     chapters: (chapters.results || []),
     shareCode,
-    creator: await getCreatorProfile(env),
+    creator,
   });
 }
 

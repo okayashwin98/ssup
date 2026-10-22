@@ -265,11 +265,30 @@ async function fileExists(filePath: string) {
 	);
 }
 
+const SUBTITLE_WORK_DIR = path.join(os.tmpdir(), "recordly-share-subtitles");
+const STALE_SUBTITLE_COPY_MS = 6 * 60 * 60 * 1000;
+
+/** Copies left by a run the app quit during would otherwise stay until macOS cleans temp. */
+async function removeStaleSubtitleCopies() {
+	const names = await fs.readdir(SUBTITLE_WORK_DIR).catch(() => []);
+	for (const name of names) {
+		const filePath = path.join(SUBTITLE_WORK_DIR, name);
+		const stat = await fs.stat(filePath).catch(() => null);
+		if (stat && Date.now() - stat.mtimeMs > STALE_SUBTITLE_COPY_MS)
+			await fs.rm(filePath, { force: true }).catch(() => undefined);
+	}
+}
+
 async function publishShareSubtitles(videoPath: string, metadataUrl: URL, token: string) {
 	// Work on a private copy: the share dialog deletes its temporary export when closed.
-	const copyPath = path.join(os.tmpdir(), `recordly-subtitles-${crypto.randomUUID()}${path.extname(videoPath)}`);
+	const copyPath = path.join(
+		SUBTITLE_WORK_DIR,
+		`${crypto.randomUUID()}${path.extname(videoPath)}`,
+	);
 	try {
+		await fs.mkdir(SUBTITLE_WORK_DIR, { recursive: true });
 		await fs.copyFile(videoPath, copyPath, fsConstants.COPYFILE_FICLONE);
+		void removeStaleSubtitleCopies();
 		const segments = await createShareSubtitles(copyPath);
 		if (!segments) return;
 		const response = await fetch(metadataUrl, {

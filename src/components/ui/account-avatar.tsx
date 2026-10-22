@@ -41,14 +41,19 @@ export function AccountAvatar({
 	label,
 	className = "",
 	user,
+	picture,
 }: {
 	label?: string;
 	className?: string;
 	user?: User | null;
+	/** Overrides the profile photo, e.g. an unsaved pick; null shows initials. */
+	picture?: string | null;
 }) {
 	const context = useContext(AccountProfileContext);
 	const localProfile = useLocalProfile();
-	const profile = getAccountProfile(user === undefined ? context : user, label, localProfile);
+	const resolved = getAccountProfile(user === undefined ? context : user, label, localProfile);
+	const profile =
+		picture === undefined ? resolved : { ...resolved, picture: picture ?? undefined };
 	return (
 		<Avatar
 			aria-label={profile.name}

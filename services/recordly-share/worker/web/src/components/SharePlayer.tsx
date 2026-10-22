@@ -231,19 +231,16 @@ export default function SharePlayer({
   return (
     <div
       className="video-area"
-      style={
-        {
-          '--toolbar-h': '0px',
-          ...(videoRatio ? { '--video-ratio': videoRatio } : {}),
-        } as CSSProperties
-      }
+      style={videoRatio ? ({ '--video-ratio': videoRatio } as CSSProperties) : undefined}
     >
     <Card
       ref={shell}
       className={`video-shell${controlsShown ? ' controls-shown' : ''}${started && !controlsShown ? ' controls-hidden' : ''}`}
       onPointerMove={wakeControls}
       onPointerDown={wakeControls}
-      onPointerLeave={() => {
+      onPointerLeave={(event) => {
+        // Touch screens fire this after every tap; only a real pointer leaving counts.
+        if (event.pointerType === 'touch') return;
         setPointerInside(false);
         setPointerActive(false);
       }}

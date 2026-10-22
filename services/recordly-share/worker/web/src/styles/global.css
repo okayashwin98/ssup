@@ -354,14 +354,14 @@
 }
 .video-area > .video-shell {
   /* Hug the recording; spare space is page background, never bars. */
-  width: min(100cqw, calc((100cqh - var(--toolbar-h, 0px)) * var(--video-ratio, 16 / 9)));
+  width: min(100cqw, calc(100cqh * var(--video-ratio, 16 / 9)));
   max-height: 100cqh;
 }
 .video-stage {
   position: relative;
   width: 100%;
   aspect-ratio: var(--video-ratio, 16 / 9);
-  max-height: calc(100cqh - var(--toolbar-h, 88px));
+  max-height: 100cqh;
   min-height: 0;
   container-type: size;
   display: grid;
@@ -533,6 +533,14 @@
 .video-toolbar:hover,
 .video-toolbar:focus-within {
   opacity: 1;
+}
+/* Only the bars take clicks; the faded area above them still reaches the video. */
+.video-toolbar :is(.video-progress, .video-controls, .timeline-marker) {
+  pointer-events: none;
+}
+.video-shell.controls-shown .video-toolbar :is(.video-progress, .video-controls, .timeline-marker),
+.video-toolbar:hover :is(.video-progress, .video-controls, .timeline-marker),
+.video-toolbar:focus-within :is(.video-progress, .video-controls, .timeline-marker) {
   pointer-events: auto;
 }
 .video-shell.controls-hidden .video-stage {

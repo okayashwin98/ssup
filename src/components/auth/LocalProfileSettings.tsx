@@ -15,8 +15,11 @@ export function LocalProfileSettings() {
 	const [name, setName] = useState(profile.name);
 	const [avatarDataUrl, setAvatarDataUrl] = useState(profile.avatarDataUrl);
 	const [busy, setBusy] = useState(false);
+	// A failed publish keeps Save enabled so the share pages can be updated again.
+	const [publishFailed, setPublishFailed] = useState(false);
 	const fileInput = useRef<HTMLInputElement>(null);
-	const changed = name.trim() !== profile.name || avatarDataUrl !== profile.avatarDataUrl;
+	const changed =
+		publishFailed || name.trim() !== profile.name || avatarDataUrl !== profile.avatarDataUrl;
 
 	const pickPhoto = async (file: File | undefined) => {
 		if (!file) return;
@@ -40,6 +43,7 @@ export function LocalProfileSettings() {
 					token: CLOUD_SHARE_PERSONAL_TOKEN,
 					...next,
 				});
+				setPublishFailed(!result.success);
 				if (!result.success) {
 					toast.warning(`Saved here, but share links weren't updated: ${result.error}`);
 					return;
@@ -59,6 +63,7 @@ export function LocalProfileSettings() {
 				<AccountAvatar
 					user={null}
 					label={name.trim() || undefined}
+					picture={avatarDataUrl}
 					className="!size-16"
 					key={avatarDataUrl ?? "no-photo"}
 				/>
