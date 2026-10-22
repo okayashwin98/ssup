@@ -117,3 +117,15 @@ describe("ScreenCaptureKitRecorder first frame timing", () => {
 		expect(audioGuard).toBeLessThan(callback.indexOf("if outputType == .audio"));
 	});
 });
+
+describe("ScreenCaptureKitRecorder pause timing", () => {
+	it("ends a pause at resume rather than at the next delivered frame", () => {
+		expect(recorderSource).toContain(
+			"self.resumeHostTime = CMClockGetTime(CMClockGetHostTimeClock())",
+		);
+		expect(recorderSource).toContain(
+			"let pauseGap = (resumeHostTime ?? sampleTime) - pauseStartedHostTime",
+		);
+		expect(recorderSource).toContain('"Recording resumed at %.3f"');
+	});
+});

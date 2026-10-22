@@ -76,6 +76,7 @@ import {
 	waitForNativeCaptureStart,
 	waitForNativeCaptureStop,
 } from "../recording/mac";
+import { parseNativeResumeVideoMs, resolveCursorCaptureStartMs } from "../recording/nativeClock";
 import { resolveRecordedVideoStoragePath } from "../recording/storagePath";
 import {
 	attachWindowsCaptureLifecycle,
@@ -109,6 +110,8 @@ import {
 	setCachedSystemCursorAssets,
 	setCachedSystemCursorAssetsSourceMtimeMs,
 	setCursorCaptureStartTimeMs,
+	setNativeCaptureClockAnchor,
+	nativeCaptureClockAnchor,
 	setFfmpegCaptureOutputBuffer,
 	setFfmpegCaptureProcess,
 	setFfmpegCaptureTargetPath,
@@ -817,6 +820,7 @@ export function registerRecordingHandlers(
 				});
 
 				await waitForNativeCaptureStart(captProc);
+				setNativeCaptureClockAnchor({ wallMs: Date.now(), videoMs: 0 });
 				setNativeScreenRecordingActive(true);
 
 				// If the native helper reported MICROPHONE_CAPTURE_UNAVAILABLE, it started
@@ -1423,7 +1427,10 @@ export function registerRecordingHandlers(
 				"Recording resumed",
 			);
 			nativeCaptureProcess.stdin.write("resume\n");
-			await commandApplied;
+			const resumeVideoMs = parseNativeResumeVideoMs(await commandApplied);
+			if (resumeVideoMs !== null) {
+				setNativeCaptureClockAnchor({ wallMs: Date.now(), videoMs: resumeVideoMs });
+			}
 			setNativeCapturePaused(false);
 			return { success: true };
 		} catch (error) {
@@ -1887,7 +1894,11 @@ export function registerRecordingHandlers(
 			setIsCursorCaptureActive(true);
 			setActiveCursorSamples([]);
 			setPendingCursorSamples([]);
-			setCursorCaptureStartTimeMs(Date.now());
+			// Native capture may have started (or resumed after the countdown) before this call.
+			setCursorCaptureStartTimeMs(
+				resolveCursorCaptureStartMs(nativeCaptureClockAnchor, Date.now()),
+			);
+			setNativeCaptureClockAnchor(null);
 			resetCursorCaptureClock();
 			setLinuxCursorScreenPoint(null);
 			setLastLeftClick(null);

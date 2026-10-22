@@ -267,6 +267,7 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 	private var isRecording = false
 	private var isPaused = false
 	private var pauseStartedHostTime: CMTime?
+	private var resumeHostTime: CMTime?
 	private var pendingResumeAdjustment = false
 	private var accumulatedPausedDuration: CMTime = .zero
 	private var sessionStarted = false
@@ -576,6 +577,7 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 		isRecording = true
 		isPaused = false
 		pauseStartedHostTime = nil
+		resumeHostTime = nil
 		pendingResumeAdjustment = false
 		accumulatedPausedDuration = .zero
 		frameCount = 0
@@ -605,19 +607,29 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 		}
 	}
 
-	func resumeCapture() async -> Bool {
+	func resumeCapture() async -> (resumed: Bool, videoSeconds: Double?) {
 		await withCheckedContinuation { continuation in
 			queue.async {
 				guard self.isRecording, self.isPaused else {
-					continuation.resume(returning: self.isRecording && !self.isPaused)
+					continuation.resume(returning: (self.isRecording && !self.isPaused, nil))
 					return
 				}
+				// The video time where capture continues, so cursor telemetry can share its clock.
+				var videoSeconds: Double?
+				if let pauseStartedHostTime = self.pauseStartedHostTime, self.firstSampleTime != .zero {
+					videoSeconds = max(
+						0,
+						CMTimeGetSeconds(pauseStartedHostTime - self.firstSampleTime - self.accumulatedPausedDuration)
+					)
+				}
 				self.isPaused = false
+				self.resumeHostTime = CMClockGetTime(CMClockGetHostTimeClock())
 				self.pendingResumeAdjustment = true
-				continuation.resume(returning: true)
+				continuation.resume(returning: (true, videoSeconds))
 			}
 		}
 	}
+
 
 	func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of outputType: SCStreamOutputType) {
 		guard sessionStarted, sampleBuffer.isValid, isRecording else { return }
@@ -902,6 +914,7 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 		frameCount = 0
 		isPaused = false
 		pauseStartedHostTime = nil
+		resumeHostTime = nil
 		pendingResumeAdjustment = false
 		accumulatedPausedDuration = .zero
 		capturesSystemAudio = false
@@ -964,11 +977,15 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 			guard outputType == .screen, let pauseStartedHostTime else {
 				return nil
 			}
-			let pauseGap = sampleTime - pauseStartedHostTime
+			// End the gap at resume, not at the next frame: ScreenCaptureKit only delivers
+			// frames when the screen changes, so a still screen after resume would otherwise
+			// be cut from the video while cursor telemetry keeps running.
+			let pauseGap = (resumeHostTime ?? sampleTime) - pauseStartedHostTime
 			if pauseGap > .zero {
 				accumulatedPausedDuration = accumulatedPausedDuration + pauseGap
 			}
 			self.pauseStartedHostTime = nil
+			self.resumeHostTime = nil
 			pendingResumeAdjustment = false
 		}
 
@@ -1285,8 +1302,13 @@ final class RecorderService {
 
 	func resume() {
 		enqueue {
-			if await self.recorder.resumeCapture() {
-				print("Recording resumed")
+			let result = await self.recorder.resumeCapture()
+			if result.resumed {
+				if let videoSeconds = result.videoSeconds {
+					print(String(format: "Recording resumed at %.3f", videoSeconds))
+				} else {
+					print("Recording resumed")
+				}
 				fflush(stdout)
 			}
 		}

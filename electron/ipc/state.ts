@@ -76,6 +76,8 @@ export let currentCursorVisualType: CursorVisualType | undefined = undefined;
 // ── Cursor telemetry ──────────────────────────────────────────────────────────
 export let cursorCaptureInterval: NodeJS.Timeout | null = null;
 export let cursorCaptureStartTimeMs = 0;
+// Wall-clock moment and video time at which native capture (re)started, for cursor alignment.
+export let nativeCaptureClockAnchor: { wallMs: number; videoMs: number } | null = null;
 export let cursorCaptureAccumulatedPausedMs = 0;
 export let cursorCapturePauseStartedAtMs: number | null = null;
 export let activeCursorSamples: CursorTelemetryPoint[] = [];
@@ -238,6 +240,9 @@ export function setCursorCaptureInterval(v: NodeJS.Timeout | null) {
 }
 export function setCursorCaptureStartTimeMs(v: number) {
 	cursorCaptureStartTimeMs = v;
+}
+export function setNativeCaptureClockAnchor(v: { wallMs: number; videoMs: number } | null) {
+	nativeCaptureClockAnchor = v;
 }
 export function setCursorCaptureAccumulatedPausedMs(v: number) {
 	cursorCaptureAccumulatedPausedMs = v;

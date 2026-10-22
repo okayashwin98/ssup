@@ -49,7 +49,7 @@ final class ScreenCaptureRecorder {
         return output
     }
     func pauseCapture() async -> Bool { true }
-    func resumeCapture() async -> Bool { true }
+    func resumeCapture() async -> (resumed: Bool, videoSeconds: Double?) { (true, nil) }
 }
 ${service}
 extension RecorderService {

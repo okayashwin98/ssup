@@ -80,7 +80,7 @@ export function waitForNativeCaptureCommand(
 	process: ChildProcessWithoutNullStreams,
 	marker: "Recording paused" | "Recording resumed",
 ) {
-	return new Promise<void>((resolve, reject) => {
+	return new Promise<string>((resolve, reject) => {
 		const timer = setTimeout(() => {
 			cleanup();
 			reject(new Error(`Timed out waiting for ScreenCaptureKit helper: ${marker}`));
@@ -91,7 +91,7 @@ export function waitForNativeCaptureCommand(
 			stdoutBuffer += chunk.toString();
 			if (stdoutBuffer.includes(marker)) {
 				cleanup();
-				resolve();
+				resolve(stdoutBuffer);
 			}
 		};
 		const onError = (error: Error) => {
