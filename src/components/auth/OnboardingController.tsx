@@ -35,7 +35,7 @@ export function OnboardingController({
 
 	useEffect(() => {
 		if (!ready) return;
-		if (!user) {
+		if (!user && configured) {
 			setOpen(true);
 			return;
 		}
@@ -45,7 +45,7 @@ export function OnboardingController({
 			setStartWithPermissions(true);
 			setOpen(true);
 		} else if (!loadAppSetting<boolean>(SEEN_KEY)) setOpen(true);
-	}, [ready, user]);
+	}, [ready, user, configured]);
 
 	useEffect(
 		() =>
@@ -57,7 +57,7 @@ export function OnboardingController({
 	);
 
 	const finish = () => {
-		if (!user) return;
+		if (!user && configured) return;
 		saveAppSetting(SEEN_KEY, true);
 		close();
 		void window.electronAPI.showRecordingHud();
@@ -70,7 +70,7 @@ export function OnboardingController({
 			variant="wide"
 			open={open}
 			onOpenChange={(value) => {
-				if (!value && user) close();
+				if (!value && (user || !configured)) close();
 			}}
 			user={user}
 			configured={configured}
