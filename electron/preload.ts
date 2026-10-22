@@ -1052,6 +1052,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	cloudShareCancel: (uploadId: string) => ipcRenderer.invoke("cloud-share-cancel", uploadId),
 	cloudShareDownload: (input: { endpoint: string; shareCode: string; title: string }) =>
 		ipcRenderer.invoke("cloud-share-download", input),
+	cloudShareProfile: (input: {
+		endpoint: string;
+		token: string;
+		name: string;
+		avatarDataUrl: string | null;
+	}) => ipcRenderer.invoke("cloud-share-profile", input),
 	onCloudShareProgress: (
 		callback: (progress: {
 			uploadId: string;

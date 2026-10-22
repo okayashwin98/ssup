@@ -3,6 +3,7 @@
 
 import { handleHostedRecording, limitedJson } from "./hostedUploads.js";
 import { ensureSchema } from "./schema.js";
+import { handleProfileAvatar, handleProfileUpdate } from "./profile.js";
 import {
 	commentViewer,
 	handleCommentLogin,
@@ -122,6 +123,11 @@ export async function handleRequest(request, env) {
 		return env.ASSETS.fetch(new Request(new URL("/lib", url), request));
 	}
 
+	// Owner photo shown on share pages (public)
+	if (path === "/profile/avatar" && request.method === "GET") {
+		return handleProfileAvatar(env);
+	}
+
 	// Library login page (public)
 	if (path === "/library/login" && request.method === "GET") {
 		return env.ASSETS.fetch(new Request(new URL("/lib-login", url), request));
@@ -173,6 +179,10 @@ export async function handleRequest(request, env) {
 			!(await dashboardCookieAuthed(request, env))
 		) {
 			return errorResponse("Unauthorized", 401);
+		}
+
+		if (path === "/api/profile" && request.method === "POST" && !hosted) {
+			return handleProfileUpdate(request, env);
 		}
 
 		// Connection check used by the desktop app to validate a worker URL + secret.

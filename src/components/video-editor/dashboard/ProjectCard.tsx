@@ -1,6 +1,5 @@
 import { Globe } from "@phosphor-icons/react";
 import { RawThumbnail } from "./RawRecordings";
-import { AccountAvatar } from "@/components/ui/account-avatar";
 import { Dropdown } from "@heroui/react";
 import { Check, DotsThree, FolderSimple } from "@/components/ui/icons";
 import { useRef, useState } from "react";
@@ -15,7 +14,6 @@ import type { DashboardModel } from "./useDashboardModel";
 
 type Props = Pick<
 	DashboardProps & DashboardModel,
-	| "accountLabel"
 	| "busy"
 	| "selecting"
 	| "selected"
@@ -35,7 +33,6 @@ type Props = Pick<
 	onDownload?: () => void;
 };
 export function ProjectCard({
-	accountLabel,
 	webUrl,
 	webReady = true,
 	onDelete,
@@ -132,7 +129,6 @@ export function ProjectCard({
 				)}
 			</Button>
 			<div className="relative flex items-start justify-between gap-4 pt-5">
-				<AccountAvatar label={accountLabel} className="!size-[48px]" />
 				<div data-project-caption className="h-12 min-w-0 flex-1">
 					{editing ? (
 						<form

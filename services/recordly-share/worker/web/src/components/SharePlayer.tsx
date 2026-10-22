@@ -27,7 +27,13 @@ import {
 } from '@phosphor-icons/react';
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type RefObject } from 'react';
 import type { Comment, Reaction, ShareData } from '../scripts/api';
-import { formatTimestamp } from '../scripts/api';
+import { formatDate, formatTimestamp } from '../scripts/api';
+
+function formatCoverDuration(seconds: number) {
+  if (!Number.isFinite(seconds) || seconds <= 0) return null;
+  const total = Math.max(1, Math.round(seconds));
+  return total < 60 ? `${total}s` : formatTimestamp(total);
+}
 import { clusterTimeline, type TimelineItem } from '../scripts/shareModel';
 
 interface Props {
@@ -82,6 +88,8 @@ export default function SharePlayer({
   const markers = useRef<HTMLDivElement>(null);
   const [trackWidth, setTrackWidth] = useState(500);
   const [playing, setPlaying] = useState(false);
+  // The title cover shows until the viewer first presses play.
+  const [started, setStarted] = useState(false);
   const [waiting, setWaiting] = useState(false);
   const [ended, setEnded] = useState(false);
   const [volume, setVolume] = useState(1);
@@ -208,6 +216,7 @@ export default function SharePlayer({
           onClick={() => void togglePlay()}
           onPlay={() => {
             setPlaying(true);
+            setStarted(true);
             setEnded(false);
           }}
           onPause={() => setPlaying(false)}
@@ -244,8 +253,46 @@ export default function SharePlayer({
             <track kind="captions" src={`/vtt/${data.shareCode}`} srcLang="en" label="English" />
           )}
         </video>
+        {!started && !error && (
+          <button
+            type="button"
+            className="video-cover"
+            aria-label={`Play ${data.video.title}`}
+            onClick={() => void togglePlay()}
+          >
+            <span className="video-cover-play" aria-hidden="true">
+              <PlayIcon size={44} weight="fill" />
+            </span>
+            <span className="video-cover-text">
+              <span className="video-cover-title">{data.video.title}</span>
+              <span className="video-cover-byline">
+                {data.creator?.avatarUrl ? (
+                  <img className="video-cover-avatar" src={data.creator.avatarUrl} alt="" />
+                ) : data.creator?.name ? (
+                  <span className="video-cover-avatar video-cover-initials">
+                    {data.creator.name
+                      .split(/\s+/)
+                      .filter(Boolean)
+                      .slice(0, 2)
+                      .map((part) => part[0])
+                      .join('')
+                      .toUpperCase()}
+                  </span>
+                ) : null}
+                <span className="video-cover-meta">
+                  {data.creator?.name && <span className="video-cover-name">{data.creator.name}</span>}
+                  <span className="video-cover-details">
+                    {[formatCoverDuration(duration || data.video.duration), formatDate(data.video.created_at)]
+                      .filter(Boolean)
+                      .join(' / ')}
+                  </span>
+                </span>
+              </span>
+            </span>
+          </button>
+        )}
         </div>
-        {!playing && !error && !(ended && cta) && (
+        {started && !playing && !error && !(ended && cta) && (
           <div className="video-play-overlay">
             <Button
               isIconOnly

@@ -26,13 +26,11 @@ export function SharedRecordings({
 	endpoint,
 	refreshKey,
 	standalone = false,
-	accountLabel,
 }: {
 	token: string;
 	endpoint: string;
 	refreshKey?: string;
 	standalone?: boolean;
-	accountLabel?: string;
 }) {
 	const [query, setQuery] = useState("");
 	const [period, setPeriod] = useState("all");
@@ -172,7 +170,6 @@ export function SharedRecordings({
 										entry={entry}
 										webUrl={entry.recording.url}
 										webReady={entry.recording.ready}
-										accountLabel={accountLabel}
 										busy={Boolean(deleting)}
 										selecting={false}
 										selected={[]}

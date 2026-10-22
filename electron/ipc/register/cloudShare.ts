@@ -536,6 +536,43 @@ export function registerCloudShareHandlers() {
 		},
 	);
 
+	// Publish the owner's name and photo shown on share pages.
+	ipcMain.handle(
+		"cloud-share-profile",
+		async (
+			_event,
+			input: { endpoint?: unknown; token?: unknown; name?: unknown; avatarDataUrl?: unknown },
+		) => {
+			try {
+				const endpoint = normalizeCloudEndpoint(input?.endpoint);
+				if (typeof input.token !== "string" || !input.token)
+					throw new Error("Share service isn't set up.");
+				const response = await fetch(new URL("/api/profile", endpoint), {
+					method: "POST",
+					headers: {
+						authorization: `Bearer ${input.token}`,
+						"content-type": "application/json",
+					},
+					body: JSON.stringify({
+						name: typeof input.name === "string" ? input.name : "",
+						avatarDataUrl:
+							typeof input.avatarDataUrl === "string" ? input.avatarDataUrl : null,
+					}),
+					redirect: "error",
+					signal: AbortSignal.timeout(30000),
+				});
+				if (!response.ok)
+					throw new Error(await responseError(response, "Could not update share links"));
+				return { success: true };
+			} catch (error) {
+				return {
+					success: false,
+					error: error instanceof Error ? error.message : String(error),
+				};
+			}
+		},
+	);
+
 	// Shared videos are public by link; save a copy to Downloads and reveal it.
 	ipcMain.handle(
 		"cloud-share-download",

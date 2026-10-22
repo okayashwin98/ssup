@@ -163,3 +163,29 @@ it('rejects expired and tampered dashboard sessions', async () => {
     expect(res.status).toBe(401);
   }
 });
+
+describe('owner profile', () => {
+  it('requires the password to update and serves the photo publicly', async () => {
+    const png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+    expect((await SELF.fetch(`${BASE}/api/profile`, { method: 'POST', body: '{}' })).status).toBe(401);
+    const res = await SELF.fetch(`${BASE}/api/profile`, {
+      method: 'POST',
+      headers: { ...AUTH, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Jane Doe', avatarDataUrl: png }),
+    });
+    expect(res.status).toBe(200);
+    const avatar = await SELF.fetch(`${BASE}/profile/avatar`);
+    expect(avatar.status).toBe(200);
+    expect(avatar.headers.get('content-type')).toBe('image/png');
+    const code = await createAndCompleteShare({ title: 'Profile Test' });
+    const data = await (await SELF.fetch(`${BASE}/s/${code}/data`)).json();
+    expect(data.creator.name).toBe('Jane Doe');
+    expect(data.creator.avatarUrl).toMatch(/^\/profile\/avatar\?v=\d+$/);
+    await SELF.fetch(`${BASE}/api/profile`, {
+      method: 'POST',
+      headers: { ...AUTH, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Jane Doe', avatarDataUrl: null }),
+    });
+    expect((await SELF.fetch(`${BASE}/profile/avatar`)).status).toBe(404);
+  });
+});

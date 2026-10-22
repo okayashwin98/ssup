@@ -1,5 +1,5 @@
 import ThemeToggle from "./ThemeToggle";
-import { Avatar, Button, Input, Label, Skeleton, TextField, toast } from "@heroui/react";
+import { Button, Input, Label, Skeleton, TextField, toast } from "@heroui/react";
 import { ChatCircleIcon, LockKeyIcon, ArrowClockwiseIcon } from "@phosphor-icons/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -10,7 +10,6 @@ import {
 	isShareData,
 	isPasswordRequired,
 	isExpired,
-	formatDate,
 	formatTimestamp,
 	type ShareData,
 	type Comment,
@@ -96,34 +95,12 @@ function Recording({ data }: { data: ShareData }) {
 			<div className="share-workspace">
 				<main className="recording-column">
 					<div className="recording-heading viewer-heading">
-						<div className="viewer-identity">
-							<Avatar
-								aria-label={data.creator?.name || "Recording creator"}
-								className="!size-[48px] shrink-0 !rounded-full bg-accent/15 text-accent"
-							>
-								<Avatar.Fallback className="!rounded-full bg-accent/15 text-xs font-medium text-accent">
-									{data.creator?.name
-										.split(/\s+/)
-										.filter(Boolean)
-										.slice(0, 2)
-										.map((part) => part[0])
-										.join("")
-										.toUpperCase() || "?"}
-								</Avatar.Fallback>
-							</Avatar>
-							<div className="viewer-caption">
-								<h1 className="recording-title" title={video.title}>
-									{video.title}
-								</h1>
-								<div className="recording-meta">
-									<span>{formatDate(video.created_at)}</span>
-									<span>
-										{video.view_count.toLocaleString()}{" "}
-										{video.view_count === 1 ? "view" : "views"}
-									</span>
-								</div>
-							</div>
-						</div>
+						<h1 className="viewer-crumb" title={video.title}>
+							{data.creator?.name && (
+								<span className="viewer-crumb-owner">{data.creator.name} / </span>
+							)}
+							<span>{video.title}</span>
+						</h1>
 						<div className="viewer-heading-actions">
 							<ThemeToggle />
 							<CopyButton time={time} />

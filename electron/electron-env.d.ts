@@ -996,6 +996,12 @@ interface Window {
 			}>;
 		}>;
 		cloudShareCancel: (uploadId: string) => Promise<{ success: boolean }>;
+		cloudShareProfile?: (input: {
+			endpoint: string;
+			token: string;
+			name: string;
+			avatarDataUrl: string | null;
+		}) => Promise<{ success: boolean; error?: string }>;
 		cloudShareDownload?: (input: {
 			endpoint: string;
 			shareCode: string;

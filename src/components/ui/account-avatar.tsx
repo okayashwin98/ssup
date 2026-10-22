@@ -1,16 +1,23 @@
 import { Avatar } from "@heroui/react";
 import { createContext, useContext } from "react";
 import type { User } from "@supabase/supabase-js";
+import { type LocalProfile, useLocalProfile } from "@/lib/localProfile";
 
 export const AccountProfileContext = createContext<User | null>(null);
-export function getAccountProfile(user: User | null, fallback?: string) {
+export function getAccountProfile(
+	user: User | null,
+	fallback?: string,
+	localProfile?: LocalProfile,
+) {
 	const metadata = user?.user_metadata;
+	const local = user ? undefined : localProfile;
 	const name = [
 		metadata?.full_name,
 		metadata?.name,
 		user?.email,
 		fallback,
-		// Without an account, a personal build can name its local profile.
+		// Without an account, the local profile (or a personal build setting) names the user.
+		local?.name,
 		import.meta.env.VITE_PROFILE_NAME,
 		"Local profile",
 	].find((value) => typeof value === "string" && value.trim()) as string;
@@ -22,9 +29,12 @@ export function getAccountProfile(user: User | null, fallback?: string) {
 		.map((part) => part[0])
 		.join("")
 		.toUpperCase();
-	const picture = [metadata?.avatar_url, metadata?.picture].find(
-		(value) => typeof value === "string" && /^https?:\/\//.test(value),
-	);
+	const picture =
+		[metadata?.avatar_url, metadata?.picture].find(
+			(value) => typeof value === "string" && /^https?:\/\//.test(value),
+		) ??
+		local?.avatarDataUrl ??
+		undefined;
 	return { name, initials, picture };
 }
 export function AccountAvatar({
@@ -37,7 +47,8 @@ export function AccountAvatar({
 	user?: User | null;
 }) {
 	const context = useContext(AccountProfileContext);
-	const profile = getAccountProfile(user === undefined ? context : user, label);
+	const localProfile = useLocalProfile();
+	const profile = getAccountProfile(user === undefined ? context : user, label, localProfile);
 	return (
 		<Avatar
 			aria-label={profile.name}

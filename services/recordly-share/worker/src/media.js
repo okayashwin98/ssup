@@ -2,6 +2,7 @@
 // See ../../LICENSE and ../../../../THIRD_PARTY_NOTICES.md for attribution.
 
 import { verifyPasswordAuth } from './auth.js';
+import { getCreatorProfile } from "./profile.js";
 import { jsonResponse } from './http.js';
 import { finiteNonnegative } from './video.js';
 
@@ -197,11 +198,7 @@ export async function handleShareData(request, env, shareCode) {
     segments: (segments.results || []),
     chapters: (chapters.results || []),
     shareCode,
-    creator: typeof env.CREATOR_NAME === 'string' && env.CREATOR_NAME.trim() ? {
-      name: env.CREATOR_NAME.trim().slice(0, 100),
-      bio: typeof env.CREATOR_BIO === 'string' ? env.CREATOR_BIO.trim().slice(0, 200) : null,
-      website: typeof env.CREATOR_WEBSITE === 'string' && /^https?:\/\//i.test(env.CREATOR_WEBSITE) ? env.CREATOR_WEBSITE : null,
-    } : null,
+    creator: await getCreatorProfile(env),
   });
 }
 

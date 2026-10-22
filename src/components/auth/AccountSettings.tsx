@@ -4,6 +4,7 @@ import { TextField, Label, Input } from "@heroui/react";
 import { AccountAvatar, getAccountProfile } from "@/components/ui/account-avatar";
 import { Button } from "@/components/ui/button";
 import { SettingsRow } from "@/components/video-editor/SettingsRow";
+import { LocalProfileSettings } from "./LocalProfileSettings";
 import {
 	requestAccountEmailChange,
 	signOutRecordly,
@@ -64,7 +65,7 @@ export function AccountSettings({ user }: { user: User | null }) {
 		});
 	};
 
-	if (!user) return <p className="text-sm text-muted">Sign in to manage your account.</p>;
+	if (!user) return <LocalProfileSettings />;
 	const profile = getAccountProfile(user);
 	const providers = [
 		...new Set([

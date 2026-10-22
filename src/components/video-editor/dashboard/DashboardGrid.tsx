@@ -25,7 +25,6 @@ export function DashboardGrid({
 	refreshRaw,
 	error,
 	section,
-	accountLabel,
 	authToken,
 	onSignIn,
 	onShareProject,
@@ -56,7 +55,6 @@ export function DashboardGrid({
 	| "refreshRaw"
 	| "error"
 	| "section"
-	| "accountLabel"
 	| "authToken"
 	| "onSignIn"
 	| "onShareProject"
@@ -93,7 +91,6 @@ export function DashboardGrid({
 								key={authToken}
 								token={authToken}
 								endpoint={CLOUD_SHARE_ENDPOINT}
-								accountLabel={accountLabel}
 								standalone
 							/>
 						</div>
@@ -124,7 +121,6 @@ export function DashboardGrid({
 								key={entry.path}
 								onDelete={() => void deleteEntries([entry.path])}
 								{...{
-									accountLabel,
 									entry,
 									busy,
 									selecting,
