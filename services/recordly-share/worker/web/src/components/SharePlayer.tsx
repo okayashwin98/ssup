@@ -97,11 +97,15 @@ export default function SharePlayer({
   const [volume, setVolume] = useState(1);
   const [muted, setMuted] = useState(false);
   const [speed, setSpeed] = useState(1);
-  const [captions, setCaptions] = useState(true);
+  // Subtitles start off; viewers turn them on with the CC button.
+  const [captions, setCaptions] = useState(false);
   const [pip, setPip] = useState(false);
   const [error, setError] = useState(false);
   const savedVolume = useRef(1);
-  const controlsShown = started && pointerInside && (!playing || pointerActive);
+  // The speed menu opens outside the player, so it keeps the controls up itself.
+  const [menuOpen, setMenuOpen] = useState(false);
+  const controlsShown =
+    started && (menuOpen || (pointerInside && (!playing || pointerActive)));
   // The seek bar is painted every frame while playing; timeupdate alone only
   // fires a few times a second and makes it tick.
   const seekFill = useRef<HTMLDivElement>(null);
@@ -513,11 +517,11 @@ export default function SharePlayer({
               <ClosedCaptioningIcon size={18} />
             </Button>
           )}
-          <Dropdown>
+          <Dropdown onOpenChange={setMenuOpen}>
             <Button size="sm" variant="ghost" aria-label={`Playback speed: ${speed}×`}>
               {speed}×
             </Button>
-            <Dropdown.Popover>
+            <Dropdown.Popover className="speed-menu">
               <Dropdown.Menu
                 aria-label="Playback speed"
                 selectionMode="single"

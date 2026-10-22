@@ -550,6 +550,9 @@
   align-items: center;
   gap: 4px;
 }
+.dropdown__popover.speed-menu {
+  min-width: 128px;
+}
 .volume-group {
   display: flex;
   align-items: center;

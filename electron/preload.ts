@@ -1042,6 +1042,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		title?: string;
 		notes?: string;
 		uploadId?: string;
+		subtitles?: boolean;
 	}) => ipcRenderer.invoke("cloud-share-upload", input),
 	cloudShareManage: (input: {
 		endpoint: string;

@@ -251,6 +251,7 @@ export function EditorExportMenu(props: Props) {
 											authToken={props.authToken}
 											accountId={props.accountId}
 											onBusyChange={setShareBusy}
+											subtitles={!hasCaptionsForSidecar}
 											onRequestSignIn={() => {
 												setShowExportDropdown(false);
 												props.onRequestShareSignIn();

@@ -970,6 +970,8 @@ interface Window {
 			title?: string;
 			notes?: string;
 			uploadId?: string;
+			/** Transcribe the shared video and add web subtitles afterwards. */
+			subtitles?: boolean;
 		}) => Promise<{
 			success: boolean;
 			uploadId?: string;

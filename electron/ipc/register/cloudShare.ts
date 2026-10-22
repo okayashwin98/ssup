@@ -1,8 +1,11 @@
+import { createShareSubtitles } from "../recording/shareSubtitles";
 import { createShareThumbnail } from "../recording/shareThumbnail";
 import { getFfmpegBinaryPath } from "../ffmpeg/binary";
 import { probeNativeVideoMetadata } from "../ffmpeg/metadata";
 import { createReadStream } from "node:fs";
+import { constants as fsConstants } from "node:fs";
 import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { Transform } from "node:stream";
 import { app, ipcMain, shell } from "electron";
@@ -262,6 +265,28 @@ async function fileExists(filePath: string) {
 	);
 }
 
+async function publishShareSubtitles(videoPath: string, metadataUrl: URL, token: string) {
+	// Work on a private copy: the share dialog deletes its temporary export when closed.
+	const copyPath = path.join(os.tmpdir(), `recordly-subtitles-${crypto.randomUUID()}${path.extname(videoPath)}`);
+	try {
+		await fs.copyFile(videoPath, copyPath, fsConstants.COPYFILE_FICLONE);
+		const segments = await createShareSubtitles(copyPath);
+		if (!segments) return;
+		const response = await fetch(metadataUrl, {
+			method: "POST",
+			headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+			body: JSON.stringify({ segments }),
+			redirect: "error",
+			signal: AbortSignal.timeout(60_000),
+		});
+		if (!response.ok) throw new Error(`Subtitle upload failed (${response.status})`);
+	} catch (error) {
+		console.warn("Shared video subtitles unavailable:", error);
+	} finally {
+		await fs.rm(copyPath, { force: true }).catch(() => undefined);
+	}
+}
+
 export function registerCloudShareHandlers() {
 	ipcMain.handle(
 		"cloud-share-manage",
@@ -326,6 +351,7 @@ export function registerCloudShareHandlers() {
 				title?: unknown;
 				notes?: unknown;
 				uploadId?: unknown;
+				subtitles?: unknown;
 			},
 		) => {
 			let uploadId: string | undefined;
@@ -519,6 +545,15 @@ export function registerCloudShareHandlers() {
 							"Shared video poster unavailable; using video preview fallback.",
 						);
 					}
+				}
+
+				if (ticket.shareCode && input.subtitles === true) {
+					// The link is ready now; subtitles follow once the speech model finishes.
+					void publishShareSubtitles(
+						resolvedPath,
+						new URL(`/api/metadata/${ticket.shareCode}`, endpointOrigin),
+						token,
+					);
 				}
 
 				return { success: true, uploadId, shareUrl: ticket.shareUrl };
