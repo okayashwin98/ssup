@@ -8,6 +8,7 @@ export interface RecordingLibraryEntry {
 	name: string;
 	createdAt: number;
 	bytes: number;
+	durationMs?: number;
 	url: string;
 }
 export interface RecordingImportResult {

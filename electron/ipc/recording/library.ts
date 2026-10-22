@@ -5,6 +5,7 @@ import { shell } from "electron";
 import { buildMediaUrl, getMediaServerBaseUrl } from "../../mediaServer";
 import { rememberApprovedLocalReadPath } from "../project/manager";
 import { getRecordingsDir } from "../utils";
+import { getCachedMediaDurationMs } from "./mediaDuration";
 import type { RecordingLibraryEntry } from "../../../src/types/recordingLibrary";
 
 let mutation = Promise.resolve();
@@ -40,6 +41,7 @@ export function listRecordings(includeSources = false): Promise<RecordingLibrary
 				path: filePath,
 				name: entry.name,
 				bytes: stat.size,
+				durationMs: await getCachedMediaDurationMs(filePath, stat),
 				createdAt: stat.mtimeMs,
 				url: buildMediaUrl(server, filePath),
 			});

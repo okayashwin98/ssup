@@ -120,7 +120,9 @@ export function parseCloudRecordingList(data: unknown, endpoint: string) {
 		)
 			throw new Error("Invalid recording response.");
 		const size = Number(video.file_size);
+		const duration = Number(video.duration);
 		return {
+			durationMs: Number.isFinite(duration) && duration > 0 ? Math.round(duration * 1000) : 0,
 			code: video.share_code,
 			title: video.title,
 			size: Number.isFinite(size) && size >= 0 ? size : 0,

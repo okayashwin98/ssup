@@ -48,6 +48,8 @@ export function useRawLibrary(enabled: boolean) {
 						isCurrent: false,
 						isInProjectsDirectory: false,
 						bytes: rawSource.bytes,
+						durationMs: rawSource.durationMs,
+						recordedAt: rawSource.createdAt,
 						rawSource,
 					})),
 			);

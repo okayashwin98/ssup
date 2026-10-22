@@ -1,12 +1,12 @@
 import { Globe } from "@phosphor-icons/react";
-import { ProjectFolderChips } from "./ProjectFolderChips";
 import { RawThumbnail } from "./RawRecordings";
 import { AccountAvatar } from "@/components/ui/account-avatar";
 import { Dropdown } from "@heroui/react";
-import { Check, DotsThree, FolderSimple, Plus } from "@/components/ui/icons";
+import { Check, DotsThree, FolderSimple } from "@/components/ui/icons";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { formatFileSize } from "@/lib/fileSize";
+import { formatDuration, formatRelativeDate } from "@/lib/relativeDate";
 import { getProjectShareLink, moveProjectShareLink } from "../cloud/projectShareLinks";
 import type { ProjectLibraryEntry } from "../ProjectBrowserDialog";
 import { ProjectThumbnail } from "./ProjectThumbnail";
@@ -54,6 +54,12 @@ export function ProjectCard({
 	const folder = assignedFolders[0];
 	const shareUrl = getProjectShareLink(entry.path);
 	const fileSize = formatFileSize(entry.bytes);
+	const metaText = [
+		formatDuration(entry.durationMs),
+		formatRelativeDate(entry.recordedAt ?? entry.createdAt ?? entry.updatedAt),
+	]
+		.filter(Boolean)
+		.join(" · ");
 	const rename = () => {
 		if (renaming.current) return;
 		renaming.current = true;
@@ -155,79 +161,22 @@ export function ProjectCard({
 						</p>
 					)}
 					<div className="mt-1 flex h-6 min-w-0 items-center gap-2">
-						<p className="shrink-0 text-[11px] text-muted-foreground">
-							{new Date(entry.updatedAt).toLocaleDateString(undefined, {
-								month: "short",
-								day: "numeric",
-							})}
-							{fileSize && ` · ${fileSize}`}
+						<p className="min-w-0 truncate text-[11px] text-muted-foreground">
+							{metaText}
 						</p>
 						{webUrl && (
 							<Globe
 								aria-label="Web project"
-								className="size-3.5 text-muted-foreground"
+								className="size-3.5 shrink-0 text-muted-foreground"
 							/>
 						)}
 						{webUrl && !webReady && (
 							<span className="text-xs text-muted-foreground">Incomplete upload</span>
 						)}
-						{!webUrl && (
-							<>
-								<ProjectFolderChips
-									folders={assignedFolders}
-									name={entry.name}
-									onRemove={(id) => assignFolder(entry.path, id)}
-								/>
-								<Dropdown>
-									<Button
-										variant="ghost"
-										size="sm"
-										aria-label={`Add folder to ${entry.name}`}
-										className="h-6 min-w-0 shrink-0 gap-1.5 rounded-full px-2.5 text-[11px] text-muted-foreground opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100"
-									>
-										<Plus className="size-3" />
-										Add folder
-									</Button>
-									<Dropdown.Popover>
-										<Dropdown.Menu aria-label="Assign project folder">
-											{folders.map((item) => (
-												<Dropdown.Item
-													key={item.id}
-													id={item.id}
-													textValue={item.name}
-													onAction={() =>
-														assignFolder(entry.path, item.id)
-													}
-												>
-													<FolderSimple
-														weight="fill"
-														style={{ color: item.color }}
-													/>
-													{item.name}
-													{item.paths.includes(entry.path) && (
-														<Check className="size-3" />
-													)}
-												</Dropdown.Item>
-											))}
-											{folder && (
-												<Dropdown.Item
-													id="remove"
-													onAction={() =>
-														assignFolder(entry.path, "none")
-													}
-												>
-													Remove from all folders
-												</Dropdown.Item>
-											)}
-											{!folders.length && (
-												<Dropdown.Item id="empty" isDisabled>
-													Create a folder in the sidebar
-												</Dropdown.Item>
-											)}
-										</Dropdown.Menu>
-									</Dropdown.Popover>
-								</Dropdown>
-							</>
+						{fileSize && (
+							<span className="ml-auto shrink-0 text-[11px] text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+								{fileSize}
+							</span>
 						)}
 					</div>
 				</div>
@@ -266,6 +215,50 @@ export function ProjectCard({
 									>
 										Rename
 									</Dropdown.Item>
+									<Dropdown.SubmenuTrigger>
+										<Dropdown.Item id="folders" textValue="Add to folder">
+											Add to folder
+											<Dropdown.SubmenuIndicator />
+										</Dropdown.Item>
+										<Dropdown.Popover>
+											<Dropdown.Menu aria-label="Assign project folder">
+												{folders.map((item) => (
+													<Dropdown.Item
+														key={item.id}
+														id={item.id}
+														textValue={item.name}
+														onAction={() =>
+															assignFolder(entry.path, item.id)
+														}
+													>
+														<FolderSimple
+															weight="fill"
+															style={{ color: item.color }}
+														/>
+														{item.name}
+														{item.paths.includes(entry.path) && (
+															<Check className="ml-auto size-3" />
+														)}
+													</Dropdown.Item>
+												))}
+												{folder && (
+													<Dropdown.Item
+														id="remove-folders"
+														onAction={() =>
+															assignFolder(entry.path, "none")
+														}
+													>
+														Remove from all folders
+													</Dropdown.Item>
+												)}
+												{!folders.length && (
+													<Dropdown.Item id="no-folders" isDisabled>
+														Create a folder in the sidebar
+													</Dropdown.Item>
+												)}
+											</Dropdown.Menu>
+										</Dropdown.Popover>
+									</Dropdown.SubmenuTrigger>
 									{!entry.rawSource && (
 										<Dropdown.Item
 											id="share"

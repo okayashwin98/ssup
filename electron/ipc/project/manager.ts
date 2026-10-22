@@ -3,6 +3,7 @@ import { createProjectFirstFrameThumbnail } from "./firstFrameThumbnail";
 import { buildMediaUrl, getMediaServerBaseUrl } from "../../mediaServer";
 import type { ProjectPreviewData } from "../../../src/types/projectPreview";
 import { hasFreshProjectThumbnail } from "./thumbnailFreshness";
+import { getCachedMediaDurationMs } from "../recording/mediaDuration";
 import { type Stats, existsSync, constants as fsConstants, realpathSync } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -372,14 +373,31 @@ export function refreshProjectThumbnail(projectPath: string, revision: Stats) {
 	return task;
 }
 
-async function getProjectRecordingBytes(projectPath: string): Promise<number | undefined> {
+async function getProjectRecordingInfo(
+	projectPath: string,
+): Promise<{ bytes?: number; durationMs?: number; recordedAt?: number }> {
 	try {
 		const project = parseJsonWithByteOrderMark(await fs.readFile(projectPath, "utf-8"));
 		const media = await resolveProjectMediaSources(project);
-		if (!media.success) return undefined;
-		return (await fs.stat(media.videoPath)).size;
+		if (!media.success) return {};
+		const stats = await fs.stat(media.videoPath);
+		// Edited length: clips are laid out on the timeline, so the last clip end is the output length.
+		const clips = (project as { editor?: { clipRegions?: Array<{ endMs?: unknown }> } }).editor
+			?.clipRegions;
+		const clipEnds = Array.isArray(clips)
+			? clips
+					.map((clip) => Number(clip?.endMs))
+					.filter((end) => Number.isFinite(end) && end > 0)
+			: [];
+		return {
+			bytes: stats.size,
+			durationMs: clipEnds.length
+				? Math.round(Math.max(...clipEnds))
+				: await getCachedMediaDurationMs(media.videoPath, stats),
+			recordedAt: stats.birthtimeMs || stats.mtimeMs,
+		};
 	} catch {
-		return undefined;
+		return {};
 	}
 }
 
@@ -399,6 +417,7 @@ export async function buildProjectLibraryEntry(
 			return null;
 		}
 
+		const recordingInfo = await getProjectRecordingInfo(normalizedPath);
 		const thumbnailPath = getProjectThumbnailPath(normalizedPath);
 		const thumbnailExists = await hasFreshProjectThumbnail(thumbnailPath, stats.mtimeMs);
 		if (!thumbnailExists) {
@@ -427,7 +446,7 @@ export async function buildProjectLibraryEntry(
 				currentProjectPath && normalizePath(currentProjectPath) === normalizedPath,
 			),
 			isInProjectsDirectory: path.dirname(normalizedPath) === normalizePath(projectsDir),
-			bytes: await getProjectRecordingBytes(normalizedPath),
+			...recordingInfo,
 		};
 	} catch {
 		return null;

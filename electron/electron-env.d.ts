@@ -896,6 +896,8 @@ interface Window {
 				isCurrent: boolean;
 				isInProjectsDirectory: boolean;
 				bytes?: number;
+				durationMs?: number;
+				recordedAt?: number;
 			}>;
 			error?: string;
 		}>;
@@ -988,6 +990,7 @@ interface Window {
 				createdAt?: string;
 				title: string;
 				size: number;
+				durationMs?: number;
 				ready: boolean;
 				url: string;
 			}>;

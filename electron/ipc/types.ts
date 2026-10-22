@@ -101,6 +101,8 @@ export type ProjectLibraryEntry = {
 	isCurrent: boolean;
 	isInProjectsDirectory: boolean;
 	bytes?: number;
+	durationMs?: number;
+	recordedAt?: number;
 };
 
 export type SystemCursorAsset = {

@@ -13,6 +13,8 @@ export type ProjectLibraryEntry = {
 	isCurrent: boolean;
 	isInProjectsDirectory: boolean;
 	bytes?: number;
+	durationMs?: number;
+	recordedAt?: number;
 };
 type ProjectBrowserDialogProps = {
 	open: boolean;

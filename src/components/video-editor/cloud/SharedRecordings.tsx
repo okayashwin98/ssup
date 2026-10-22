@@ -14,6 +14,7 @@ type Recording = {
 	code: string;
 	title: string;
 	size: number;
+	durationMs?: number;
 	ready: boolean;
 	url: string;
 	createdAt?: string;
@@ -104,6 +105,7 @@ export function SharedRecordings({
 				isCurrent: false,
 				isInProjectsDirectory: false,
 				bytes: recording.size,
+				durationMs: recording.durationMs,
 				recording,
 			}))
 			.filter(
