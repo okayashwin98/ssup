@@ -797,11 +797,6 @@
   cursor: pointer;
   margin: 0;
 }
-.video-progress:focus-within {
-  outline: 2px solid var(--focus);
-  outline-offset: 2px;
-  border-radius: var(--radius);
-}
 .mobile-view-switch {
   display: none;
 }
