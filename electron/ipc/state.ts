@@ -111,6 +111,11 @@ export type { CursorInteractionType, CursorTelemetryPoint };
 // TypeScript exported `let` can be reassigned by the owning module but importers
 // cannot assign to them directly. Provide simple setters for cross-module writes.
 
+// Which source the latest recording used, so its project can be named after it.
+export let lastRecordingSourceName: { label: string; startedAt: number } | null = null;
+export function setLastRecordingSourceName(v: { label: string; startedAt: number } | null) {
+	lastRecordingSourceName = v;
+}
 export function setSelectedSource(v: SelectedSource | null) {
 	selectedSource = v;
 }

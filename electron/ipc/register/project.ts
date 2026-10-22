@@ -1,6 +1,7 @@
 import { persistRecentMetadata } from "../project/recentMetadata";
 import { renameLibraryProject } from "../project/renameLibraryProject";
 import { createUntitledProject } from "../project/createUntitledProject";
+import { buildRecordingProjectName } from "../project/recordingProjectName";
 import { trashLibraryProjects } from "../project/trashProjects";
 import { getRecordingThumbnail } from "../recording/thumbnail";
 import { listRecordings, setRecordingsRemoved } from "../recording/library";
@@ -39,6 +40,7 @@ import {
 	setCurrentProjectPath,
 	setCurrentRecordingSession,
 	setCurrentVideoPath,
+	lastRecordingSourceName,
 } from "../state";
 import {
 	approveUserPath,
@@ -712,6 +714,10 @@ export function registerProjectHandlers() {
 				const target = await createUntitledProject(
 					await getProjectsDir(),
 					JSON.stringify(prepared.projectData, null, 2),
+					buildRecordingProjectName(
+						(prepared.projectData as { videoPath?: unknown })?.videoPath,
+						lastRecordingSourceName,
+					) ?? undefined,
 				);
 				setCurrentProjectPath(target);
 				const warning = await persistRecentMetadata(() => rememberRecentProject(target));

@@ -77,6 +77,7 @@ import {
 	waitForNativeCaptureStop,
 } from "../recording/mac";
 import { parseNativeResumeVideoMs, resolveCursorCaptureStartMs } from "../recording/nativeClock";
+import { getRecordingSourceLabel } from "../project/recordingProjectName";
 import { resolveRecordedVideoStoragePath } from "../recording/storagePath";
 import {
 	attachWindowsCaptureLifecycle,
@@ -111,6 +112,7 @@ import {
 	setCachedSystemCursorAssetsSourceMtimeMs,
 	setCursorCaptureStartTimeMs,
 	setNativeCaptureClockAnchor,
+	setLastRecordingSourceName,
 	nativeCaptureClockAnchor,
 	setFfmpegCaptureOutputBuffer,
 	setFfmpegCaptureProcess,
@@ -1899,6 +1901,10 @@ export function registerRecordingHandlers(
 				resolveCursorCaptureStartMs(nativeCaptureClockAnchor, Date.now()),
 			);
 			setNativeCaptureClockAnchor(null);
+			setLastRecordingSourceName({
+				label: getRecordingSourceLabel(selectedSource),
+				startedAt: Date.now(),
+			});
 			resetCursorCaptureClock();
 			setLinuxCursorScreenPoint(null);
 			setLastLeftClick(null);
