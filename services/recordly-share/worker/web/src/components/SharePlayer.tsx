@@ -7,7 +7,6 @@ import {
   Label,
   Link,
   Slider,
-  ProgressBar,
   Spinner,
   Tooltip,
   toast,
@@ -25,7 +24,7 @@ import {
   RewindIcon,
   ChatCircleIcon,
 } from '@phosphor-icons/react';
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type RefObject } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from 'react';
 import type { Comment, Reaction, ShareData } from '../scripts/api';
 import { formatDate, formatTimestamp } from '../scripts/api';
 
@@ -66,8 +65,11 @@ export default function SharePlayer({
   );
   // Controls sit over the video and fade out while playing with the pointer still.
   const [pointerActive, setPointerActive] = useState(false);
+  // Off the player nothing is drawn over the video, so screenshots stay clean.
+  const [pointerInside, setPointerInside] = useState(false);
   const idleTimer = useRef<number | undefined>(undefined);
   const wakeControls = useCallback(() => {
+    setPointerInside(true);
     setPointerActive(true);
     window.clearTimeout(idleTimer.current);
     idleTimer.current = window.setTimeout(() => setPointerActive(false), 2500);
@@ -99,7 +101,34 @@ export default function SharePlayer({
   const [pip, setPip] = useState(false);
   const [error, setError] = useState(false);
   const savedVolume = useRef(1);
-  const controlsShown = started && (!playing || pointerActive);
+  const controlsShown = started && pointerInside && (!playing || pointerActive);
+  // The seek bar is painted every frame while playing; timeupdate alone only
+  // fires a few times a second and makes it tick.
+  const seekFill = useRef<HTMLDivElement>(null);
+  const paintProgress = useCallback(
+    (current: number) => {
+      const fill = seekFill.current;
+      if (!fill) return;
+      const length = videoRef.current?.duration;
+      const total = length && Number.isFinite(length) ? length : duration;
+      fill.style.width = total ? `${Math.min(100, Math.max(0, (current / total) * 100))}%` : '0%';
+    },
+    [duration, videoRef],
+  );
+  useLayoutEffect(() => {
+    if (!playing) paintProgress(time);
+  }, [playing, time, paintProgress]);
+  useEffect(() => {
+    if (!playing) return;
+    let frame = 0;
+    const tick = () => {
+      const video = videoRef.current;
+      if (video) paintProgress(video.currentTime);
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [playing, paintProgress, videoRef]);
   const caption = data.segments.find((s) => time >= s.start_time && time < s.end_time);
   const cta =
     data.video.cta_url && /^https?:\/\//i.test(data.video.cta_url) ? data.video.cta_url : null;
@@ -210,7 +239,10 @@ export default function SharePlayer({
       className={`video-shell${controlsShown ? ' controls-shown' : ''}${started && !controlsShown ? ' controls-hidden' : ''}`}
       onPointerMove={wakeControls}
       onPointerDown={wakeControls}
-      onPointerLeave={() => setPointerActive(false)}
+      onPointerLeave={() => {
+        setPointerInside(false);
+        setPointerActive(false);
+      }}
       onFocus={wakeControls}
     >
       <div className="video-stage">
@@ -300,19 +332,16 @@ export default function SharePlayer({
           </button>
         )}
         </div>
-        {started && !playing && !error && !(ended && cta) && (
+        {/* Pausing draws nothing over the video; only the end offers a replay. */}
+        {ended && !error && !cta && (
           <div className="video-play-overlay">
             <Button
               isIconOnly
               size="lg"
-              aria-label={ended ? 'Replay recording' : 'Play recording'}
+              aria-label="Replay recording"
               onPress={() => void togglePlay()}
             >
-              {ended ? (
-                <ArrowCounterClockwiseIcon size={24} />
-              ) : (
-                <PlayIcon size={24} weight="fill" />
-              )}
+              <ArrowCounterClockwiseIcon size={24} />
             </Button>
           </div>
         )}
@@ -390,18 +419,9 @@ export default function SharePlayer({
           ))}
         </div>
         <div className="video-progress">
-          <ProgressBar
-            aria-label="Video progress"
-            value={Math.min(time, duration || 0)}
-            minValue={0}
-            maxValue={duration || 1}
-            size="sm"
-            valueLabel={`${formatTimestamp(time)} of ${formatTimestamp(duration)}`}
-          >
-            <ProgressBar.Track>
-              <ProgressBar.Fill />
-            </ProgressBar.Track>
-          </ProgressBar>
+          <div className="seek-track" aria-hidden="true">
+            <div ref={seekFill} className="seek-fill" />
+          </div>
           <input
             className="video-seek-input"
             type="range"
@@ -445,35 +465,38 @@ export default function SharePlayer({
           >
             <FastForwardIcon size={18} />
           </Button>
-          <Button
-            isIconOnly
-            size="sm"
-            variant="ghost"
-            aria-label={muted || volume === 0 ? 'Unmute' : 'Mute'}
-            onPress={toggleMute}
-          >
-            {muted || volume === 0 ? <SpeakerSlashIcon size={18} /> : <SpeakerHighIcon size={18} />}
-          </Button>
-          <Slider
-            className="volume-control"
-            aria-label="Volume"
-            minValue={0}
-            maxValue={1}
-            step={0.05}
-            value={muted ? 0 : volume}
-            onChange={(value) => {
-              if (videoRef.current) {
-                videoRef.current.volume = Number(value);
-                videoRef.current.muted = Number(value) === 0;
-                if (Number(value)) savedVolume.current = Number(value);
-              }
-            }}
-          >
-            <Slider.Track>
-              <Slider.Fill />
-              <Slider.Thumb />
-            </Slider.Track>
-          </Slider>
+          {/* The volume bar slides out while the speaker button or bar is hovered. */}
+          <div className="volume-group">
+            <Button
+              isIconOnly
+              size="sm"
+              variant="ghost"
+              aria-label={muted || volume === 0 ? 'Unmute' : 'Mute'}
+              onPress={toggleMute}
+            >
+              {muted || volume === 0 ? <SpeakerSlashIcon size={18} /> : <SpeakerHighIcon size={18} />}
+            </Button>
+            <Slider
+              className="volume-control"
+              aria-label="Volume"
+              minValue={0}
+              maxValue={1}
+              step={0.05}
+              value={muted ? 0 : volume}
+              onChange={(value) => {
+                if (videoRef.current) {
+                  videoRef.current.volume = Number(value);
+                  videoRef.current.muted = Number(value) === 0;
+                  if (Number(value)) savedVolume.current = Number(value);
+                }
+              }}
+            >
+              <Slider.Track>
+                <Slider.Fill />
+                <Slider.Thumb />
+              </Slider.Track>
+            </Slider>
+          </div>
           <span className="video-time">
             {formatTimestamp(time)} / {formatTimestamp(duration)}
           </span>
