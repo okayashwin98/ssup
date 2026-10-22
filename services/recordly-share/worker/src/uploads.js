@@ -3,7 +3,7 @@
 
 import { limitedJson, MAX_RECORDING_BYTES } from "./hostedUploads.js";
 import { errorResponse, jsonResponse } from "./http.js";
-import { EXPIRY_DAYS, FREE_EXPIRY_DAYS, finiteNonnegative } from "./video.js";
+import { FREE_EXPIRY_DAYS, finiteNonnegative, recordingExpiresAt } from "./video.js";
 import { generateSalt, hashRecordingPassword } from "./crypto.js";
 
 export function generateShareCode() {
@@ -52,9 +52,9 @@ export async function handleUpload(request, env, ownerId = null) {
 	}
 
 	const shareCode = generateShareCode();
-	const expiresAt = new Date(
-		Date.now() + (ownerId ? FREE_EXPIRY_DAYS : EXPIRY_DAYS) * 24 * 60 * 60 * 1000,
-	).toISOString();
+	const expiresAt = ownerId
+		? new Date(Date.now() + FREE_EXPIRY_DAYS * 24 * 60 * 60 * 1000).toISOString()
+		: recordingExpiresAt(env);
 
 	// Versioned slow hash of the client digest, with a unique per-record salt.
 	let storedHash = null;

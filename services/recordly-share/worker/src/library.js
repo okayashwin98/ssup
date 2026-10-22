@@ -2,11 +2,11 @@
 // See ../../LICENSE and ../../../../THIRD_PARTY_NOTICES.md for attribution.
 
 import { abortStoredMultipart, withRecordingLock } from "./hostedUploads.js";
-import { EXPIRY_DAYS } from "./video.js";
+import { recordingExpiresAt } from "./video.js";
 import { errorResponse, jsonResponse } from "./http.js";
 
 export async function handleRenew(env, shareCode) {
-	const newExpiry = new Date(Date.now() + EXPIRY_DAYS * 24 * 60 * 60 * 1000).toISOString();
+	const newExpiry = recordingExpiresAt(env);
 
 	const result = await env.DB.prepare("UPDATE videos SET expires_at = ? WHERE share_code = ?")
 		.bind(newExpiry, shareCode)

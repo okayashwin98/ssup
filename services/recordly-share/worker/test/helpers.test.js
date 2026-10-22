@@ -94,3 +94,13 @@ describe('formatVTTTime', () => {
     expect(formatVTTTime(3661.25)).toBe('01:01:01.250');
   });
 });
+
+describe('recordingExpiresAt', () => {
+  it('keeps recordings indefinitely only when KEEP_RECORDINGS is true', async () => {
+    const { recordingExpiresAt, NEVER_EXPIRES_AT } = await import('../src/video.js');
+    expect(recordingExpiresAt({ KEEP_RECORDINGS: 'true' })).toBe(NEVER_EXPIRES_AT);
+    const days = (Date.parse(recordingExpiresAt({})) - Date.now()) / 86_400_000;
+    expect(days).toBeGreaterThan(29.9);
+    expect(days).toBeLessThan(30.1);
+  });
+});

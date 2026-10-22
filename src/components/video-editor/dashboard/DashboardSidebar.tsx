@@ -2,6 +2,8 @@ import { FeedbackDialog } from "@/components/feedback/FeedbackDialog";
 import { RecordNewButton } from "./RecordNewButton";
 import { SidebarCards } from "./SidebarCards";
 import { FolderRow } from "./FolderRow";
+import { CloudStorageMeter } from "../cloud/CloudStorageMeter";
+import { CLOUD_SHARE_ENDPOINT, CLOUD_SHARE_PERSONAL_TOKEN } from "../cloud/endpoint";
 import { Cloud, File, GearSix, House, Plus, UserCircle } from "@/components/ui/icons";
 
 import { Button } from "@/components/ui/button";
@@ -23,6 +25,7 @@ export function DashboardSidebar({
 	navClass,
 	onSignIn,
 	accountLabel,
+	authToken,
 }: Pick<
 	DashboardProps & DashboardModel,
 	| "busy"
@@ -36,6 +39,7 @@ export function DashboardSidebar({
 	| "navClass"
 	| "onSignIn"
 	| "accountLabel"
+	| "authToken"
 >) {
 	return (
 		<>
@@ -149,10 +153,14 @@ export function DashboardSidebar({
 						/>
 						Settings
 					</Button>
-					<Button variant="ghost" className={navClass(false)} onClick={onSignIn}>
-						<UserCircle weight="fill" className="size-[18px] shrink-0" />
-						<span className="truncate">{accountLabel || "Sign in"}</span>
-					</Button>
+					{CLOUD_SHARE_PERSONAL_TOKEN && CLOUD_SHARE_ENDPOINT && authToken ? (
+						<CloudStorageMeter token={authToken} />
+					) : (
+						<Button variant="ghost" className={navClass(false)} onClick={onSignIn}>
+							<UserCircle weight="fill" className="size-[18px] shrink-0" />
+							<span className="truncate">{accountLabel || "Sign in"}</span>
+						</Button>
+					)}
 				</div>
 			</aside>
 		</>
