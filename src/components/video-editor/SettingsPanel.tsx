@@ -2884,6 +2884,15 @@ export function SettingsPanel({
 								onChange={(v) => onCursorSizeChange?.(v)}
 								formatValue={(v) => `${v.toFixed(2)}×`}
 							/>
+							<SliderControl
+								label={tSettings("effects.cursorSmoothing", "Cursor Smoothing")}
+								value={cursorSmoothing}
+								min={0}
+								max={2}
+								step={0.01}
+								onChange={(v) => onCursorSmoothingChange?.(v)}
+								formatValue={(v) => (v <= 0 ? "Off" : v.toFixed(2))}
+							/>
 							<CursorClickEffectCards
 								title={tSettings(
 									"effects.cursorClickEffects.title",
