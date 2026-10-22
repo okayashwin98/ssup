@@ -25,7 +25,7 @@ import {
   RewindIcon,
   ChatCircleIcon,
 } from '@phosphor-icons/react';
-import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type RefObject } from 'react';
 import type { Comment, Reaction, ShareData } from '../scripts/api';
 import { formatTimestamp } from '../scripts/api';
 import { clusterTimeline, type TimelineItem } from '../scripts/shareModel';
@@ -54,6 +54,19 @@ export default function SharePlayer({
   seek,
 }: Props) {
   const shell = useRef<HTMLDivElement>(null);
+  // Shape the player like the recording so no letterbox bars appear.
+  const [videoRatio, setVideoRatio] = useState(() =>
+    data.video.width > 0 && data.video.height > 0 ? data.video.width / data.video.height : null,
+  );
+  const toolbar = useRef<HTMLDivElement>(null);
+  const [toolbarHeight, setToolbarHeight] = useState(88);
+  useEffect(() => {
+    const element = toolbar.current;
+    if (!element) return;
+    const observer = new ResizeObserver(() => setToolbarHeight(element.offsetHeight));
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
   const [poster, setPoster] = useState<string>();
   useEffect(() => {
     let active = true;
@@ -174,8 +187,18 @@ export default function SharePlayer({
   }, [seek, videoRef, togglePlay, toggleMute, fullscreen]);
 
   return (
+    <div
+      className="video-area"
+      style={
+        {
+          '--toolbar-h': `${toolbarHeight}px`,
+          ...(videoRatio ? { '--video-ratio': videoRatio } : {}),
+        } as CSSProperties
+      }
+    >
     <Card ref={shell} className="video-shell">
       <div className="video-stage">
+        <div className="video-frame">
         <video
           ref={videoRef}
           src={`/v/${data.shareCode}`}
@@ -208,6 +231,8 @@ export default function SharePlayer({
           onSeeking={() => setEnded(false)}
           onLoadedMetadata={(e) => {
             const video = e.currentTarget;
+            if (video.videoWidth > 0 && video.videoHeight > 0)
+              setVideoRatio(video.videoWidth / video.videoHeight);
             onDuration(Number.isFinite(video.duration) ? video.duration : 0);
             const start = Number(new URLSearchParams(location.search).get('t'));
             if (Number.isFinite(start) && start > 0 && start < video.duration)
@@ -219,6 +244,7 @@ export default function SharePlayer({
             <track kind="captions" src={`/vtt/${data.shareCode}`} srcLang="en" label="English" />
           )}
         </video>
+        </div>
         {!playing && !error && !(ended && cta) && (
           <div className="video-play-overlay">
             <Button
@@ -290,7 +316,7 @@ export default function SharePlayer({
           </div>
         )}
       </div>
-      <div className="video-toolbar">
+      <div ref={toolbar} className="video-toolbar">
         <div ref={markers} className="timeline-markers" aria-label="Comments and reactions on the timeline">
           {clusterTimeline([
             ...comments.map((item): TimelineItem => ({ timestamp: item.timestamp, kind: 'comment', label: `${item.author_name}: ${item.text}` })),
@@ -455,5 +481,6 @@ export default function SharePlayer({
         </div>
       </div>
     </Card>
+    </div>
   );
 }

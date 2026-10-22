@@ -1,4 +1,6 @@
 import { createShareThumbnail } from "../recording/shareThumbnail";
+import { getFfmpegBinaryPath } from "../ffmpeg/binary";
+import { probeNativeVideoMetadata } from "../ffmpeg/metadata";
 import { createReadStream } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -354,6 +356,12 @@ export function registerCloudShareHandlers() {
 					"content-type": "application/json",
 				};
 				if (token) controlHeaders.authorization = `Bearer ${token}`;
+				// The share page sizes its player from these; an unreadable file still uploads.
+				const videoInfo = await probeNativeVideoMetadata(
+					getFfmpegBinaryPath(),
+					resolvedPath,
+					controller.signal,
+				).catch(() => null);
 				const ticketResponse = await fetch(endpoint, {
 					method: "POST",
 					headers: controlHeaders,
@@ -364,6 +372,9 @@ export function registerCloudShareHandlers() {
 						notes,
 						size: stat.size,
 						contentType: contentTypeFor(resolvedPath),
+						width: videoInfo?.width ?? 0,
+						height: videoInfo?.height ?? 0,
+						duration: videoInfo?.duration ?? 0,
 					}),
 					redirect: "error",
 					signal: controller.signal,

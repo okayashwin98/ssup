@@ -335,12 +335,37 @@
   padding: 0;
   gap: 0;
 }
+/* The card hugs the recording's shape; leftover space shows the page background. */
+.video-area {
+  container-type: size;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+}
+.video-area > .video-shell {
+  width: max(
+    min(100cqw, 560px),
+    min(100cqw, calc((100cqh - var(--toolbar-h, 88px)) * var(--video-ratio, 16 / 9)))
+  );
+  max-height: 100cqh;
+}
 .video-stage {
   position: relative;
   width: 100%;
-  flex: 1;
+  aspect-ratio: var(--video-ratio, 16 / 9);
+  max-height: calc(100cqh - var(--toolbar-h, 88px));
   min-height: 0;
-  background: black;
+  container-type: size;
+  display: grid;
+  place-items: center;
+}
+/* Largest box with the recording's shape that fits the stage; the card shows around it. */
+.video-frame {
+  position: relative;
+  width: min(100cqw, calc(100cqh * var(--video-ratio, 16 / 9)));
+  aspect-ratio: var(--video-ratio, 16 / 9);
+  overflow: hidden;
 }
 .video-stage video {
   position: absolute;
@@ -410,10 +435,15 @@
   flex-direction: column;
   background: black;
 }
+.video-area > .video-shell:fullscreen {
+  width: 100%;
+  max-height: none;
+}
 .video-shell:fullscreen .video-stage {
   flex: 1;
   min-height: 0;
   aspect-ratio: auto;
+  max-height: none;
 }
 .video-shell:fullscreen .video-toolbar {
   flex-shrink: 0;
