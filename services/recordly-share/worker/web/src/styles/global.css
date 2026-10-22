@@ -562,7 +562,8 @@
   grid-template-columns: 1fr;
   grid-template-areas: "track";
   align-items: center;
-  transition: width 180ms ease, margin 180ms ease, opacity 180ms ease, visibility 0s 180ms;
+  /* Fade only: the width snaps open and stays until the fade-out ends. */
+  transition: opacity 120ms ease, width 0s 120ms, margin 0s 120ms, visibility 0s 120ms;
 }
 .volume-group:hover .volume-control,
 .volume-group:focus-within .volume-control {
@@ -570,7 +571,7 @@
   margin: 0 10px 0 6px;
   opacity: 1;
   visibility: visible;
-  transition: width 180ms ease, margin 180ms ease, opacity 180ms ease, visibility 0s;
+  transition: opacity 120ms ease, visibility 0s;
 }
 .volume-control .slider__track {
   height: 6px;
