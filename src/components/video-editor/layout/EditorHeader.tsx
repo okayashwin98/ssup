@@ -19,7 +19,7 @@ import { EditorExportMenu } from "./EditorExportMenu";
 import { EditorPresetMenu } from "./EditorPresetMenu";
 
 // Keep the preset implementation available for future use.
-const SHOW_PRESETS_BUTTON = false;
+const SHOW_PRESETS_BUTTON = true;
 
 type Props = {
 	clipsOpen: boolean;
