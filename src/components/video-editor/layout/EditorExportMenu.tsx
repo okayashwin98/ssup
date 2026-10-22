@@ -1,4 +1,5 @@
 import { ExportErrorReportButton } from "@/components/feedback/ExportErrorReportButton";
+import { copyText } from "@/lib/copyText";
 import { LinkSimple, HardDrive, Export } from "@phosphor-icons/react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { CloudShareButton } from "../cloud/CloudShareButton";
@@ -369,9 +370,7 @@ export function EditorExportMenu(props: Props) {
 												className="h-8 text-xs"
 												onClick={async () => {
 													try {
-														await navigator.clipboard.writeText(
-															exportError,
-														);
+														await copyText(exportError);
 														toast.success(
 															t(
 																"editor.exportStatus.errorCopied",

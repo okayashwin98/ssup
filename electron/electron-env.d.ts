@@ -643,6 +643,7 @@ interface Window {
 			callback: (state: { cursorType: CursorTelemetryPoint["cursorType"] }) => void,
 		) => () => void;
 		openExternalUrl: (url: string) => Promise<{ success: boolean; error?: string }>;
+		copyTextToClipboard?: (text: string) => Promise<{ success: boolean; error?: string }>;
 		getAccessibilityPermissionStatus: () => Promise<{
 			success: boolean;
 			trusted: boolean;

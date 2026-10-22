@@ -1,3 +1,4 @@
+import { copyText } from "@/lib/copyText";
 import {
 	checkShareCapacity,
 	RECORDING_LIMIT_MESSAGE,
@@ -243,7 +244,7 @@ export function CloudShareButton({
 	const copyShareUrl = useCallback(async () => {
 		if (!shareUrl) return;
 		try {
-			await navigator.clipboard.writeText(shareUrl);
+			await copyText(shareUrl);
 			setCopied(true);
 			toast.success(t("editor.cloud.linkCopied"));
 		} catch {

@@ -1,4 +1,4 @@
-import { desktopCapturer, ipcMain, shell, systemPreferences } from "electron";
+import { clipboard, desktopCapturer, ipcMain, shell, systemPreferences } from "electron";
 import { getMacPrivacySettingsUrl } from "../utils";
 
 export function registerPermissionHandlers() {
@@ -15,6 +15,15 @@ export function registerPermissionHandlers() {
 			console.error("Failed to open URL:", error);
 			return { success: false, error: String(error) };
 		}
+	});
+
+	// The renderer's clipboard permission is refused by the session policy, so copy here.
+	ipcMain.handle("copy-text-to-clipboard", (_, text: unknown) => {
+		if (typeof text !== "string" || text.length > 100_000) {
+			return { success: false, error: "Nothing valid to copy" };
+		}
+		clipboard.writeText(text);
+		return { success: true };
 	});
 
 	ipcMain.handle("get-accessibility-permission-status", () => {

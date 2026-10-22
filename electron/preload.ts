@@ -685,6 +685,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	openExternalUrl: (url: string) => {
 		return ipcRenderer.invoke("open-external-url", url);
 	},
+	copyTextToClipboard: (text: string) => {
+		return ipcRenderer.invoke("copy-text-to-clipboard", text);
+	},
 	getAccessibilityPermissionStatus: () => {
 		return ipcRenderer.invoke("get-accessibility-permission-status");
 	},
