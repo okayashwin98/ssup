@@ -1,3 +1,5 @@
+import { CLOUD_SHARE_PERSONAL_TOKEN } from "./endpoint";
+
 export const FREE_RECORDING_LIMIT = 5;
 export const RECORDING_LIMIT_MESSAGE =
 	"You have 5 cloud recordings. Delete one from Shared before sharing another.";
@@ -7,6 +9,8 @@ export async function checkShareCapacity(endpoint: string, token: string): Promi
 	if (!result.success || !Array.isArray(result.videos)) {
 		throw new Error(result.error || "Could not check cloud storage. Try again.");
 	}
+	// Personal Workers have no recording quota.
+	if (CLOUD_SHARE_PERSONAL_TOKEN) return true;
 	// Pending uploads occupy slots too, matching the backend's atomic quota check.
 	return result.videos.length < FREE_RECORDING_LIMIT;
 }

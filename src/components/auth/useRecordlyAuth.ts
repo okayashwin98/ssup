@@ -5,6 +5,7 @@ import {
 	recordlyAuth,
 	recordlyAuthConfigured,
 } from "@/lib/auth/recordlyAuth";
+import { CLOUD_SHARE_PERSONAL_TOKEN } from "@/components/video-editor/cloud/endpoint";
 
 export function useRecordlyAuth() {
 	const [user, setUser] = useState<User | null>(null);
@@ -68,9 +69,11 @@ export function useRecordlyAuth() {
 		};
 	}, []);
 
+	const sessionToken = user?.is_anonymous ? undefined : accessToken;
 	return {
 		user: user?.is_anonymous ? null : user,
-		accessToken: user?.is_anonymous ? undefined : accessToken,
+		accessToken: sessionToken,
+		shareToken: CLOUD_SHARE_PERSONAL_TOKEN ?? sessionToken,
 		loading,
 		configured: recordlyAuthConfigured,
 		callbackError,

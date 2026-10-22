@@ -1,4 +1,5 @@
 import { parseSharedRecordingDate } from "./sharedRecordingDate";
+import { CLOUD_SHARE_PERSONAL_TOKEN } from "./endpoint";
 import { FREE_RECORDING_LIMIT, notifyShareCapacityChanged } from "./shareCapacity";
 import { LibrarySkeleton } from "../dashboard/LibrarySkeleton";
 import { ProjectCard } from "../dashboard/ProjectCard";
@@ -245,7 +246,9 @@ export function SharedRecordings({
 					<p className="text-xs text-muted">
 						{loading
 							? "Loading recordings…"
-							: `${recordings.length} of ${FREE_RECORDING_LIMIT} recordings · 1 GB each · Free links expire after 14 days`}
+							: CLOUD_SHARE_PERSONAL_TOKEN
+								? `${recordings.length} recordings · Links expire after 30 days`
+								: `${recordings.length} of ${FREE_RECORDING_LIMIT} recordings · 1 GB each · Free links expire after 14 days`}
 					</p>
 					{loading ? (
 						<LibrarySkeleton />

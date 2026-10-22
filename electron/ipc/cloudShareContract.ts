@@ -13,6 +13,11 @@ const TRUSTED_SHARE_ORIGINS = new Set([
 	"http://localhost:8787",
 	"http://127.0.0.1:8787",
 ]);
+// A personal share Worker configured at build time is trusted alongside the Recordly service.
+const configuredShareEndpoint = import.meta.env.VITE_CLOUD_SHARE_ENDPOINT?.trim();
+if (configuredShareEndpoint?.startsWith("https://")) {
+	TRUSTED_SHARE_ORIGINS.add(new URL(configuredShareEndpoint).origin);
+}
 
 function parseUrl(value: unknown, label: string): URL {
 	if (typeof value !== "string") throw new Error(`${label} is missing.`);

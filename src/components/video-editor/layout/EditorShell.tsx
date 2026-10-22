@@ -193,11 +193,11 @@ export function EditorShell(props: Props) {
 						)
 							return;
 						project.setProjectBrowserOpen(false);
-						if (!auth.user) requestSignIn("share");
+						if (!auth.shareToken) requestSignIn("share");
 						else setShareRequestNonce((value) => value + 1);
 					}}
 					accountLabel={auth.user?.email}
-					authToken={auth.accessToken}
+					authToken={auth.shareToken}
 					handleImportMediaOrProject={openActions.handleImportMediaOrProject}
 					handleOpenProjectFromLibrary={openActions.handleOpenProjectFromLibrary}
 					nativeCaptureUnavailableModalOpen={ui.nativeCaptureUnavailableModalOpen}
@@ -292,7 +292,7 @@ export function EditorShell(props: Props) {
 				prepareExportForShare={dialogActions.prepareExportForShare}
 				onRequestShareSignIn={() => requestSignIn("share")}
 				shareRequestNonce={shareRequestNonce}
-				authToken={auth.accessToken}
+				authToken={auth.shareToken}
 				accountId={auth.user?.id}
 				revealExportedFile={dialogActions.revealExportedFile}
 				exportMessage={exportMessage}

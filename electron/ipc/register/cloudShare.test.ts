@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
 	normalizeCloudEndpoint,
 	parseCloudShareTicket,
@@ -165,5 +165,31 @@ describe("cloud recording library responses", () => {
 				url: "https://videos.recordly.dev/s/abc123",
 			},
 		]);
+	});
+});
+
+describe("configured personal share endpoint", () => {
+	it("trusts only an HTTPS endpoint configured at build time", async () => {
+		vi.resetModules();
+		vi.stubEnv(
+			"VITE_CLOUD_SHARE_ENDPOINT",
+			"https://recordly-share.example.workers.dev/api/upload",
+		);
+		const contract = await import("../cloudShareContract");
+		expect(
+			contract.normalizeCloudEndpoint(
+				"https://recordly-share.example.workers.dev/api/upload",
+			),
+		).toBe("https://recordly-share.example.workers.dev/api/upload");
+		expect(() =>
+			contract.normalizeCloudEndpoint("https://other.example.workers.dev/api/upload"),
+		).toThrow();
+		vi.resetModules();
+		vi.stubEnv("VITE_CLOUD_SHARE_ENDPOINT", "http://insecure.example.com/api/upload");
+		const insecure = await import("../cloudShareContract");
+		expect(() =>
+			insecure.normalizeCloudEndpoint("http://insecure.example.com/api/upload"),
+		).toThrow();
+		vi.unstubAllEnvs();
 	});
 });

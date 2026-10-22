@@ -20,7 +20,10 @@ import {
 import { Export, LinkSimple } from "@phosphor-icons/react";
 import { Label } from "@/components/ui/label";
 
-import { CLOUD_SHARE_ENDPOINT as DEFAULT_CLOUD_ENDPOINT } from "./endpoint";
+import {
+	CLOUD_SHARE_PERSONAL_TOKEN,
+	CLOUD_SHARE_ENDPOINT as DEFAULT_CLOUD_ENDPOINT,
+} from "./endpoint";
 
 type Props = {
 	projectPath?: string | null;
@@ -349,7 +352,9 @@ export function CloudShareButton({
 						<DialogTitle>{t("editor.cloud.heading")}</DialogTitle>
 						<DialogDescription>{t("editor.cloud.description")}</DialogDescription>
 						<p className="text-xs text-muted-foreground">
-							Free-plan links expire after 14 days.
+							{CLOUD_SHARE_PERSONAL_TOKEN
+								? "Links expire after 30 days."
+								: "Free-plan links expire after 14 days."}
 						</p>
 					</DialogHeader>
 
