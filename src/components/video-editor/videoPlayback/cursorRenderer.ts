@@ -32,7 +32,10 @@ import { computeCursorFrameBlur } from "./frameMotionSample";
 export { interpolateCursorPosition } from "./cursorPosition";
 
 type CursorAssetKey = NonNullable<CursorTelemetryPoint["cursorType"]>;
-type StatefulCursorStyle = Extract<CursorStyle, "macos" | "tahoe" | "tahoe-inverted" | "windows11">;
+type StatefulCursorStyle = Extract<
+	CursorStyle,
+	"macos" | "tahoe" | "tahoe-inverted" | "snap" | "windows11"
+>;
 type SingleCursorStyle = Extract<CursorStyle, "dot" | "figma">;
 type CursorPackStyle = Exclude<CursorStyle, StatefulCursorStyle | SingleCursorStyle>;
 type CursorPackVariant = "default" | "pointer";
@@ -199,6 +202,7 @@ function isStatefulCursorStyle(style: CursorStyle): style is StatefulCursorStyle
 		style === "macos" ||
 		style === "tahoe" ||
 		style === "tahoe-inverted" ||
+		style === "snap" ||
 		style === "windows11"
 	);
 }
@@ -593,9 +597,10 @@ export async function preloadCursorAssets() {
 				) as Partial<Record<CursorAssetKey, LoadedCursorAsset>>;
 			}
 
-			const [macosAssets, tahoeAssets, windows11Assets] = await Promise.all([
+			const [macosAssets, tahoeAssets, snapAssets, windows11Assets] = await Promise.all([
 				loadCursorSet("macos"),
 				loadCursorSet("tahoe"),
+				loadCursorSet("snap"),
 				loadCursorSet("windows11"),
 			]);
 
@@ -608,6 +613,7 @@ export async function preloadCursorAssets() {
 			loadedCursorSetAssets = {
 				macos: macosAssets,
 				tahoe: tahoeAssets,
+				snap: snapAssets,
 				windows11: windows11Assets,
 				"tahoe-inverted": Object.fromEntries(invertedEntries) as Partial<
 					Record<CursorAssetKey, LoadedCursorAsset>

@@ -13,6 +13,7 @@ import tahoeTextUrl from "../../../assets/cursors/tahoe/ibeam-1__50-44.svg";
 import tahoeNotAllowedUrl from "../../../assets/cursors/tahoe/notallowed-1__23-0.svg";
 import tahoeOpenHandUrl from "../../../assets/cursors/golden-gate/openhand.svg";
 import tahoeArrowUrl from "../../../assets/cursors/tahoe/pointer-1__14-6.svg";
+import snapArrowUrl from "../../../assets/cursors/snap/arrow.svg";
 import tahoePointerUrl from "../../../assets/cursors/golden-gate/pointinghand.svg";
 import tahoeResizeEwUrl from "../../../assets/cursors/tahoe/resizeeastwest-1__50-50.svg";
 import tahoeResizeNsUrl from "../../../assets/cursors/tahoe/resizenorthsouth-1__50-49.svg";
@@ -28,7 +29,10 @@ import windows11TextUrl from "../../../assets/cursors/windows11/text__50-50.svg"
 import type { CursorStyle, CursorTelemetryPoint } from "../types";
 
 type CursorAssetKey = NonNullable<CursorTelemetryPoint["cursorType"]>;
-type CursorSetStyle = Extract<CursorStyle, "macos" | "tahoe" | "tahoe-inverted" | "windows11">;
+type CursorSetStyle = Extract<
+	CursorStyle,
+	"macos" | "tahoe" | "tahoe-inverted" | "snap" | "windows11"
+>;
 
 const MACOS_POINTER_ASSET_HEIGHT = 746;
 const MACOS_POINTER_CONTENT_HEIGHT = 386;
@@ -105,6 +109,18 @@ export const cursorSetAssets: Record<
 		"resize-ns": asset(tahoeResizeNsUrl, 50, 49),
 		"not-allowed": asset(tahoeNotAllowedUrl, 23, 0),
 	},
+	// Snap arrow; every other state uses the Golden Gate artwork.
+	snap: {
+		arrow: asset(snapArrowUrl, 31.69, 22.54),
+		text: asset(tahoeTextUrl, 50, 44),
+		pointer: asset(tahoePointerUrl, 37.5, 25),
+		crosshair: asset(tahoeCrosshairUrl, 50, 50),
+		"open-hand": asset(tahoeOpenHandUrl, 46.875, 50),
+		"closed-hand": asset(tahoeClosedHandUrl, 46.875, 50),
+		"resize-ew": asset(tahoeResizeEwUrl, 50, 50),
+		"resize-ns": asset(tahoeResizeNsUrl, 50, 49),
+		"not-allowed": asset(tahoeNotAllowedUrl, 23, 0),
+	},
 	windows11: {
 		// Hotspots are from the 32px frames embedded in the matching Windows .cur files.
 		arrow: windowsSystemAsset(windows11ArrowUrl, 0, 0),
@@ -123,6 +139,7 @@ export const cursorStyleSizeMultipliers: Record<CursorSetStyle, number> = {
 	macos: MACOS_CURSOR_STYLE_SIZE_MULTIPLIER,
 	tahoe: 1,
 	"tahoe-inverted": 1,
+	snap: 1,
 	windows11: WINDOWS11_CURSOR_VIEWBOX_HEIGHT / WINDOWS11_ARROW_CONTENT_HEIGHT,
 };
 

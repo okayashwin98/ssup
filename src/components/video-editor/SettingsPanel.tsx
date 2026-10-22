@@ -600,6 +600,7 @@ const BUILTIN_CURSOR_STYLE_OPTIONS: CursorStyleOption[] = [
 	{ value: "macos", label: "macOS" },
 	{ value: "tahoe", label: "Golden Gate" },
 	{ value: "tahoe-inverted", label: "Golden Gate Inverted" },
+	{ value: "snap", label: "Snap" },
 	{ value: "windows11", label: "Windows 11" },
 	{ value: "dot", label: "Dot" },
 	{ value: "figma", label: "Minimal" },
@@ -790,12 +791,15 @@ function CursorStylePreview({
 						? (previewUrls.figma ?? minimalCursorUrl)
 						: style === "tahoe-inverted"
 							? (previewUrls["tahoe-inverted"] ?? tahoeCursorUrl)
-							: previewUrls[style];
+							: style === "snap"
+								? (previewUrls.snap ?? tahoeCursorUrl)
+								: previewUrls[style];
 
 	if (
 		style === "macos" ||
 		style === "tahoe" ||
 		style === "tahoe-inverted" ||
+		style === "snap" ||
 		style === "windows11"
 	) {
 		const resolvedPreviewSize =
@@ -1169,6 +1173,10 @@ export function SettingsPanel({
 			try {
 				const macosPreview = cursorSetAssets.macos.arrow.url;
 				const tahoePreview = cursorSetAssets.tahoe.arrow.url;
+				const snapPreview = await createTrimmedSvgPreview(
+					cursorSetAssets.snap.arrow.url,
+					512,
+				);
 				const [windows11Preview, minimalPreview] = await Promise.all([
 					createTrimmedSvgPreview(cursorSetAssets.windows11.arrow.url, 512),
 					createTrimmedSvgPreview(minimalCursorUrl, 512),
@@ -1182,6 +1190,7 @@ export function SettingsPanel({
 						windows11: windows11Preview,
 						figma: minimalPreview,
 						"tahoe-inverted": invertedPreview,
+						snap: snapPreview,
 					});
 				}
 			} catch {
@@ -1192,6 +1201,7 @@ export function SettingsPanel({
 						windows11: tahoeCursorUrl,
 						figma: minimalCursorUrl,
 						"tahoe-inverted": tahoeCursorUrl,
+						snap: tahoeCursorUrl,
 					});
 				}
 			}

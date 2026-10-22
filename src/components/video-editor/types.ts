@@ -59,6 +59,7 @@ export type CursorStyle =
 	| "macos"
 	| "tahoe"
 	| "tahoe-inverted"
+	| "snap"
 	| "windows11"
 	| "dot"
 	| "figma"
