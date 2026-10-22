@@ -1,3 +1,4 @@
+import { toast } from "@/components/ui/toast";
 import { parseSharedRecordingDate } from "./sharedRecordingDate";
 import { CLOUD_SHARE_PERSONAL_TOKEN } from "./endpoint";
 import { FREE_RECORDING_LIMIT, notifyShareCapacityChanged } from "./shareCapacity";
@@ -195,6 +196,33 @@ export function SharedRecordings({
 										save={() => undefined}
 										assignFolder={() => undefined}
 										onDelete={() => void remove(entry.path)}
+										onDownload={
+											window.electronAPI.cloudShareDownload
+												? () =>
+														void run(async () => {
+															const toastId = `download-${entry.path}`;
+															toast.info("Downloading…", {
+																id: toastId,
+															});
+															const result = await window.electronAPI
+																.cloudShareDownload!({
+																endpoint,
+																shareCode: entry.path,
+																title: entry.name,
+															});
+															if (!result.success) {
+																toast.dismiss(toastId);
+																throw new Error(
+																	result.error ||
+																		"Could not download.",
+																);
+															}
+															toast.success("Saved to Downloads", {
+																id: toastId,
+															});
+														})
+												: undefined
+										}
 									/>
 								</Fragment>
 							))}

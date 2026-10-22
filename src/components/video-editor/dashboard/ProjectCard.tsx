@@ -27,12 +27,19 @@ type Props = Pick<
 	| "folders"
 	| "save"
 	| "assignFolder"
-> & { entry: ProjectLibraryEntry; webUrl?: string; webReady?: boolean; onDelete?: () => void };
+> & {
+	entry: ProjectLibraryEntry;
+	webUrl?: string;
+	webReady?: boolean;
+	onDelete?: () => void;
+	onDownload?: () => void;
+};
 export function ProjectCard({
 	accountLabel,
 	webUrl,
 	webReady = true,
 	onDelete,
+	onDownload,
 	entry,
 	busy,
 	selecting,
@@ -291,6 +298,15 @@ export function ProjectCard({
 										Show in folder
 									</Dropdown.Item>
 								</>
+							)}
+							{onDownload && (
+								<Dropdown.Item
+									id="download"
+									isDisabled={busy || !webReady}
+									onAction={onDownload}
+								>
+									Download
+								</Dropdown.Item>
 							)}
 							{onDelete && (
 								<Dropdown.Item

@@ -996,6 +996,11 @@ interface Window {
 			}>;
 		}>;
 		cloudShareCancel: (uploadId: string) => Promise<{ success: boolean }>;
+		cloudShareDownload?: (input: {
+			endpoint: string;
+			shareCode: string;
+			title: string;
+		}) => Promise<{ success: boolean; path?: string; error?: string }>;
 		onCloudShareProgress: (
 			callback: (progress: {
 				uploadId: string;

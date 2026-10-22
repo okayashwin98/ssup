@@ -5,7 +5,7 @@ import { createReadStream } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { Transform } from "node:stream";
-import { ipcMain } from "electron";
+import { app, ipcMain, shell } from "electron";
 import {
 	normalizeCloudEndpoint,
 	parseCloudRecordingList,
@@ -253,6 +253,13 @@ async function uploadMultipart(options: {
 			}
 		}
 	}
+}
+
+async function fileExists(filePath: string) {
+	return fs.access(filePath).then(
+		() => true,
+		() => false,
+	);
 }
 
 export function registerCloudShareHandlers() {
@@ -525,6 +532,53 @@ export function registerCloudShareHandlers() {
 				};
 			} finally {
 				if (uploadId) activeUploads.delete(uploadId);
+			}
+		},
+	);
+
+	// Shared videos are public by link; save a copy to Downloads and reveal it.
+	ipcMain.handle(
+		"cloud-share-download",
+		async (_event, input: { endpoint?: unknown; shareCode?: unknown; title?: unknown }) => {
+			let targetPath: string | undefined;
+			try {
+				const endpoint = normalizeCloudEndpoint(input?.endpoint);
+				if (
+					typeof input.shareCode !== "string" ||
+					!/^[a-z0-9]{1,128}$/.test(input.shareCode)
+				)
+					throw new Error("Invalid recording ID.");
+				const response = await fetch(new URL(`/v/${input.shareCode}`, endpoint), {
+					redirect: "error",
+				});
+				if (!response.ok || !response.body)
+					throw new Error(`Download failed (${response.status}).`);
+				const baseName =
+					(typeof input.title === "string" ? input.title : "")
+						.replace(/[\\/:*?"<>|\u0000-\u001f]/g, " ")
+						.trim()
+						.slice(0, 120) || "Recordly recording";
+				const downloads = app.getPath("downloads");
+				targetPath = path.join(downloads, `${baseName}.mp4`);
+				for (let index = 2; await fileExists(targetPath); index += 1) {
+					targetPath = path.join(downloads, `${baseName} ${index}.mp4`);
+				}
+				const file = await fs.open(targetPath, "wx");
+				try {
+					for await (const chunk of response.body as unknown as AsyncIterable<Uint8Array>) {
+						await file.write(chunk);
+					}
+				} finally {
+					await file.close();
+				}
+				shell.showItemInFolder(targetPath);
+				return { success: true, path: targetPath };
+			} catch (error) {
+				if (targetPath) await fs.rm(targetPath, { force: true }).catch(() => undefined);
+				return {
+					success: false,
+					error: error instanceof Error ? error.message : String(error),
+				};
 			}
 		},
 	);
