@@ -3,7 +3,7 @@ import type { SourceAudioTrackSettings } from "@/components/video-editor/audio/a
 import { DEFAULT_WALLPAPER_PATH } from "@/lib/wallpapers";
 import { ASPECT_RATIOS, type AspectRatio, isCustomAspectRatio } from "@/utils/aspectRatioUtils";
 import { closeClipGaps, rippleRegionAnchors, rippleRegions } from "./clipSequence";
-import { CURSOR_MOTION_PRESETS, resolveCursorMotionPresetId } from "./cursorMotionPresets";
+import { CURSOR_MOTION_PRESETS } from "./cursorMotionPresets";
 import {
 	ADVANCED_VERTICAL_PADDING_MAX,
 	type AnnotationRegion,
@@ -830,9 +830,6 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 		(editor as Partial<ProjectEditorState>).cursorClickEffectColor,
 		DEFAULT_CURSOR_CLICK_EFFECT_COLOR,
 	);
-	const normalizedMotionPreset =
-		CURSOR_MOTION_PRESETS[resolveCursorMotionPresetId(normalizedMotionValues)];
-
 	return {
 		wallpaper: typeof editor.wallpaper === "string" ? editor.wallpaper : DEFAULT_WALLPAPER_PATH,
 		shadowIntensity: typeof editor.shadowIntensity === "number" ? editor.shadowIntensity : 0.67,
@@ -840,9 +837,9 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 		zoomMotionBlur: normalizedZoomMotionBlur,
 		zoomMotionBlurTuning: normalizedZoomMotionBlurTuning,
 		connectZooms: typeof editor.connectZooms === "boolean" ? editor.connectZooms : true,
-		zoomInDurationMs: normalizedMotionPreset.zoomInDurationMs,
+		zoomInDurationMs: normalizedMotionValues.zoomInDurationMs,
 		zoomInOverlapMs: normalizedZoomInOverlapMs,
-		zoomOutDurationMs: normalizedMotionPreset.zoomOutDurationMs,
+		zoomOutDurationMs: normalizedMotionValues.zoomOutDurationMs,
 		connectedZoomGapMs: normalizedConnectedZoomGapMs,
 		connectedZoomDurationMs: normalizedConnectedZoomDurationMs,
 		zoomInEasing: normalizeZoomTransitionEasing(editor.zoomInEasing, DEFAULT_ZOOM_IN_EASING),
@@ -862,11 +859,11 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 		cursorClickEffectScale: normalizedCursorClickEffectScale,
 		cursorClickEffectOpacity: normalizedCursorClickEffectOpacity,
 		cursorClickEffectDurationMs: normalizedCursorClickEffectDurationMs,
-		cursorSize: normalizedMotionPreset.cursorSize,
-		cursorSmoothing: normalizedMotionPreset.cursorSmoothing,
-		cursorSpringStiffnessMultiplier: normalizedMotionPreset.cursorSpringStiffnessMultiplier,
-		cursorSpringDampingMultiplier: normalizedMotionPreset.cursorSpringDampingMultiplier,
-		cursorSpringMassMultiplier: normalizedMotionPreset.cursorSpringMassMultiplier,
+		cursorSize: normalizedMotionValues.cursorSize,
+		cursorSmoothing: normalizedMotionValues.cursorSmoothing,
+		cursorSpringStiffnessMultiplier: normalizedMotionValues.cursorSpringStiffnessMultiplier,
+		cursorSpringDampingMultiplier: normalizedMotionValues.cursorSpringDampingMultiplier,
+		cursorSpringMassMultiplier: normalizedMotionValues.cursorSpringMassMultiplier,
 		cameraSpringStiffnessMultiplier: isFiniteNumber(editor.cameraSpringStiffnessMultiplier)
 			? clamp(editor.cameraSpringStiffnessMultiplier, 0.25, 3)
 			: 1,
@@ -880,8 +877,8 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 		zoomClassicMode:
 			typeof editor.zoomClassicMode === "boolean" ? editor.zoomClassicMode : false,
 		cursorMotionBlur: DEFAULT_CURSOR_MOTION_BLUR,
-		cursorClickBounce: normalizedMotionPreset.cursorClickBounce,
-		cursorClickBounceDuration: normalizedMotionPreset.cursorClickBounceDuration,
+		cursorClickBounce: normalizedMotionValues.cursorClickBounce,
+		cursorClickBounceDuration: normalizedMotionValues.cursorClickBounceDuration,
 		cursorSway: isFiniteNumber((editor as Partial<ProjectEditorState>).cursorSway)
 			? clamp((editor as Partial<ProjectEditorState>).cursorSway as number, 0, 2)
 			: DEFAULT_CURSOR_SWAY,

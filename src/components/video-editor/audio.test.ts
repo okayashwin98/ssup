@@ -264,8 +264,7 @@ describe("Motion preset normalization", () => {
 		expect(result.cursorSpringDampingMultiplier).toBe(smooth.cursorSpringDampingMultiplier);
 	});
 
-	it("falls back to focused when the saved values do not match a supported preset", () => {
-		const focused = CURSOR_MOTION_PRESETS.focused;
+	it("keeps saved motion values that do not match a supported preset", () => {
 		const result = normalizeProjectEditor({
 			zoomInDurationMs: 275,
 			zoomOutDurationMs: 410,
@@ -279,18 +278,16 @@ describe("Motion preset normalization", () => {
 			cursorClickBounceDuration: 280,
 		} as any);
 
-		expect(result.zoomInDurationMs).toBe(focused.zoomInDurationMs);
-		expect(result.zoomOutDurationMs).toBe(focused.zoomOutDurationMs);
-		expect(result.cursorSize).toBe(focused.cursorSize);
-		expect(result.cursorSmoothing).toBe(focused.cursorSmoothing);
-		expect(result.cursorSpringStiffnessMultiplier).toBe(
-			focused.cursorSpringStiffnessMultiplier,
-		);
-		expect(result.cursorSpringDampingMultiplier).toBe(focused.cursorSpringDampingMultiplier);
-		expect(result.cursorSpringMassMultiplier).toBe(focused.cursorSpringMassMultiplier);
+		expect(result.zoomInDurationMs).toBe(275);
+		expect(result.zoomOutDurationMs).toBe(410);
+		expect(result.cursorSize).toBe(3.25);
+		expect(result.cursorSmoothing).toBe(0.52);
+		expect(result.cursorSpringStiffnessMultiplier).toBe(1.1);
+		expect(result.cursorSpringDampingMultiplier).toBe(1.05);
+		expect(result.cursorSpringMassMultiplier).toBe(1.6);
 		expect(result.cursorMotionBlur).toBe(DEFAULT_CURSOR_MOTION_BLUR);
-		expect(result.cursorClickBounce).toBe(focused.cursorClickBounce);
-		expect(result.cursorClickBounceDuration).toBe(focused.cursorClickBounceDuration);
+		expect(result.cursorClickBounce).toBe(2.25);
+		expect(result.cursorClickBounceDuration).toBe(280);
 	});
 });
 
