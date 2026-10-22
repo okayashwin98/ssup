@@ -3,7 +3,6 @@ import type { CursorTelemetryPoint, TrimRegion } from "../types";
 const LOOP_CURSOR_FREEZE_DURATION_MS = 670;
 const LOOP_CURSOR_RETURN_STEPS = 20;
 const LOOP_CURSOR_SETTLE_DURATION_MS = 120;
-const CURSOR_TRAILING_MOVEMENT_EPSILON = 0.0015;
 
 function clamp(value: number, min: number, max: number) {
 	return Math.min(max, Math.max(min, value));
@@ -69,23 +68,6 @@ function findFirstStableCursorType(samples: CursorTelemetryPoint[]) {
 
 function easeOutQuint(progress: number) {
 	return 1 - (1 - progress) ** 5;
-}
-
-function findLastMovingSampleTime(samples: CursorTelemetryPoint[]) {
-	if (samples.length <= 1) {
-		return samples[0]?.timeMs ?? 0;
-	}
-
-	for (let index = samples.length - 1; index > 0; index -= 1) {
-		const curr = samples[index];
-		const prev = samples[index - 1];
-		const distance = Math.hypot(curr.cx - prev.cx, curr.cy - prev.cy);
-		if (distance > CURSOR_TRAILING_MOVEMENT_EPSILON) {
-			return curr.timeMs;
-		}
-	}
-
-	return samples[samples.length - 1].timeMs;
 }
 
 function findLatestStableCursorType(samples: CursorTelemetryPoint[], timeMs: number) {
@@ -178,13 +160,6 @@ export function buildLoopedCursorTelemetry(
 		Math.max(0, freezeDurationMs - 1),
 	);
 	const returnMotionDurationMs = Math.max(1, freezeDurationMs - clampedSettleDurationMs);
-	const sourceStartMs = firstSample.timeMs;
-	const sourceEndMs = Math.max(sourceStartMs, findLastMovingSampleTime(boundedSamples));
-	const sourceDurationMs = Math.max(1, sourceEndMs - sourceStartMs);
-	// Keep remapped times in source-time coordinates so cursor lookups
-	// (which always use video.currentTime, i.e. source time) stay correct
-	// even when the visible timeline window doesn't start at 0.
-	const motionDurationMs = Math.max(1, motionEndMs - timelineStartClampedMs);
 	const startingCursorType = findFirstStableCursorType(boundedSamples);
 	const loopedSamples: CursorTelemetryPoint[] = [
 		{
@@ -195,9 +170,11 @@ export function buildLoopedCursorTelemetry(
 		},
 	];
 
+	// Keep recorded timing so the cursor stays in sync with the video; only the final
+	// freeze window is replaced by the glide back to the starting position.
 	for (const sample of boundedSamples) {
-		const progress = clamp((sample.timeMs - sourceStartMs) / sourceDurationMs, 0, 1);
-		const mappedTimeMs = Math.round(timelineStartClampedMs + motionDurationMs * progress);
+		if (sample.timeMs > motionEndMs) break;
+		const mappedTimeMs = sample.timeMs;
 
 		if (mappedTimeMs <= loopedSamples[loopedSamples.length - 1].timeMs) {
 			loopedSamples[loopedSamples.length - 1] = {
