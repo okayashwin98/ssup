@@ -438,7 +438,7 @@
   gap: 12px;
 }
 .video-cover-avatar {
-  width: clamp(32px, 4cqw, 48px);
+  width: clamp(32px, 3.5cqw, 48px);
   aspect-ratio: 1;
   border-radius: 999px;
   object-fit: cover;
