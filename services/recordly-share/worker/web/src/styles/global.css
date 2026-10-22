@@ -443,7 +443,6 @@
   border-radius: 999px;
   object-fit: cover;
   flex-shrink: 0;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85);
 }
 .video-cover-initials {
   display: grid;
