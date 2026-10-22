@@ -131,7 +131,8 @@
 .reaction-rail {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  /* The player is centred in its column, so this centres the row under the video. */
+  justify-content: center;
   gap: 12px;
   flex-wrap: wrap;
 }
