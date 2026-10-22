@@ -8,6 +8,13 @@
   font-style: normal;
   font-display: swap;
 }
+@font-face {
+  font-family: 'Inter Display';
+  src: url('/fonts/InterDisplay-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
 @theme { --font-sans: 'DM Sans', sans-serif; }
 /* Match the desktop dashboard typography. */
 @layer base {
@@ -414,8 +421,9 @@
   gap: clamp(8px, 2cqh, 18px);
 }
 .video-cover-title {
+  font-family: 'Inter Display', 'DM Sans', sans-serif;
   font-size: clamp(22px, 5.2cqw, 64px);
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1.05;
   letter-spacing: -0.02em;
   overflow-wrap: anywhere;
