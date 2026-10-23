@@ -21,7 +21,7 @@ export function RecordNewButton({
 			className={cn("h-10 shrink-0 gap-2 text-[13px]", className)}
 		>
 			<Plus className="size-4" />
-			{first ? "Record your first video" : "Record new"}
+			{first ? "Capture your first video" : "Capture"}
 		</Button>
 	);
 }

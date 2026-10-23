@@ -46,13 +46,13 @@ export function DashboardSettings({ onImportFile }: { onImportFile: () => Promis
 			<h1 className="mb-8 text-lg font-semibold">Settings</h1>
 			<SettingsSections
 				categories={[
+					"motion",
+					"advanced",
 					"general",
 					"account",
 					"permissions",
-					"motion",
 					"recording",
 					"files",
-					"advanced",
 				]}
 			>
 				<SettingsCategory

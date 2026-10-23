@@ -10,7 +10,8 @@ test("settings opens permissions and the carousel banner adapts to each page", a
 		timeout: 15000,
 	});
 	await page.getByRole("radio", { name: "Settings", exact: true }).click();
-	await page.getByRole("button", { name: "Show onboarding" }).click();
+	await page.getByRole("row", { name: "Permissions", exact: true }).click();
+	await page.getByRole("button", { name: "Review permissions" }).click();
 	const tour = page.getByRole("dialog", { name: "Welcome to SuperShare" });
 	await expect(tour.getByRole("heading", { name: "Allow SuperShare to record" })).toBeVisible();
 	await expect(tour.getByText("Allowed", { exact: true })).toHaveCount(2);
@@ -89,7 +90,8 @@ test("settings opens permissions and the carousel banner adapts to each page", a
 	await expect(tour).not.toBeVisible();
 	await expect(page.locator("html")).toHaveAttribute("data-hud-opened", "true");
 	await page.getByRole("radio", { name: "Settings", exact: true }).click();
-	await page.getByRole("button", { name: "Show onboarding" }).click();
+	await page.getByRole("row", { name: "Permissions", exact: true }).click();
+	await page.getByRole("button", { name: "Review permissions" }).click();
 	await expect(tour.getByRole("heading", { name: "Allow SuperShare to record" })).toBeVisible();
 });
 
@@ -127,7 +129,8 @@ test("onboarding fits a compact window with reduced motion", async ({ page }) =>
 		timeout: 15000,
 	});
 	await page.getByRole("radio", { name: "Settings", exact: true }).click();
-	await page.getByRole("button", { name: "Show onboarding" }).click();
+	await page.getByRole("row", { name: "Permissions", exact: true }).click();
+	await page.getByRole("button", { name: "Review permissions" }).click();
 	const tour = page.getByRole("dialog", { name: "Welcome to SuperShare" });
 	await expect(
 		tour.getByRole("button", { name: "Start recording", exact: true }),
@@ -162,7 +165,8 @@ test("short dark windows keep the banner and navigation visible while the accoun
 	await page.emulateMedia({ reducedMotion: "reduce" });
 	await page.goto("/?windowType=editor");
 	await page.getByRole("radio", { name: "Settings", exact: true }).click();
-	await page.getByRole("button", { name: "Show onboarding" }).click();
+	await page.getByRole("row", { name: "Permissions", exact: true }).click();
+	await page.getByRole("button", { name: "Review permissions" }).click();
 	await page.setViewportSize({ width: 390, height: 600 });
 	await page.evaluate(() => document.documentElement.classList.add("dark"));
 	const tour = page.getByRole("dialog", { name: "Welcome to SuperShare" });
@@ -294,7 +298,8 @@ test("missing macOS permissions gate Start recording until access is allowed", a
 	});
 	await page.goto("/?windowType=editor");
 	await page.getByRole("radio", { name: "Settings", exact: true }).click();
-	await page.getByRole("button", { name: "Show onboarding" }).click();
+	await page.getByRole("row", { name: "Permissions", exact: true }).click();
+	await page.getByRole("button", { name: "Review permissions" }).click();
 	const tour = page.getByRole("dialog", { name: "Welcome to SuperShare" });
 	const start = tour.getByRole("button", { name: "Start recording", exact: true });
 	await expect(tour.getByRole("heading", { name: "Allow SuperShare to record" })).toBeVisible();
@@ -354,7 +359,8 @@ for (const platform of ["win32", "linux"]) {
 		}, platform);
 		await page.goto("/?windowType=editor");
 		await page.getByRole("radio", { name: "Settings", exact: true }).click();
-		await page.getByRole("button", { name: "Show onboarding" }).click();
+		await page.getByRole("row", { name: "Permissions", exact: true }).click();
+		await page.getByRole("button", { name: "Review permissions" }).click();
 		const tour = page.getByRole("dialog", { name: "Welcome to SuperShare" });
 		await expect(tour.getByRole("heading", { name: "Allow SuperShare to record" })).toBeVisible();
 		await expect(

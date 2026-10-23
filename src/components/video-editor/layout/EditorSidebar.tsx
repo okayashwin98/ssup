@@ -37,10 +37,12 @@ export function EditorSidebar({
 	onAccountClick,
 }: Props) {
 	const [advancedSections, setAdvancedSections] = useState<Record<string, boolean>>({});
-	const advanced = advancedSections[activeSection] ?? false;
+	// Settings always shows its Advanced tab; other sections keep their Advanced switch.
+	const advanced =
+		activeSection === "settings" ? true : (advancedSections[activeSection] ?? false);
 	const hasAdvanced =
 		!settingsPanelProps.selectedAnnotationId &&
-		["scene", "frame", "crop", "cursor", "webcam", "captions", "settings", "zoom"].includes(
+		["scene", "frame", "crop", "cursor", "webcam", "captions", "zoom"].includes(
 			activeSection,
 		);
 	const sections = useMemo(

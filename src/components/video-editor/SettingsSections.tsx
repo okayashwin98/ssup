@@ -29,7 +29,8 @@ export function SettingsSections({
 	categories: Category[];
 }) {
 	const parent = useContext(SettingsCategoryContext);
-	const [selected, setSelected] = useState<Category>("general");
+	// The first tab listed opens first.
+	const [selected, setSelected] = useState<Category>(categories[0]);
 	if (parent) return <div className="space-y-6">{children}</div>;
 	const active = categories.includes(selected) ? selected : categories[0];
 	return (

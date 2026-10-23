@@ -148,7 +148,7 @@ test("home dashboard searches, sorts, opens projects and returns to the editor",
 	await home.getByRole("button", { name: "Home", exact: true }).click();
 	await home
 		.getByRole("complementary", { name: "Library navigation" })
-		.getByRole("button", { name: "Record new", exact: true })
+		.getByRole("button", { name: "Capture", exact: true })
 		.click();
 	await expect(page.locator("html")).toHaveAttribute("data-hud-opened", "true");
 	await home.getByRole("button", { name: "Select projects to delete" }).click();
@@ -180,15 +180,15 @@ test("home dashboard explains an empty library", async ({ page }) => {
 	await page.goto("/?windowType=editor");
 	await page.getByRole("button", { name: "Home", exact: true }).click();
 	await expect(page.getByText("It's looking empty in here...")).toBeVisible();
-	await expect(page.getByRole("button", { name: "Record new", exact: true })).toHaveCount(1);
-	await page.getByRole("button", { name: "Record your first video", exact: true }).click();
+	await expect(page.getByRole("button", { name: "Capture", exact: true })).toHaveCount(1);
+	await page.getByRole("button", { name: "Capture your first video", exact: true }).click();
 	await expect(page.locator("html")).toHaveAttribute("data-hud-opened", "true");
 	await page.evaluate(() => {
 		delete document.documentElement.dataset.hudOpened;
 	});
 	await page
 		.getByRole("complementary", { name: "Library navigation" })
-		.getByRole("button", { name: "Record new", exact: true })
+		.getByRole("button", { name: "Capture", exact: true })
 		.click();
 	await expect(page.locator("html")).toHaveAttribute("data-hud-opened", "true");
 	await page.screenshot({ path: "test-results/dashboard-empty.png", animations: "disabled" });
@@ -442,6 +442,9 @@ test("dashboard supports creation sort, independent folders, shared settings and
 	await home.getByRole("button", { name: "Settings", exact: true }).click();
 	await expect(home.getByRole("textbox", { name: "Search projects" })).toHaveCount(0);
 	await expect(home.getByRole("button", { name: "Sort projects" })).toHaveCount(0);
+	// Settings opens on Motion; General holds the theme.
+	await expect(home.getByRole("switch", { name: "Connect Zooms" })).toBeVisible();
+	await home.getByRole("row", { name: "General", exact: true }).click();
 	await expect(home.getByRole("row", { name: "Dark", exact: true })).toBeVisible();
 	await expect(home.getByRole("grid", { name: "Settings sections" })).toHaveCount(1);
 	await expect(home.getByRole("switch", { name: "Connect Zooms" })).toHaveCount(0);
@@ -758,6 +761,7 @@ test("sidebar cards, separate Import, and shortcut settings use the dashboard fl
 		"Import",
 	);
 	await settings.click();
+	await home.getByRole("row", { name: "General", exact: true }).click();
 	await home.getByRole("button", { name: "Customize", exact: true }).click();
 	const shortcuts = page.getByRole("dialog", { name: "Keyboard Shortcuts", exact: true });
 	await expect(shortcuts).toBeVisible();
@@ -794,7 +798,7 @@ test("empty filtered libraries do not prompt for a first recording", async ({ pa
 	});
 	await page.goto("/?windowType=editor");
 	const home = page.getByRole("dialog", { name: "Projects dashboard" });
-	const first = home.getByRole("button", { name: "Record your first video", exact: true });
+	const first = home.getByRole("button", { name: "Capture your first video", exact: true });
 	await expect(first).toBeVisible();
 	await home.getByRole("button", { name: "Last 7 days", exact: true }).click();
 	await expect(home.getByText("No matching projects", { exact: true })).toBeVisible();

@@ -2272,11 +2272,8 @@ export function SettingsPanel({
 	const effectSectionContent = (() => {
 		const settingsSectionContent = (
 			<SettingsSections
-				categories={
-					advanced
-						? ["general", "account", "permissions", "motion", "advanced"]
-						: ["general", "account", "permissions", "motion"]
-				}
+				// General and Account live in the dashboard's Settings.
+				categories={["motion", "advanced", "permissions"]}
 			>
 				<SettingsCategory category="account">
 					<AccountSettings key={accountUser?.id ?? "signed-out"} user={accountUser} />
