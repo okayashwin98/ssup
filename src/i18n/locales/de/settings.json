@@ -170,7 +170,7 @@
 		"language": "Sprache",
 		"glossary": "Glossar",
 		"glossaryPlaceholder": "Namen, Marken und Begriffe, durch Kommas getrennt",
-		"glossaryHint": "Wird mit dem Projekt gespeichert und bei der nächsten Untertitelerzeugung verwendet.",
+		"glossaryHint": "Gilt für Untertitel in allen Projekten und für Untertitel geteilter Links.",
 		"downloading": "Wird heruntergeladen...",
 		"deleteModel": "Modell löschen",
 		"clearModel": "Modell entfernen",

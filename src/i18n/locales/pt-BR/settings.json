@@ -170,7 +170,7 @@
 		"language": "Idioma",
 		"glossary": "Glossário",
 		"glossaryPlaceholder": "Nomes, marcas e termos, separados por vírgulas",
-		"glossaryHint": "Salvo com o projeto e usado na próxima geração de legendas.",
+		"glossaryHint": "Usado nas legendas de todos os projetos e dos links compartilhados.",
 		"downloading": "Baixando...",
 		"deleteModel": "Excluir modelo",
 		"clearModel": "Limpar modelo",

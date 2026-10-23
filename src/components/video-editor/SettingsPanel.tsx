@@ -8,6 +8,11 @@ import { ColorControl, ColorPalette } from "@/components/ui/color-picker";
 import { Palette, Trash as Trash2, UploadSimple as Upload } from "@/components/ui/icons";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import {
+	loadCaptionGlossary,
+	normalizeCaptionGlossary,
+	saveCaptionGlossary,
+} from "@/lib/captionGlossary";
 import { toast } from "@/components/ui/toast";
 import minimalCursorUrl from "@/assets/cursors/custom/minimal-cursor.svg";
 import { Button } from "@/components/ui/button";
@@ -1012,6 +1017,7 @@ export function SettingsPanel({
 	onOpenNativeCaptureUnavailableModal,
 }: SettingsPanelProps) {
 	const tSettings = useScopedT("settings");
+	const [captionGlossary, setCaptionGlossary] = useState(loadCaptionGlossary);
 	const { locale, setLocale, t } = useI18n();
 	const { preference: themePreference, setPreference: setThemePreference } = useTheme();
 	const isBackgroundPanel = panelMode === "background";
@@ -2074,18 +2080,18 @@ export function SettingsPanel({
 							"captions.glossaryPlaceholder",
 							"Names, brands and terms, separated by commas",
 						)}
-						value={autoCaptionSettings.glossary ?? ""}
-						onChange={(event) =>
-							updateAutoCaptionSettings({
-								glossary: event.target.value.slice(0, 1000),
-							})
-						}
+						value={captionGlossary}
+						onChange={(event) => {
+							const value = normalizeCaptionGlossary(event.target.value);
+							setCaptionGlossary(value);
+							saveCaptionGlossary(value);
+						}}
 						className="block h-16 w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
 					/>
 					<p className="text-[11px] text-muted-foreground">
 						{tSettings(
 							"captions.glossaryHint",
-							"Saved with the project and used the next time captions are generated.",
+							"Used for captions in every project and for shared-link subtitles.",
 						)}
 					</p>
 				</div>

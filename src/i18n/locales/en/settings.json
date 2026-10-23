@@ -176,7 +176,7 @@
 		"language": "Language",
 		"glossary": "Glossary",
 		"glossaryPlaceholder": "Names, brands and terms, separated by commas",
-		"glossaryHint": "Saved with the project and used the next time captions are generated.",
+		"glossaryHint": "Used for captions in every project and for shared-link subtitles.",
 		"downloading": "Downloading...",
 		"deleteModel": "Delete Model",
 		"clearModel": "Clear Model",

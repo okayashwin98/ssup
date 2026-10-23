@@ -170,7 +170,7 @@
 		"language": "語言",
 		"glossary": "詞彙表",
 		"glossaryPlaceholder": "名稱、品牌和術語，以逗號分隔",
-		"glossaryHint": "隨專案儲存，下次產生字幕時使用。",
+		"glossaryHint": "用於所有專案的字幕和分享連結的字幕。",
 		"downloading": "下載中...",
 		"deleteModel": "刪除模型",
 		"clearModel": "清除模型",

@@ -1,3 +1,8 @@
+import {
+	CAPTION_GLOSSARY_SETTING,
+	normalizeCaptionGlossary,
+} from "../../../src/lib/captionGlossary";
+import { readAppSetting } from "../../appSettingsStore";
 import { generateAutoCaptionsFromVideo } from "../captions/generate";
 import { getWhisperSmallModelStatus } from "../captions/whisper";
 
@@ -16,6 +21,7 @@ export async function createShareSubtitles(
 		const { cues } = await generateAutoCaptionsFromVideo({
 			videoPath,
 			whisperModelPath: model.path,
+			prompt: normalizeCaptionGlossary(readAppSetting(CAPTION_GLOSSARY_SETTING)),
 		});
 		const segments = cues
 			.map((cue) => ({

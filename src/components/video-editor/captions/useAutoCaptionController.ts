@@ -2,6 +2,7 @@ import { type Dispatch, type SetStateAction, useCallback, useEffect, useRef } fr
 import { toast } from "@/components/ui/toast";
 import { resolveAutoCaptionSourcePath } from "../autoCaptionSource";
 import { type CaptionEditTarget, updateCaptionCuesForEditedTarget } from "../captionEditing";
+import { loadCaptionGlossary } from "@/lib/captionGlossary";
 import { resolveVideoUrl } from "../projectPersistence";
 import type { AutoCaptionSettings, CaptionCue } from "../types";
 import { getErrorMessage } from "../videoEditorUtils";
@@ -193,7 +194,7 @@ export function useAutoCaptionController({
 				whisperExecutablePath: whisperExecutablePath ?? undefined,
 				whisperModelPath,
 				language: autoCaptionSettings.language,
-				prompt: autoCaptionSettings.glossary,
+				prompt: loadCaptionGlossary().trim() || undefined,
 			});
 			if (resolveAutoCaptionSourcePath(activeSourceRef.current) !== sourcePath) {
 				toast.info("Recording changed; generated captions were not applied.");
@@ -217,7 +218,6 @@ export function useAutoCaptionController({
 		}
 	}, [
 		autoCaptionSettings.language,
-		autoCaptionSettings.glossary,
 		isGeneratingCaptions,
 		setAutoCaptionSettings,
 		setAutoCaptions,
