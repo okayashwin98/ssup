@@ -57,15 +57,16 @@ export function FrostedFolder({
 	const id = useId().replace(/[^a-zA-Z0-9]/g, "");
 	const ref = (name: string) => `url(#${name}${id})`;
 	const slots = POSTER_SLOTS[posters.length === 1 ? 1 : 2];
-	// What the glass sits over: the back panel, its window and the recordings in it.
-	const back = (
+	// What the glass sits over: the back panel, its window and the recordings in it. Only the
+	// sharp copy lifts on hover, so the blurred copies under the glass never re-blur per frame.
+	const back = (lift: boolean) => (
 		<>
 			<rect x="120" y="118" width="706" height="570" rx="46" fill={ref("back")} />
 			<rect x="143" y="138" width="662" height="540" rx="30" fill="rgb(20,20,22)" />
 			{/* Not clipped to the window, so on hover the recordings rise out of the folder. */}
 			<g
-				className="transition-transform duration-300 ease-out"
-				style={{ transform: `translateY(${open ? -50 : 0}px)` }}
+				className={lift ? "transition-transform duration-300 ease-out" : undefined}
+				style={lift ? { transform: `translateY(${open ? -50 : 0}px)` } : undefined}
 			>
 				{posters.map((poster, index) => (
 					<image
@@ -172,15 +173,15 @@ export function FrostedFolder({
 					</filter>
 				</defs>
 
-				{back}
+				{back(true)}
 
 				{/* The glass: lightly blurred at the top, heavily blurred and darker at the bottom. */}
 				<g clipPath={ref("front")}>
 					{/* Opaque base, so the sharp folder behind never shows through the blur's soft edges. */}
 					<path d={FRONT} fill="rgb(26,26,28)" />
-					<g filter={ref("soft")}>{back}</g>
+					<g filter={ref("soft")}>{back(false)}</g>
 					<g mask={ref("heavy")}>
-						<g filter={ref("deep")}>{back}</g>
+						<g filter={ref("deep")}>{back(false)}</g>
 					</g>
 					<path d={FRONT} fill={ref("tint")} />
 					<rect

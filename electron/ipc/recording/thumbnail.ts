@@ -1,11 +1,12 @@
-import { createHash } from "node:crypto";
 import { execFile } from "node:child_process";
+import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 import { app } from "electron";
 import { getFfmpegBinaryPath } from "../ffmpeg/binary";
 import { resolveApprovedLocalMediaPath } from "../project/manager";
+import { isReservedProjectFolderName } from "../project/projectMedia";
 import { getRecordingsDir } from "../utils";
 
 const run = promisify(execFile);
@@ -19,8 +20,7 @@ export async function getRecordingThumbnail(candidate: string): Promise<string> 
 	// Loose recordings and those filed in a project's folder (never the Projects folder).
 	const parts = file ? path.relative(root, file).split(path.sep) : [];
 	const inLibrary =
-		parts.length === 1 ||
-		(parts.length === 2 && !parts[0].startsWith(".") && parts[0] !== "Projects");
+		parts.length === 1 || (parts.length === 2 && !isReservedProjectFolderName(parts[0]));
 	if (!file || !inLibrary || !/\.(mp4|mov|webm|mkv|m4v)$/i.test(file))
 		throw new Error("Recording is outside the Videos library");
 	const stat = await fs.stat(file);

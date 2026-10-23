@@ -40,5 +40,9 @@ describe("recording thumbnails", () => {
 			getRecordingThumbnail(path.join(recordings, "Projects", "recording-3.mp4")),
 		).rejects.toThrow(/outside/);
 		await expect(getRecordingThumbnail(fixture)).rejects.toThrow(/outside/);
+		// The disk ignores capitals, so another spelling is still the Projects folder.
+		await expect(
+			getRecordingThumbnail(path.join(recordings, "projects", "recording-3.mp4")),
+		).rejects.toThrow(/outside/);
 	});
 });

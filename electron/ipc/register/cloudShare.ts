@@ -317,6 +317,7 @@ async function publishShareCard(
 	poster: Buffer,
 	profile: ShareCardProfile,
 	signal: AbortSignal,
+	shouldUpload: () => boolean = () => true,
 ) {
 	try {
 		const font = await fs.readFile(
@@ -329,6 +330,7 @@ async function publishShareCard(
 			avatarDataUrl: typeof profile.avatarDataUrl === "string" ? profile.avatarDataUrl : null,
 			name: typeof profile.name === "string" ? profile.name : "",
 		});
+		if (!shouldUpload()) return;
 		const response = await fetch(new URL(`/api/upload-social/${shareCode}`, origin), {
 			method: "PUT",
 			headers: {
@@ -346,6 +348,8 @@ async function publishShareCard(
 	}
 }
 
+const latestCardRefresh = new Map<string, number>();
+
 /** Redraws the link preview with a new title, from the poster already online. */
 export async function refreshShareCard(
 	origin: string,
@@ -354,13 +358,17 @@ export async function refreshShareCard(
 	title: string,
 	profile: ShareCardProfile,
 ) {
+	// Quick successive renames: only the newest title may upload its preview.
+	const run = (latestCardRefresh.get(shareCode) ?? 0) + 1;
+	latestCardRefresh.set(shareCode, run);
+	const isLatest = () => latestCardRefresh.get(shareCode) === run;
 	try {
 		const poster = await fetch(new URL(`/thumb/${shareCode}`, origin), {
 			redirect: "error",
 			signal: AbortSignal.timeout(30000),
 		});
 		// Password-protected posters aren't public; their previews show no image.
-		if (!poster.ok) return;
+		if (!poster.ok || !isLatest()) return;
 		await publishShareCard(
 			origin,
 			shareCode,
@@ -369,9 +377,12 @@ export async function refreshShareCard(
 			Buffer.from(await poster.arrayBuffer()),
 			profile,
 			AbortSignal.timeout(60000),
+			isLatest,
 		);
 	} catch (error) {
 		console.warn("Link preview not refreshed:", error);
+	} finally {
+		if (isLatest()) latestCardRefresh.delete(shareCode);
 	}
 }
 
