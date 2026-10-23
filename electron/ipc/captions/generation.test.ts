@@ -128,6 +128,21 @@ describe("caption generation pipeline", () => {
 		expect(args[args.indexOf("-mc") + 1]).toBe(String(Math.ceil(glossary.length / 2)));
 	});
 
+	it("uses the glossary once with a Whisper build that cannot repeat it", async () => {
+		mocks.exec.mockImplementation(async (file: string, args: string[]) => {
+			if (file === "/whisper" && args.includes("--carry-initial-prompt"))
+				throw new Error("error: unknown argument: --carry-initial-prompt");
+			return { stderr: "" };
+		});
+		const result = await generateAutoCaptionsFromVideo({ ...options, prompt: "Starlight" });
+		expect(result.cues).toHaveLength(1);
+		expect(whisperCalls()).toHaveLength(2);
+		expect(whisperCalls()[1][1]).toEqual(
+			expect.arrayContaining(["--prompt", "Starlight", "-ojf"]),
+		);
+		expect(whisperCalls()[1][1]).not.toContain("--carry-initial-prompt");
+	});
+
 	it("retries SRT only for a runtime that rejects full JSON", async () => {
 		mocks.exec.mockImplementation(async (file: string, args: string[]) => {
 			if (file === "/whisper" && args.includes("-ojf"))

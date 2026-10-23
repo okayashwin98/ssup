@@ -13,7 +13,8 @@ import {
 } from "../recording/diagnostics";
 import { normalizeVideoSourcePath } from "../utils";
 import { type CaptionAudioCandidate, getCaptionCompanionAudioCandidates } from "./audioCandidates";
-import { shouldRetryWhisperWithoutJson } from "./parser";
+import { normalizeCaptionGlossary } from "../../../src/lib/captionGlossary";
+import { isUnsupportedWhisperOption, shouldRetryWhisperWithoutJson } from "./parser";
 import { readWhisperCaptionOutput } from "./output";
 import { isMissingWindowsWhisperRuntimeDependency } from "./runtimeErrors";
 import { mergeCaptionSources } from "./mergeSources";
@@ -273,7 +274,7 @@ async function generateCaptionsForSource(options: {
 
 		const language =
 			options.language && options.language.trim() ? options.language.trim() : "auto";
-		const glossary = options.prompt?.trim().slice(0, 1000) ?? "";
+		const glossary = normalizeCaptionGlossary(options.prompt).trim();
 		const whisperBaseArgs = [
 			"-m",
 			whisperModelPath,
@@ -294,19 +295,35 @@ async function generateCaptionsForSource(options: {
 		];
 
 		let jsonEnabled = true;
-		try {
-			await executeWhisper(whisperExecutablePath, [...whisperBaseArgs, "-ojf"]);
-		} catch (error) {
-			if (!shouldRetryWhisperWithoutJson(error)) {
-				throw error;
+		let baseArgs = whisperBaseArgs;
+		// Older Whisper builds lack some options: drop each one they reject and run again.
+		for (;;) {
+			try {
+				await executeWhisper(
+					whisperExecutablePath,
+					jsonEnabled ? [...baseArgs, "-ojf"] : baseArgs,
+				);
+				break;
+			} catch (error) {
+				if (jsonEnabled && shouldRetryWhisperWithoutJson(error)) {
+					jsonEnabled = false;
+					console.warn(
+						"[auto-captions] Whisper runtime does not support JSON full output, retrying with SRT only:",
+						error,
+					);
+				} else if (
+					baseArgs.includes("--carry-initial-prompt") &&
+					isUnsupportedWhisperOption(error, ["carry-initial-prompt"])
+				) {
+					baseArgs = baseArgs.filter((arg) => arg !== "--carry-initial-prompt");
+					console.warn(
+						"[auto-captions] Whisper runtime cannot repeat the glossary, using it once:",
+						error,
+					);
+				} else {
+					throw error;
+				}
 			}
-
-			jsonEnabled = false;
-			console.warn(
-				"[auto-captions] Whisper runtime does not support JSON full output, retrying with SRT only:",
-				error,
-			);
-			await executeWhisper(whisperExecutablePath, whisperBaseArgs);
 		}
 
 		const cues = await readWhisperCaptionOutput(outputBase, jsonEnabled);

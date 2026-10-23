@@ -179,9 +179,16 @@ export function parseSrtCues(content: string): CaptionCuePayload[] {
 		.filter((cue): cue is CaptionCuePayload => cue != null);
 }
 
-export function shouldRetryWhisperWithoutJson(error: unknown): boolean {
+/** True when a Whisper build rejects one of the given option names as unknown. */
+export function isUnsupportedWhisperOption(error: unknown, names: string[]): boolean {
 	const message = error instanceof Error ? error.message : String(error);
-	return /(?:unknown|unrecognized|unsupported) (?:argument|option)[:\s=]+['"]?--?(?:ojf|output-json-full)\b/i.test(
-		message,
-	);
+	const pattern = names.map((name) => name.replace(/[-]/g, "\\-")).join("|");
+	return new RegExp(
+		`(?:unknown|unrecognized|unsupported) (?:argument|option)[:\\s=]+['"]?--?(?:${pattern})(?![\\w-])`,
+		"i",
+	).test(message);
+}
+
+export function shouldRetryWhisperWithoutJson(error: unknown): boolean {
+	return isUnsupportedWhisperOption(error, ["ojf", "output-json-full"]);
 }

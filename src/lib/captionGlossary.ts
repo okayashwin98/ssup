@@ -2,7 +2,8 @@ import { loadAppSetting, saveAppSetting } from "./appSettings";
 
 /** One glossary for every project's captions and for shared-link subtitles. */
 export const CAPTION_GLOSSARY_SETTING = "supershare.captionGlossary";
-export const MAX_CAPTION_GLOSSARY_LENGTH = 1000;
+// Whisper keeps at most 224 prompt tokens, about 500 characters of names.
+export const MAX_CAPTION_GLOSSARY_LENGTH = 500;
 
 export function normalizeCaptionGlossary(value: unknown): string {
 	return typeof value === "string" ? value.slice(0, MAX_CAPTION_GLOSSARY_LENGTH) : "";

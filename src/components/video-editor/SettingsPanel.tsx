@@ -8,11 +8,7 @@ import { ColorControl, ColorPalette } from "@/components/ui/color-picker";
 import { Palette, Trash as Trash2, UploadSimple as Upload } from "@/components/ui/icons";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-	loadCaptionGlossary,
-	normalizeCaptionGlossary,
-	saveCaptionGlossary,
-} from "@/lib/captionGlossary";
+import { MAX_CAPTION_GLOSSARY_LENGTH } from "@/lib/captionGlossary";
 import { toast } from "@/components/ui/toast";
 import minimalCursorUrl from "@/assets/cursors/custom/minimal-cursor.svg";
 import { Button } from "@/components/ui/button";
@@ -102,6 +98,7 @@ import {
 	cursorSetAssets,
 	getCursorStyleSizeMultiplier,
 } from "./videoPlayback/uploadedCursorAssets";
+import { useCaptionGlossary } from "./captions/useCaptionGlossary";
 import { WebcamCropControl } from "./WebcamCropControl";
 import {
 	getCropMatchedWebcamHeightPercent,
@@ -1017,7 +1014,7 @@ export function SettingsPanel({
 	onOpenNativeCaptureUnavailableModal,
 }: SettingsPanelProps) {
 	const tSettings = useScopedT("settings");
-	const [captionGlossary, setCaptionGlossary] = useState(loadCaptionGlossary);
+	const captionGlossary = useCaptionGlossary();
 	const { locale, setLocale, t } = useI18n();
 	const { preference: themePreference, setPreference: setThemePreference } = useTheme();
 	const isBackgroundPanel = panelMode === "background";
@@ -2080,12 +2077,10 @@ export function SettingsPanel({
 							"captions.glossaryPlaceholder",
 							"Names, brands and terms, separated by commas",
 						)}
-						value={captionGlossary}
-						onChange={(event) => {
-							const value = normalizeCaptionGlossary(event.target.value);
-							setCaptionGlossary(value);
-							saveCaptionGlossary(value);
-						}}
+						value={captionGlossary.glossary}
+						maxLength={MAX_CAPTION_GLOSSARY_LENGTH}
+						onChange={(event) => captionGlossary.update(event.target.value)}
+						onBlur={captionGlossary.flush}
 						className="block h-16 w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
 					/>
 					<p className="text-[11px] text-muted-foreground">
