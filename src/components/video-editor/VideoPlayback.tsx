@@ -1,4 +1,12 @@
-import { Application, Container, Graphics, Rectangle, Sprite, Texture } from "pixi.js";
+import {
+	Application,
+	Container,
+	Graphics,
+	Rectangle,
+	Sprite,
+	Texture,
+	UPDATE_PRIORITY,
+} from "pixi.js";
 import { MotionBlurFilter } from "pixi-filters/motion-blur";
 import { ZoomBlurFilter } from "pixi-filters/zoom-blur";
 import type React from "react";
@@ -286,6 +294,9 @@ interface VideoPlaybackProps {
 	volume?: number;
 	suspendRendering?: boolean;
 }
+
+/** Paused previews keep drawing this long after the last change, for settling animations. */
+const PREVIEW_IDLE_SLEEP_MS = 2500;
 
 export interface VideoPlaybackRef {
 	readonly isPlaying: boolean;
@@ -2215,6 +2226,58 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				}
 			};
 		}, [pixiReady, videoReady, applyWebcamBubbleLayout]);
+
+		// While paused and untouched the preview stops drawing; left alone it redrew
+		// 60 times a second even behind the dashboard. The ticker keeps running so
+		// playback logic is unaffected; only the draw is skipped. Any change wakes it.
+		const drawAwakeRef = useRef(true);
+		const idleSleepTimerRef = useRef<number | undefined>(undefined);
+		const wakeRendering = useCallback(() => {
+			drawAwakeRef.current = true;
+			window.clearTimeout(idleSleepTimerRef.current);
+			idleSleepTimerRef.current = window.setTimeout(() => {
+				drawAwakeRef.current = false;
+			}, PREVIEW_IDLE_SLEEP_MS);
+		}, []);
+		useEffect(() => {
+			const app = appRef.current;
+			if (!pixiReady || !app?.ticker) return;
+			const drawIfAwake = () => {
+				if (drawAwakeRef.current || isPlayingRef.current || isSeekingRef.current) app.render();
+			};
+			app.ticker.remove(app.render, app);
+			app.ticker.add(drawIfAwake, undefined, UPDATE_PRIORITY.LOW);
+			return () => {
+				if (appRef.current !== app || !app.ticker) return;
+				app.ticker.remove(drawIfAwake);
+				app.ticker.add(app.render, app, UPDATE_PRIORITY.LOW);
+			};
+		}, [pixiReady]);
+		// Every prop or state change re-renders this component, so treat it as activity.
+		useEffect(() => {
+			wakeRendering();
+		});
+		// biome-ignore lint/correctness/useExhaustiveDependencies: the media elements attach once the video is ready.
+		useEffect(() => {
+			if (!pixiReady) return;
+			const container = containerRef.current;
+			const media = [videoRef.current, webcamVideoRef.current, bgVideoRef.current].filter(
+				(element): element is HTMLVideoElement => Boolean(element),
+			);
+			const pointerEvents = ["pointerdown", "pointermove", "wheel"] as const;
+			const mediaEvents = ["seeked", "loadeddata", "playing", "timeupdate"] as const;
+			for (const type of pointerEvents) container?.addEventListener(type, wakeRendering);
+			for (const element of media)
+				for (const type of mediaEvents) element.addEventListener(type, wakeRendering);
+			window.addEventListener("resize", wakeRendering);
+			return () => {
+				for (const type of pointerEvents) container?.removeEventListener(type, wakeRendering);
+				for (const element of media)
+					for (const type of mediaEvents) element.removeEventListener(type, wakeRendering);
+				window.removeEventListener("resize", wakeRendering);
+			};
+		}, [pixiReady, videoReady, wakeRendering]);
+		useEffect(() => () => window.clearTimeout(idleSleepTimerRef.current), []);
 
 		useEffect(() => {
 			const overlay = cursorOverlayRef.current;
