@@ -1,56 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import type { RecordingLibraryEntry } from "@/types/recordingLibrary";
-
-// Front panel: raised left edge stepping down to the right, rounded corners (0–1 units).
-const FRONT_PATH =
-	"M0.04,0.02 H0.47 C0.52,0.02 0.54,0.05 0.57,0.1 C0.6,0.15 0.62,0.17 0.67,0.17 H0.96 C0.985,0.17 1,0.19 1,0.22 V0.92 C1,0.965 0.975,1 0.94,1 H0.06 C0.025,1 0,0.965 0,0.92 V0.08 C0,0.045 0.015,0.02 0.04,0.02 Z";
-type Point = [number, number];
-// The same outline as points for clip-path: polygon(), which the backdrop blur respects.
-const FRONT_POLYGON = (() => {
-	const cubic = (p0: Point, p1: Point, p2: Point, p3: Point, steps = 10) =>
-		Array.from({ length: steps }, (_, index) => {
-			const t = (index + 1) / steps;
-			const u = 1 - t;
-			return [
-				u ** 3 * p0[0] + 3 * u * u * t * p1[0] + 3 * u * t * t * p2[0] + t ** 3 * p3[0],
-				u ** 3 * p0[1] + 3 * u * u * t * p1[1] + 3 * u * t * t * p2[1] + t ** 3 * p3[1],
-			] as Point;
-		});
-	const points: Point[] = [
-		[0.04, 0.02],
-		[0.47, 0.02],
-		...cubic([0.47, 0.02], [0.52, 0.02], [0.54, 0.05], [0.57, 0.1]),
-		...cubic([0.57, 0.1], [0.6, 0.15], [0.62, 0.17], [0.67, 0.17]),
-		[0.96, 0.17],
-		...cubic([0.96, 0.17], [0.985, 0.17], [1, 0.19], [1, 0.22]),
-		[1, 0.92],
-		...cubic([1, 0.92], [1, 0.965], [0.975, 1], [0.94, 1]),
-		[0.06, 1],
-		...cubic([0.06, 1], [0.025, 1], [0, 0.965], [0, 0.92]),
-		[0, 0.08],
-		...cubic([0, 0.08], [0, 0.045], [0.015, 0.02], [0.04, 0.02]),
-	];
-	return `polygon(${points.map(([x, y]) => `${(x * 100).toFixed(2)}% ${(y * 100).toFixed(2)}%`).join(", ")})`;
-})();
-// The front covers the bottom 74% of the folder; the blurred copy is drawn in folder coordinates.
-const FRONT_HEIGHT = 0.74;
-const FRONT_OFFSET = (1 - FRONT_HEIGHT) / FRONT_HEIGHT;
-
-function posterProps(poster: string, index: number, open: boolean) {
-	return {
-		src: poster,
-		alt: "",
-		draggable: false,
-		className:
-			"absolute h-[56%] w-[86%] rounded-[7%] object-cover shadow-lg transition-transform duration-300 ease-out",
-		style: {
-			left: index === 0 ? "4%" : "10%",
-			top: index === 0 ? "5%" : "9%",
-			zIndex: index === 0 ? 1 : 2,
-			transform: `translateY(${open ? -12 : 0}%) rotate(${index === 0 ? -2.5 : 2}deg)`,
-		},
-	};
-}
 
 const isAudio = (name: string) => /\.(wav|m4a|mp3|ogg|flac)$/i.test(name);
 
@@ -82,7 +31,20 @@ function useFolderPosters(sources: RecordingLibraryEntry[]) {
 	return posters;
 }
 
-/** A folder with its recordings peeking out behind a frosted front, like a macOS folder icon. */
+// Drawn in a 775 × 595 box: a grey back panel with a dark window holding the recordings,
+// and a frosted-glass front leaning towards the viewer, so its sides narrow going down.
+const FRONT =
+	"M133,232 H470 C540,232 555,316 625,316 H808 Q853,316 850,361 L832,640 Q828,698 770,698 H175 Q117,698 113,640 L91,277 Q88,232 133,232 Z";
+// Recordings near their own 16:9 shape, tall enough to stay tucked in when lifted.
+const POSTER_SLOTS = {
+	1: [{ x: 143, y: 138, width: 662, height: 372 }],
+	2: [
+		{ x: 143, y: 138, width: 340, height: 191 },
+		{ x: 440, y: 138, width: 365, height: 240 },
+	],
+} as const;
+
+/** A folder with its recordings tucked behind a frosted-glass front, like a macOS folder. */
 export function FrostedFolder({
 	sources,
 	open,
@@ -91,58 +53,156 @@ export function FrostedFolder({
 	open: boolean;
 }) {
 	const posters = useFolderPosters(sources);
+	const id = useId().replace(/[^a-zA-Z0-9]/g, "");
+	const ref = (name: string) => `url(#${name}${id})`;
+	const slots = POSTER_SLOTS[posters.length === 1 ? 1 : 2];
+	// What the glass sits over: the back panel, its window and the recordings in it.
+	const back = (
+		<>
+			<rect x="120" y="118" width="706" height="570" rx="46" fill={ref("back")} />
+			<rect x="143" y="138" width="662" height="540" rx="30" fill="rgb(20,20,22)" />
+			{/* Not clipped to the window, so on hover the recordings rise out of the folder. */}
+			<g
+				className="transition-transform duration-300 ease-out"
+				style={{ transform: `translateY(${open ? -50 : 0}px)` }}
+			>
+				{posters.map((poster, index) => (
+					<image
+						key={`${index}-${poster.length}`}
+						href={poster}
+						preserveAspectRatio="xMidYMid slice"
+						clipPath={ref(`poster${index}`)}
+						{...slots[index]}
+					/>
+				))}
+			</g>
+		</>
+	);
 	return (
 		<div className="relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-xl bg-default/40">
-			<div className="relative h-[72%] w-[70%]">
-				{/* Back of the folder. */}
-				<div className="absolute inset-x-[2%] top-0 h-[88%] rounded-[10%/13%] bg-[linear-gradient(180deg,rgba(150,150,158,0.55),rgba(90,90,98,0.5))] ring-1 ring-white/20" />
-				{/* Recordings tucked inside. */}
-				{posters.map((poster, index) => (
-					<img key={poster.slice(-24)} {...posterProps(poster, index, open)} />
-				))}
-				{/* Frosted front: a blurred copy of the same posters, clipped to the front's shape. */}
-				<div
-					className="absolute inset-x-0 bottom-0 z-10 h-[74%] overflow-hidden"
-					style={{ clipPath: FRONT_POLYGON }}
-				>
-					<div
-						className="absolute inset-x-0"
-						style={{
-							top: `${-FRONT_OFFSET * 100}%`,
-							height: `${(1 + FRONT_OFFSET) * 100}%`,
-							filter: "blur(12px) saturate(0.75)",
-						}}
+			<svg
+				viewBox="85 110 775 595"
+				aria-hidden="true"
+				// The card is a button, whose icon sizing would otherwise shrink this drawing.
+				className="!h-[78%] !w-[78%] overflow-visible"
+			>
+				<defs>
+					{slots.map((slot, index) => (
+						<clipPath key={slot.x} id={`poster${index}${id}`}>
+							<rect {...slot} rx="30" />
+						</clipPath>
+					))}
+					<clipPath id={`front${id}`}>
+						<path d={FRONT} />
+					</clipPath>
+					<linearGradient id={`back${id}`} x1="0" y1="0" x2="0" y2="1">
+						<stop offset="0" stopColor="rgb(78,78,80)" />
+						<stop offset="1" stopColor="rgb(52,52,54)" />
+					</linearGradient>
+					{/* Brightest just under the top edge, falling to about half by the bottom. */}
+					<linearGradient
+						id={`tint${id}`}
+						gradientUnits="userSpaceOnUse"
+						x1="0"
+						y1="232"
+						x2="0"
+						y2="698"
 					>
-						<div className="absolute inset-0 bg-[rgb(110,110,118)]" />
-						{posters.map((poster, index) => (
-							<img key={poster.slice(-24)} {...posterProps(poster, index, open)} />
-						))}
-					</div>
-					<div
-						className="absolute inset-0"
-						style={{
-							background:
-								"linear-gradient(180deg, rgba(232,232,236,0.6) 0%, rgba(178,178,186,0.52) 55%, rgba(128,128,136,0.55) 100%)",
-						}}
+						<stop offset="0" stopColor="rgb(175,175,178)" stopOpacity="0.24" />
+						<stop offset="0.25" stopColor="rgb(140,140,142)" stopOpacity="0.32" />
+						<stop offset="0.6" stopColor="rgb(72,72,74)" stopOpacity="0.56" />
+						<stop offset="1" stopColor="rgb(34,34,36)" stopOpacity="0.8" />
+					</linearGradient>
+					{/* The heavier blur fades in going down. */}
+					<linearGradient
+						id={`fade${id}`}
+						gradientUnits="userSpaceOnUse"
+						x1="0"
+						y1="232"
+						x2="0"
+						y2="698"
+					>
+						<stop offset="0.1" stopColor="white" stopOpacity="0" />
+						<stop offset="0.75" stopColor="white" stopOpacity="1" />
+					</linearGradient>
+					<mask
+						id={`heavy${id}`}
+						maskUnits="userSpaceOnUse"
+						x="85"
+						y="110"
+						width="775"
+						height="595"
+					>
+						<rect x="85" y="110" width="775" height="595" fill={ref("fade")} />
+					</mask>
+					{/* The rim: brightest along the top edge, dimmer down the sides and bottom. */}
+					<linearGradient
+						id={`rim${id}`}
+						gradientUnits="userSpaceOnUse"
+						x1="0"
+						y1="232"
+						x2="0"
+						y2="698"
+					>
+						<stop offset="0" stopColor="white" stopOpacity="0.8" />
+						<stop offset="0.25" stopColor="white" stopOpacity="0.42" />
+						<stop offset="1" stopColor="white" stopOpacity="0.24" />
+					</linearGradient>
+					<filter id={`soft${id}`} x="-20%" y="-20%" width="140%" height="140%">
+						<feGaussianBlur stdDeviation="44" />
+						<feColorMatrix type="saturate" values="0.9" />
+					</filter>
+					<filter id={`deep${id}`} x="-20%" y="-20%" width="140%" height="140%">
+						<feGaussianBlur stdDeviation="80" />
+						<feColorMatrix type="saturate" values="0.85" />
+					</filter>
+					<filter id={`bevel${id}`} x="-10%" y="-10%" width="120%" height="120%">
+						<feGaussianBlur stdDeviation="7" />
+					</filter>
+					{/* Faint vertical streaks, like reeded glass. */}
+					<filter id={`grain${id}`} x="0" y="0" width="100%" height="100%">
+						<feTurbulence
+							type="fractalNoise"
+							baseFrequency="0.25 0.004"
+							numOctaves="2"
+							seed="4"
+						/>
+						<feColorMatrix type="saturate" values="0" />
+					</filter>
+				</defs>
+
+				{back}
+
+				{/* The glass: lightly blurred at the top, heavily blurred and darker at the bottom. */}
+				<g clipPath={ref("front")}>
+					{/* Opaque base, so the sharp folder behind never shows through the blur's soft edges. */}
+					<path d={FRONT} fill="rgb(26,26,28)" />
+					<g filter={ref("soft")}>{back}</g>
+					<g mask={ref("heavy")}>
+						<g filter={ref("deep")}>{back}</g>
+					</g>
+					<path d={FRONT} fill={ref("tint")} />
+					<rect
+						x="85"
+						y="110"
+						width="775"
+						height="595"
+						filter={ref("grain")}
+						opacity="0.03"
+						style={{ mixBlendMode: "overlay" }}
 					/>
-				</div>
-				{/* Bright rim along the front's edge. */}
-				<svg
-					viewBox="0 0 1 1"
-					preserveAspectRatio="none"
-					aria-hidden="true"
-					// The card is a button, whose icon sizing would otherwise shrink this drawing.
-					className="pointer-events-none absolute inset-x-0 bottom-0 z-10 !h-[74%] !w-full overflow-visible"
-				>
+					{/* Soft light just inside the edge, then a crisp rim on the edge itself. */}
 					<path
-						d={FRONT_PATH}
+						d={FRONT}
 						fill="none"
-						stroke="rgba(255,255,255,0.55)"
-						strokeWidth="1"
-						vectorEffect="non-scaling-stroke"
+						stroke="white"
+						strokeOpacity="0.08"
+						strokeWidth="18"
+						filter={ref("bevel")}
 					/>
-				</svg>
-			</div>
+					<path d={FRONT} fill="none" stroke={ref("rim")} strokeWidth="5" />
+				</g>
+			</svg>
 		</div>
 	);
 }
