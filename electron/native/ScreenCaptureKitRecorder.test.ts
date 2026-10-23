@@ -86,6 +86,18 @@ describe("ScreenCaptureKitRecorder window capture", () => {
 		expect(recorderSource).toContain("appendCroppedVideoFrame(sampleBuffer");
 	});
 
+	it("crops whole, even pixel sizes and sizes the bitrate for the frame rate", () => {
+		expect(recorderSource).toContain(
+			"let crop = Self.pixelCrop(for: captureRect, on: display, scale: scaleFactor)",
+		);
+		expect(recorderSource).toMatch(/let width = max\(2, Int\(.*\) & ~1\)/);
+		expect(recorderSource).toContain("x: (crop.minX * sourceWidth).rounded(),");
+		expect(recorderSource).toContain("averageBitRate * requestedFPS / assistantFPS");
+		expect(recorderSource).toContain(
+			"compression[AVVideoMaxKeyFrameIntervalKey] = requestedFPS",
+		);
+	});
+
 	it("records a fixed area of a display through the same crop", () => {
 		expect(recorderSource).toContain("let regionX: Double?");
 		expect(recorderSource).toContain("} else if let x = config.regionX,");
