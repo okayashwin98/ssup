@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { formatFileSize } from "@/lib/fileSize";
 import { formatRelativeDate } from "@/lib/relativeDate";
 import type { ProjectLibraryEntry } from "../ProjectBrowserDialog";
-import { RawThumbnail } from "./RawRecordings";
+import { FrostedFolder } from "./FrostedFolder";
 
 /** A project's raw folder in the Raw section; opening it lists the files inside. */
 export function RawFolderCard({
@@ -17,9 +17,6 @@ export function RawFolderCard({
 	onOpen: () => void;
 }) {
 	const [hovering, setHovering] = useState(false);
-	// Prefer the screen recording over the camera video for the preview.
-	const cover =
-		entries.find((entry) => !/-webcam\./i.test(entry.name) && entry.rawSource) ?? entries[0];
 	const bytes = entries.reduce((total, entry) => total + (entry.bytes ?? 0), 0);
 	const latest = Math.max(...entries.map((entry) => entry.recordedAt ?? entry.updatedAt));
 	const count = `${entries.length} ${entries.length === 1 ? "file" : "files"}`;
@@ -35,7 +32,10 @@ export function RawFolderCard({
 				onClick={onOpen}
 				className="relative block h-auto w-full min-w-0 rounded-xl p-0"
 			>
-				{cover?.rawSource && <RawThumbnail entry={cover.rawSource} active={hovering} />}
+				<FrostedFolder
+					sources={entries.flatMap((entry) => (entry.rawSource ? [entry.rawSource] : []))}
+					open={hovering}
+				/>
 			</Button>
 			<div className="flex min-w-0 items-start gap-2 pt-5">
 				<FolderSimple
