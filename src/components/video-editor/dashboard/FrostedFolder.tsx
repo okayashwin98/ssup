@@ -31,8 +31,9 @@ function useFolderPosters(sources: RecordingLibraryEntry[]) {
 	return posters;
 }
 
-// Drawn in a 775 × 595 box: a grey back panel with a dark window holding the recordings,
-// and a frosted-glass front leaning towards the viewer, so its sides narrow going down.
+// Drawn in a 4:3 box from the front's left edge to its bottom: a grey back panel with
+// a dark window holding the recordings, and a frosted-glass front leaning towards the viewer,
+// so its sides narrow going down.
 const FRONT =
 	"M133,232 H470 C540,232 555,316 625,316 H808 Q853,316 850,361 L832,640 Q828,698 770,698 H175 Q117,698 113,640 L91,277 Q88,232 133,232 Z";
 // Recordings near their own 16:9 shape, tall enough to stay tucked in when lifted.
@@ -79,12 +80,12 @@ export function FrostedFolder({
 		</>
 	);
 	return (
-		<div className="relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-xl bg-default/40">
+		<div className="relative aspect-[4/3] w-full">
 			<svg
-				viewBox="85 110 775 595"
+				viewBox="88 124 765 574"
 				aria-hidden="true"
 				// The card is a button, whose icon sizing would otherwise shrink this drawing.
-				className="!h-[78%] !w-[78%] overflow-visible"
+				className="absolute inset-0 !h-full !w-full overflow-visible"
 			>
 				<defs>
 					{slots.map((slot, index) => (

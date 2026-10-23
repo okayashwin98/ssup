@@ -29,7 +29,8 @@ export function RawFolderCard({
 				}}
 				onPointerLeave={() => setHovering(false)}
 				onClick={onOpen}
-				className="relative block h-auto w-full min-w-0 rounded-xl p-0"
+				// No card behind the folder, so no hover fill either.
+				className="relative block h-auto w-full min-w-0 overflow-visible rounded-xl !bg-transparent p-0"
 			>
 				<FrostedFolder
 					sources={entries.flatMap((entry) => (entry.rawSource ? [entry.rawSource] : []))}
