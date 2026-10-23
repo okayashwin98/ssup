@@ -86,9 +86,16 @@
 	input,
 	textarea,
 	select,
+	a[href],
+	[contenteditable="true"],
 	[role="button"],
+	[role="checkbox"],
+	[role="combobox"],
+	[role="menuitem"],
+	[role="radio"],
 	[role="slider"],
-	[role="switch"] {
+	[role="switch"],
+	[role="tab"] {
 		-webkit-app-region: no-drag;
 	}
 }

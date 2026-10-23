@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { FeedbackDialog } from "@/components/feedback/FeedbackDialog";
 import { RecordNewButton } from "./RecordNewButton";
 import { SidebarCards } from "./SidebarCards";
@@ -45,8 +46,14 @@ export function DashboardSidebar({
 		<>
 			<aside
 				aria-label="Library navigation"
-				className="flex w-48 shrink-0 flex-col bg-transparent px-4 pb-5 pt-12 lg:w-56"
+				className="flex w-48 shrink-0 flex-col bg-transparent px-4 pb-5 lg:w-56"
 			>
+				{/* The strip beside the window buttons drags the window, like the toolbar. */}
+				<div
+					aria-hidden="true"
+					className="-mx-4 h-12 shrink-0"
+					style={{ WebkitAppRegion: "drag" } as CSSProperties}
+				/>
 				<RecordNewButton busy={busy} run={run} className="mb-5 w-full" />
 				<nav className="space-y-1">
 					<Button

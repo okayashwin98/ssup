@@ -27,10 +27,7 @@ export function DashboardToolbar({
 				className="flex h-24 shrink-0 items-center gap-5 px-7 pt-5 lg:px-10"
 				style={{ WebkitAppRegion: "drag" } as CSSProperties}
 			>
-				<div
-					className="relative min-w-0 flex-1"
-					style={{ WebkitAppRegion: "no-drag" } as CSSProperties}
-				>
+				<div className="relative min-w-0 flex-1">
 					<MagnifyingGlass className="pointer-events-none absolute left-3.5 top-1/2 z-10 size-4 -translate-y-1/2 text-muted-foreground/60" />
 					<Input
 						value={query}
@@ -40,7 +37,7 @@ export function DashboardToolbar({
 						className="h-11 w-full border-0 bg-default/30 pl-10 shadow-none"
 					/>
 				</div>
-				<div style={{ WebkitAppRegion: "no-drag" } as CSSProperties}>
+				<div>
 					<Button
 						variant="secondary"
 						disabled={busy}
