@@ -41,6 +41,7 @@ import {
 	handleUpload,
 	handleUploadData,
 	handleUploadThumbnail,
+	handleUploadSocialCard,
 } from "./uploads.js";
 import {
 	handleOGImage,
@@ -207,6 +208,11 @@ export async function handleRequest(request, env) {
 		const uploadDataMatch = path.match(/^\/api\/upload-data\/([a-z0-9]+)$/);
 		if (uploadDataMatch && request.method === "PUT") {
 			return handleUploadData(request, env, uploadDataMatch[1]);
+		}
+
+		const socialMatch = path.match(/^\/api\/upload-social\/([a-z0-9]+)$/);
+		if (socialMatch && request.method === "PUT" && !hosted) {
+			return handleUploadSocialCard(request, env, socialMatch[1]);
 		}
 
 		const thumbnailMatch = path.match(/^\/api\/upload-thumbnail\/([a-z0-9]+)$/);

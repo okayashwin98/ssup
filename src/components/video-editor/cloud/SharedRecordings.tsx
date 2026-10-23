@@ -1,15 +1,16 @@
+import { Alert, Button } from "@heroui/react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import { ArrowClockwise, ArrowSquareOut, Trash } from "@/components/ui/icons";
 import { toast } from "@/components/ui/toast";
-import { parseSharedRecordingDate } from "./sharedRecordingDate";
-import { CLOUD_SHARE_PERSONAL_TOKEN } from "./endpoint";
-import { FREE_RECORDING_LIMIT, notifyShareCapacityChanged } from "./shareCapacity";
+import { loadLocalProfile } from "@/lib/localProfile";
+import { DashboardAnnouncements } from "../dashboard/DashboardAnnouncements";
+import { DashboardFilters } from "../dashboard/DashboardFilters";
+import { DashboardToolbar } from "../dashboard/DashboardToolbar";
 import { LibrarySkeleton } from "../dashboard/LibrarySkeleton";
 import { ProjectCard } from "../dashboard/ProjectCard";
-import { DashboardToolbar } from "../dashboard/DashboardToolbar";
-import { DashboardFilters } from "../dashboard/DashboardFilters";
-import { DashboardAnnouncements } from "../dashboard/DashboardAnnouncements";
-import { Fragment, useCallback, useEffect, useRef, useState } from "react";
-import { Alert, Button } from "@heroui/react";
-import { ArrowClockwise, ArrowSquareOut, Trash } from "@/components/ui/icons";
+import { CLOUD_SHARE_PERSONAL_TOKEN } from "./endpoint";
+import { FREE_RECORDING_LIMIT, notifyShareCapacityChanged } from "./shareCapacity";
+import { parseSharedRecordingDate } from "./sharedRecordingDate";
 
 type Recording = {
 	code: string;
@@ -99,6 +100,7 @@ export function SharedRecordings({
 			action: "rename",
 			shareCode: code,
 			title,
+			...loadLocalProfile(),
 		});
 		if (!result.success)
 			throw new Error(`Could not rename recording: ${result.error || "unknown error"}`);

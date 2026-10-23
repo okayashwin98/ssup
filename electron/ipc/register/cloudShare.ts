@@ -1,9 +1,4 @@
-import { createShareSubtitles } from "../recording/shareSubtitles";
-import { createShareThumbnail } from "../recording/shareThumbnail";
-import { getFfmpegBinaryPath } from "../ffmpeg/binary";
-import { probeNativeVideoMetadata } from "../ffmpeg/metadata";
-import { createReadStream } from "node:fs";
-import { constants as fsConstants } from "node:fs";
+import { createReadStream, constants as fsConstants } from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -15,7 +10,12 @@ import {
 	parseCloudShareTicket,
 } from "../cloudShareContract";
 import { isOwnedExportPath } from "../export/exportStream";
+import { getFfmpegBinaryPath } from "../ffmpeg/binary";
+import { probeNativeVideoMetadata } from "../ffmpeg/metadata";
 import { isAllowedLocalReadPath } from "../project/manager";
+import { renderShareCard } from "../recording/shareCard";
+import { createShareSubtitles } from "../recording/shareSubtitles";
+import { createShareThumbnail } from "../recording/shareThumbnail";
 
 const MAX_CONTROL_RESPONSE_BYTES = 1024 * 1024;
 const MAX_AUTH_TOKEN_BYTES = 8192;
@@ -306,6 +306,75 @@ async function publishShareSubtitles(videoPath: string, metadataUrl: URL, token:
 	}
 }
 
+type ShareCardProfile = { avatarDataUrl?: unknown; name?: unknown };
+
+/** Composes and uploads the image link previews show; a share works without it. */
+async function publishShareCard(
+	origin: string,
+	shareCode: string,
+	token: string,
+	title: string,
+	poster: Buffer,
+	profile: ShareCardProfile,
+	signal: AbortSignal,
+) {
+	try {
+		const font = await fs.readFile(
+			path.join(process.env.VITE_PUBLIC ?? "", "fonts", "InterDisplay-Medium.woff2"),
+		);
+		const card = await renderShareCard({
+			title,
+			poster,
+			font,
+			avatarDataUrl: typeof profile.avatarDataUrl === "string" ? profile.avatarDataUrl : null,
+			name: typeof profile.name === "string" ? profile.name : "",
+		});
+		const response = await fetch(new URL(`/api/upload-social/${shareCode}`, origin), {
+			method: "PUT",
+			headers: {
+				authorization: `Bearer ${token}`,
+				"content-type": "image/jpeg",
+				"content-length": String(card.length),
+			},
+			body: new Uint8Array(card),
+			redirect: "error",
+			signal,
+		});
+		if (!response.ok) throw new Error(`Link preview upload failed (${response.status})`);
+	} catch (error) {
+		console.warn("Link preview image unavailable:", error);
+	}
+}
+
+/** Redraws the link preview with a new title, from the poster already online. */
+export async function refreshShareCard(
+	origin: string,
+	shareCode: string,
+	token: string,
+	title: string,
+	profile: ShareCardProfile,
+) {
+	try {
+		const poster = await fetch(new URL(`/thumb/${shareCode}`, origin), {
+			redirect: "error",
+			signal: AbortSignal.timeout(30000),
+		});
+		// Password-protected posters aren't public; their previews show no image.
+		if (!poster.ok) return;
+		await publishShareCard(
+			origin,
+			shareCode,
+			token,
+			title,
+			Buffer.from(await poster.arrayBuffer()),
+			profile,
+			AbortSignal.timeout(60000),
+		);
+	} catch (error) {
+		console.warn("Link preview not refreshed:", error);
+	}
+}
+
 export function registerCloudShareHandlers() {
 	ipcMain.handle(
 		"cloud-share-manage",
@@ -317,6 +386,8 @@ export function registerCloudShareHandlers() {
 				action?: unknown;
 				shareCode?: unknown;
 				title?: unknown;
+				avatarDataUrl?: unknown;
+				name?: unknown;
 			},
 		) => {
 			try {
@@ -367,6 +438,14 @@ export function registerCloudShareHandlers() {
 					throw new Error(
 						await responseError(response, "Could not manage shared recordings"),
 					);
+				if (input.action === "rename" && typeof input.shareCode === "string")
+					void refreshShareCard(
+						new URL(endpoint).origin,
+						input.shareCode,
+						input.token,
+						title,
+						input,
+					);
 				if (input.action !== "list") return { success: true };
 				return {
 					success: true,
@@ -393,6 +472,8 @@ export function registerCloudShareHandlers() {
 				notes?: unknown;
 				uploadId?: unknown;
 				subtitles?: unknown;
+				avatarDataUrl?: unknown;
+				name?: unknown;
 			},
 		) => {
 			let uploadId: string | undefined;
@@ -579,6 +660,15 @@ export function registerCloudShareHandlers() {
 						);
 						if (!response.ok)
 							throw new Error(`Thumbnail upload failed (${response.status})`);
+						await publishShareCard(
+							endpointOrigin,
+							ticket.shareCode,
+							token,
+							title,
+							thumbnail,
+							input,
+							controller.signal,
+						);
 					} catch {
 						// The recording is already published. Older/missing posters use the
 						// video's first frame in the library instead of failing the share.

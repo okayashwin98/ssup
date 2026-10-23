@@ -1044,6 +1044,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		notes?: string;
 		uploadId?: string;
 		subtitles?: boolean;
+		avatarDataUrl?: string | null;
+		name?: string;
 	}) => ipcRenderer.invoke("cloud-share-upload", input),
 	cloudShareManage: (input: {
 		endpoint: string;
@@ -1051,6 +1053,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		action: "list" | "delete" | "rename";
 		shareCode?: string;
 		title?: string;
+		avatarDataUrl?: string | null;
+		name?: string;
 	}) => ipcRenderer.invoke("cloud-share-manage", input),
 	cloudShareCancel: (uploadId: string) => ipcRenderer.invoke("cloud-share-cancel", uploadId),
 	cloudShareDownload: (input: { endpoint: string; shareCode: string; title: string }) =>

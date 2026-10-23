@@ -885,9 +885,7 @@ interface Window {
 			path: string,
 			name: string,
 		) => Promise<{ success: boolean; path?: string; error?: string }>;
-		trashProjectFiles: (
-			paths: string[],
-		) => Promise<{
+		trashProjectFiles: (paths: string[]) => Promise<{
 			success: boolean;
 			deleted: string[];
 			errors: string[];
@@ -984,6 +982,9 @@ interface Window {
 			uploadId?: string;
 			/** Transcribe the shared video and add web subtitles afterwards. */
 			subtitles?: boolean;
+			/** Owner's photo and name for the link-preview image. */
+			avatarDataUrl?: string | null;
+			name?: string;
 		}) => Promise<{
 			success: boolean;
 			uploadId?: string;
@@ -998,6 +999,9 @@ interface Window {
 			shareCode?: string;
 			/** New name, for rename. */
 			title?: string;
+			/** Owner's photo and name, to redraw the link-preview image on rename. */
+			avatarDataUrl?: string | null;
+			name?: string;
 		}) => Promise<{
 			success: boolean;
 			error?: string;

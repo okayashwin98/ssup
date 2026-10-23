@@ -1,15 +1,5 @@
-import { copyText } from "@/lib/copyText";
-import {
-	checkShareCapacity,
-	RECORDING_LIMIT_MESSAGE,
-	subscribeShareCapacityChanges,
-} from "./shareCapacity";
-import { SharedRecordings } from "./SharedRecordings";
-import { saveProjectShareLink } from "./projectShareLinks";
-import { useI18n } from "@/contexts/I18nContext";
-import { Check } from "@/components/ui/icons";
+import { Export, LinkSimple } from "@phosphor-icons/react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { toast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -18,13 +8,23 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { Export, LinkSimple } from "@phosphor-icons/react";
+import { Check } from "@/components/ui/icons";
 import { Label } from "@/components/ui/label";
-
+import { toast } from "@/components/ui/toast";
+import { useI18n } from "@/contexts/I18nContext";
+import { copyText } from "@/lib/copyText";
+import { loadLocalProfile } from "@/lib/localProfile";
 import {
 	CLOUD_SHARE_PERSONAL_TOKEN,
 	CLOUD_SHARE_ENDPOINT as DEFAULT_CLOUD_ENDPOINT,
 } from "./endpoint";
+import { saveProjectShareLink } from "./projectShareLinks";
+import { SharedRecordings } from "./SharedRecordings";
+import {
+	checkShareCapacity,
+	RECORDING_LIMIT_MESSAGE,
+	subscribeShareCapacityChanges,
+} from "./shareCapacity";
 
 type Props = {
 	projectPath?: string | null;
@@ -212,6 +212,7 @@ export function CloudShareButton({
 				notes: notes.trim() || undefined,
 				uploadId: nextUploadId,
 				subtitles,
+				...loadLocalProfile(),
 			});
 			if (!isCurrentAccount()) return;
 			if (!result.success || !result.shareUrl) {

@@ -40,6 +40,7 @@ export async function handleDelete(env, shareCode) {
 	await Promise.all([
 		env.VIDEOS_BUCKET.delete(`videos/${shareCode}.mp4`),
 		env.VIDEOS_BUCKET.delete(`thumbnails/${shareCode}.jpg`),
+		env.VIDEOS_BUCKET.delete(`social/${shareCode}.jpg`),
 	]);
 	await env.DB.batch(deleteVideoStatements(env, video.id));
 
@@ -94,6 +95,7 @@ export async function cleanupExpired(env) {
 		await Promise.all([
 			env.VIDEOS_BUCKET.delete(`videos/${video.share_code}.mp4`),
 			env.VIDEOS_BUCKET.delete(`thumbnails/${video.share_code}.jpg`),
+			env.VIDEOS_BUCKET.delete(`social/${video.share_code}.jpg`),
 		]);
 		await env.DB.batch(deleteVideoStatements(env, video.id));
 	}

@@ -27,6 +27,12 @@ export function formatVTTTime(seconds) {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(Math.floor(s)).padStart(2, '0')}.${String(ms).padStart(3, '0')}`;
 }
 
+export function titleVersion(title) {
+  let hash = 0;
+  for (const char of String(title)) hash = (hash * 31 + char.codePointAt(0)) >>> 0;
+  return hash.toString(36);
+}
+
 export function escapeHTML(str) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
@@ -239,6 +245,8 @@ export async function handleOGPage(request, env, shareCode) {
   }
 
   const desc = video.summary ? escapeHTML(video.summary) : `${formatTimestamp(video.duration)} screen recording`;
+  // Changes with the title, so apps that cache previews fetch the renamed one.
+  const ogVersion = titleVersion(video.title);
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -253,8 +261,8 @@ export async function handleOGPage(request, env, shareCode) {
 <meta property="og:video:type" content="text/html">
 <meta property="og:video:width" content="${finiteNonnegative(video.width)}">
 <meta property="og:video:height" content="${finiteNonnegative(video.height)}">
-<meta property="og:image" content="${baseUrl}/og/${shareCode}">
-<meta property="og:image:secure_url" content="${baseUrl}/og/${shareCode}">
+<meta property="og:image" content="${baseUrl}/og/${shareCode}?v=${ogVersion}">
+<meta property="og:image:secure_url" content="${baseUrl}/og/${shareCode}?v=${ogVersion}">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:site_name" content="SuperShare">
@@ -262,7 +270,7 @@ export async function handleOGPage(request, env, shareCode) {
 <meta name="twitter:card" content="player">
 <meta name="twitter:title" content="${escapeHTML(video.title)}">
 <meta name="twitter:description" content="${desc}">
-<meta name="twitter:image" content="${baseUrl}/og/${shareCode}">
+<meta name="twitter:image" content="${baseUrl}/og/${shareCode}?v=${ogVersion}">
 <meta name="twitter:player" content="${baseUrl}/embed/${shareCode}">
 <meta name="twitter:player:width" content="${finiteNonnegative(video.width)}">
 <meta name="twitter:player:height" content="${finiteNonnegative(video.height)}">
@@ -291,7 +299,10 @@ export async function handleOGImage(env, shareCode) {
   // Serve uploaded thumbnail if available \u2014 but never for password-protected
   // videos, whose poster frame may itself be sensitive.
   if (!video.password_hash) {
-    const thumb = await env.VIDEOS_BUCKET.get(`thumbnails/${shareCode}.jpg`);
+    // The composed link preview first, then the plain poster frame.
+    const thumb =
+      (await env.VIDEOS_BUCKET.get(`social/${shareCode}.jpg`)) ||
+      (await env.VIDEOS_BUCKET.get(`thumbnails/${shareCode}.jpg`));
     if (thumb) {
       return new Response(thumb.body, {
         status: 200,

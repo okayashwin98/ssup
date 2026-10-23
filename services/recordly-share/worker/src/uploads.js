@@ -136,6 +136,20 @@ export async function handleUploadThumbnail(request, env, shareCode) {
 	return jsonResponse({ ok: true });
 }
 
+// The image link previews show: the poster with the owner's photo and the title.
+export async function handleUploadSocialCard(request, env, shareCode) {
+	const video = await env.DB.prepare("SELECT id FROM videos WHERE share_code = ?")
+		.bind(shareCode)
+		.first();
+	if (!video) return errorResponse("Video not found", 404);
+
+	await env.VIDEOS_BUCKET.put(`social/${shareCode}.jpg`, request.body, {
+		httpMetadata: { contentType: "image/jpeg" },
+	});
+
+	return jsonResponse({ ok: true });
+}
+
 export async function handleMultipartStart(request, env, shareCode) {
 	const video = await env.DB.prepare("SELECT id FROM videos WHERE share_code = ?")
 		.bind(shareCode)
