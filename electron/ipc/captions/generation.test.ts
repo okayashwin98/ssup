@@ -118,6 +118,16 @@ describe("caption generation pipeline", () => {
 		expect(mocks.rm).toHaveBeenCalledTimes(3);
 	});
 
+	it("gives a glossary to Whisper for every window, with just enough context for it", async () => {
+		const glossary = "Jane Doe, Starlight, SuperShare";
+		await generateAutoCaptionsFromVideo({ ...options, prompt: `  ${glossary}  ` });
+		const args = whisperCalls()[0][1] as string[];
+		expect(args).toEqual(
+			expect.arrayContaining(["--prompt", glossary, "--carry-initial-prompt"]),
+		);
+		expect(args[args.indexOf("-mc") + 1]).toBe(String(Math.ceil(glossary.length / 2)));
+	});
+
 	it("retries SRT only for a runtime that rejects full JSON", async () => {
 		mocks.exec.mockImplementation(async (file: string, args: string[]) => {
 			if (file === "/whisper" && args.includes("-ojf"))

@@ -193,6 +193,7 @@ export function useAutoCaptionController({
 				whisperExecutablePath: whisperExecutablePath ?? undefined,
 				whisperModelPath,
 				language: autoCaptionSettings.language,
+				prompt: autoCaptionSettings.glossary,
 			});
 			if (resolveAutoCaptionSourcePath(activeSourceRef.current) !== sourcePath) {
 				toast.info("Recording changed; generated captions were not applied.");
@@ -216,6 +217,7 @@ export function useAutoCaptionController({
 		}
 	}, [
 		autoCaptionSettings.language,
+		autoCaptionSettings.glossary,
 		isGeneratingCaptions,
 		setAutoCaptionSettings,
 		setAutoCaptions,

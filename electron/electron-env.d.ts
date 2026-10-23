@@ -749,6 +749,7 @@ interface Window {
 			whisperExecutablePath?: string;
 			whisperModelPath: string;
 			language?: string;
+			prompt?: string;
 		}) => Promise<{
 			success: boolean;
 			cues?: AutoCaptionCue[];

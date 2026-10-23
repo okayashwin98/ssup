@@ -229,11 +229,18 @@ export async function detectSilenceIntervals(options: {
 	return parseSilenceIntervals(stderr ?? "");
 }
 
+/** Context Whisper needs to keep a glossary prompt, within its limit of 224 tokens. */
+export function getGlossaryContextTokens(glossary: string) {
+	return Math.min(224, Math.ceil(glossary.length / 2));
+}
+
 async function generateCaptionsForSource(options: {
 	videoPath: string;
 	whisperExecutablePath?: string;
 	whisperModelPath: string;
 	language?: string;
+	/** Project glossary: Whisper's initial prompt, which biases spelling of names and jargon. */
+	prompt?: string;
 	candidates: CaptionAudioCandidate[];
 }) {
 	const ffmpegPath = getFfmpegBinaryPath();
@@ -266,6 +273,7 @@ async function generateCaptionsForSource(options: {
 
 		const language =
 			options.language && options.language.trim() ? options.language.trim() : "auto";
+		const glossary = options.prompt?.trim().slice(0, 1000) ?? "";
 		const whisperBaseArgs = [
 			"-m",
 			whisperModelPath,
@@ -276,10 +284,13 @@ async function generateCaptionsForSource(options: {
 			outputBase,
 			"-l",
 			language,
+			...(glossary ? ["--prompt", glossary, "--carry-initial-prompt"] : []),
 			"-np",
-			// Do not carry a hallucinated phrase through later decoding windows.
+			// Do not carry a hallucinated phrase through later decoding windows. A glossary
+			// needs room in that context or Whisper drops it: about one token per two
+			// characters, repeated for every window, leaves almost no room for earlier text.
 			"-mc",
-			"0",
+			glossary ? String(getGlossaryContextTokens(glossary)) : "0",
 		];
 
 		let jsonEnabled = true;
@@ -336,6 +347,7 @@ export async function generateAutoCaptionsFromVideo(options: {
 	whisperExecutablePath?: string;
 	whisperModelPath: string;
 	language?: string;
+	prompt?: string;
 }) {
 	const candidates = await resolveCaptionAudioCandidates(options.videoPath);
 	const microphone = candidates.filter((source) => source.label === "microphone audio sidecar");
