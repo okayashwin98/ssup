@@ -3,12 +3,7 @@ import { renameLibraryProject } from "../project/renameLibraryProject";
 import { createUntitledProject } from "../project/createUntitledProject";
 import { buildRecordingProjectName } from "../project/recordingProjectName";
 import { trashLibraryProjects } from "../project/trashProjects";
-import {
-	assertProjectFolderRenameAllowed,
-	getProjectMediaFolder,
-	moveProjectMediaIntoFolder,
-	renameProjectMediaFolder,
-} from "../project/projectMedia";
+import { assertProjectFolderRenameAllowed, reconcileProjectFolder } from "../project/projectMedia";
 import { getRecordingThumbnail } from "../recording/thumbnail";
 import { listRecordings, setRecordingsRemoved } from "../recording/library";
 import { importRecording, discardRecordingImport } from "../recording/importRecording";
@@ -47,6 +42,7 @@ import {
 	setCurrentRecordingSession,
 	setCurrentVideoPath,
 	lastRecordingSourceName,
+	onCurrentProjectChange,
 } from "../state";
 import {
 	approveUserPath,
@@ -249,7 +245,36 @@ function followMovedMedia(rename: (filePath: string) => string | null | undefine
 	}
 }
 
+/**
+ * Files a library project's recordings into the folder named after it. Never for the open
+ * project: moving its media would pull files out from under the editor.
+ */
+async function fileProjectRecordings(projectPath: string) {
+	try {
+		const projectsDir = await getProjectsDir();
+		if (!isPathInsideDirectory(projectPath, projectsDir)) return;
+		if (currentProjectPath && normalizePath(currentProjectPath) === normalizePath(projectPath))
+			return;
+		await fs.access(projectPath);
+		const others = (await listProjectLibraryEntries()).entries
+			.map((entry) => entry.path)
+			.filter((entry) => normalizePath(entry) !== normalizePath(projectPath));
+		await reconcileProjectFolder(
+			projectPath,
+			await getRecordingsDir(),
+			writeProjectFileAtomically,
+			others,
+		);
+	} catch (error) {
+		console.warn("Could not file project recordings:", path.basename(projectPath), error);
+	}
+}
+
 export function registerProjectHandlers() {
+	// A project's recordings are filed once it is no longer the open one.
+	onCurrentProjectChange((previous) => {
+		if (previous) setTimeout(() => void fileProjectRecordings(previous), 0);
+	});
 	ipcMain.handle("rename-library-project", async (_, source: string, name: string) => {
 		try {
 			const entries = await listProjectLibraryEntries();
@@ -266,22 +291,12 @@ export function registerProjectHandlers() {
 				entries.entries.map((entry) => entry.path),
 				(value) => [getProjectThumbnailPath(value), getProjectBackupPath(value)],
 			);
-			// The project's raw folder carries the project's name.
-			const oldFolder = getProjectMediaFolder(recordingsDir, source);
-			const newFolder = getProjectMediaFolder(recordingsDir, target);
-			await renameProjectMediaFolder(
-				recordingsDir,
-				source,
-				target,
-				writeProjectFileAtomically,
-			);
-			followMovedMedia((file) =>
-				file.startsWith(`${oldFolder}${path.sep}`)
-					? path.join(newFolder, path.relative(oldFolder, file))
-					: undefined,
-			);
-			if (currentProjectPath && normalizePath(currentProjectPath) === normalizePath(source))
-				setCurrentProjectPath(target);
+			const isOpen =
+				currentProjectPath !== null &&
+				normalizePath(currentProjectPath) === normalizePath(source);
+			if (isOpen) setCurrentProjectPath(target);
+			// The raw folder follows the name now, or once the project is no longer open.
+			else await fileProjectRecordings(target);
 			const warning = await persistRecentMetadata(() => rememberRecentProject(target));
 			return { success: true, path: target, warning };
 		} catch (error) {
@@ -769,23 +784,6 @@ export function registerProjectHandlers() {
 					) ?? undefined,
 				);
 				setCurrentProjectPath(target);
-				// A new recording's loose files move into the project's own folder.
-				const recordingsDir = await getRecordingsDir();
-				const folder = getProjectMediaFolder(recordingsDir, target);
-				const { moved } = await moveProjectMediaIntoFolder(
-					target,
-					recordingsDir,
-					writeProjectFileAtomically,
-				).catch((error) => {
-					console.warn("Could not move recording into its project folder", error);
-					return { moved: [] as string[] };
-				});
-				const movedSet = new Set(moved);
-				followMovedMedia((file) =>
-					movedSet.has(file) ? path.join(folder, path.basename(file)) : undefined,
-				);
-				for (const file of moved)
-					await rememberApprovedLocalReadPath(path.join(folder, path.basename(file)));
 				const warning = await persistRecentMetadata(() => rememberRecentProject(target));
 				try {
 					await saveProjectThumbnail(target, thumbnailDataUrl);
@@ -797,7 +795,6 @@ export function registerProjectHandlers() {
 					path: target,
 					projectId: prepared.projectId,
 					warning,
-					relocated: moved.length > 0,
 				};
 			} catch (error) {
 				return { success: false, message: String(error) };

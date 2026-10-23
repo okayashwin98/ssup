@@ -36,7 +36,12 @@ export async function migrateRecordingsIntoProjectFolders(options: Options) {
 	const loose = (await fs.readdir(recordingsDir, { withFileTypes: true })).filter(
 		(entry) => entry.isFile() && /^recording-\d+/.test(entry.name),
 	);
-	if (loose.length) {
+	// One backup per recordings folder, even if a later launch retries the move.
+	const backedUp = await fs.access(backupDir).then(
+		() => true,
+		() => false,
+	);
+	if (loose.length && !backedUp) {
 		// Clones on APFS: a complete backup that takes no extra space until files change.
 		await fs.cp(recordingsDir, backupDir, {
 			recursive: true,
@@ -68,7 +73,8 @@ export async function migrateRecordingsIntoProjectFolders(options: Options) {
 	});
 
 	// Leave the marker only when every project moved, so a failure retries next launch.
-	if (!errors.length) await fs.writeFile(marker, `${new Date(options.now ?? Date.now()).toISOString()}\n`);
+	if (!errors.length)
+		await fs.writeFile(marker, `${new Date(options.now ?? Date.now()).toISOString()}\n`);
 	return {
 		projects: projects.length,
 		moved,

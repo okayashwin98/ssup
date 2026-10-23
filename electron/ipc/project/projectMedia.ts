@@ -176,32 +176,6 @@ export async function assertProjectFolderRenameAllowed(
 		throw new Error("A recordings folder with this name already exists. Choose another name.");
 }
 
-/** Renames a project's folder to match its new name and updates the project's paths. */
-export async function renameProjectMediaFolder(
-	recordingsDir: string,
-	sourceProjectPath: string,
-	targetProjectPath: string,
-	write: WriteProject,
-) {
-	const source = getProjectMediaFolder(recordingsDir, sourceProjectPath);
-	const target = getProjectMediaFolder(recordingsDir, targetProjectPath);
-	if (source === target || !(await exists(source))) return;
-	await fs.rename(source, target);
-	try {
-		await rewriteProjectFiles(
-			targetProjectPath,
-			(file) =>
-				file === source || file.startsWith(`${source}${path.sep}`)
-					? path.join(target, path.relative(source, file))
-					: null,
-			write,
-		);
-	} catch (error) {
-		await fs.rename(target, source).catch(() => undefined);
-		throw error;
-	}
-}
-
 /**
  * Raw files to trash with a project: its folder, plus any loose recordings only it uses.
  * Anything another project still references is kept.
@@ -231,4 +205,51 @@ export async function getProjectMediaToTrash(
 	const groupUsedElsewhere = group.some((file) => usedElsewhere(file));
 	if (!groupUsedElsewhere) result.push(...group);
 	return result;
+}
+
+/**
+ * Files a project's raw recordings under its name: loose files move into its folder, and a
+ * folder still carrying an old project name is renamed. Only for projects not open in the editor.
+ */
+export async function reconcileProjectFolder(
+	projectPath: string,
+	recordingsDir: string,
+	write: WriteProject,
+	otherProjectPaths: string[],
+) {
+	await moveProjectMediaIntoFolder(projectPath, recordingsDir, write);
+	const target = getProjectMediaFolder(recordingsDir, projectPath);
+	const referenced = [...getReferencedPaths(await readJson(projectPath))].filter((file) =>
+		file.startsWith(`${recordingsDir}${path.sep}`),
+	);
+	const folders = new Set(
+		referenced
+			.map((file) => path.relative(recordingsDir, file).split(path.sep))
+			// Only project folders: never the app's Projects folder or hidden ones.
+			.filter((parts) => parts.length > 1 && !isReservedProjectFolderName(parts[0]))
+			.map((parts) => path.join(recordingsDir, parts[0])),
+	);
+	if (folders.size !== 1) return;
+	const [source] = folders;
+	if (source === target || isReservedProjectFolderName(path.basename(target))) return;
+	if (await exists(target)) return;
+	for (const other of otherProjectPaths) {
+		const data = await readJson(other).catch(() => null);
+		if ([...getReferencedPaths(data)].some((file) => file.startsWith(`${source}${path.sep}`)))
+			return;
+	}
+	await fs.rename(source, target);
+	try {
+		await rewriteProjectFiles(
+			projectPath,
+			(file) =>
+				file.startsWith(`${source}${path.sep}`)
+					? path.join(target, path.relative(source, file))
+					: null,
+			write,
+		);
+	} catch (error) {
+		await fs.rename(target, source).catch(() => undefined);
+		throw error;
+	}
 }

@@ -1,6 +1,7 @@
 import { resolveDisplayMediaSource } from "./ipc/register/sourceMapping";
 import { createSaveBeforeCloseController } from "./saveBeforeClose";
 import { clearRecordingTrashUndo } from "./ipc/recording/library";
+import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -64,6 +65,7 @@ import {
 } from "./windows";
 import { writeProjectFileAtomically } from "./ipc/project/atomicSave";
 import { getProjectsDir, loadRecentProjectPaths } from "./ipc/project/manager";
+import { reconcileProjectFolder } from "./ipc/project/projectMedia";
 import {
 	migrateRecordingsIntoProjectFolders,
 	trashOrphanRecordings,
@@ -918,20 +920,33 @@ async function migrateProjectFolders() {
 	const projectsDir = await getProjectsDir();
 	const trash = (filePath: string) => shell.trashItem(filePath);
 	const recent = await loadRecentProjectPaths().catch(() => [] as string[]);
-	const stamp = new Date().toISOString().replace(/[:.]/g, "-");
 	const result = await migrateRecordingsIntoProjectFolders({
 		recordingsDir,
 		projectsDir,
-		backupDir: path.join(app.getPath("userData"), "backups", `recordings-before-folders-${stamp}`),
+		// One backup per recordings folder.
+		backupDir: path.join(
+			app.getPath("userData"),
+			"backups",
+			`recordings-before-folders-${createHash("sha1").update(recordingsDir).digest("hex").slice(0, 8)}`,
+		),
 		trash,
 		write: writeProjectFileAtomically,
 		extraProjectFiles: recent,
 	});
 	if (result) console.log("[project-folders] Migration:", JSON.stringify(result));
-	// Later on, loose recordings no project uses for a day go to Trash.
 	const projects = (await fs.readdir(projectsDir))
 		.filter((name) => name.endsWith(".recordly"))
 		.map((name) => path.join(projectsDir, name));
+	// Nothing is open yet: file new recordings and folders renamed while their project was open.
+	for (const project of projects) {
+		await reconcileProjectFolder(
+			project,
+			recordingsDir,
+			writeProjectFileAtomically,
+			projects.filter((other) => other !== project),
+		).catch((error) => console.warn("[project-folders]", path.basename(project), error));
+	}
+	// Loose recordings no project has used for a day go to Trash.
 	const swept = await trashOrphanRecordings({
 		recordingsDir,
 		projectFiles: [...projects, ...recent],

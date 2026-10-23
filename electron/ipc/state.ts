@@ -119,8 +119,17 @@ export function setLastRecordingSourceName(v: { label: string; startedAt: number
 export function setSelectedSource(v: SelectedSource | null) {
 	selectedSource = v;
 }
+const projectChangeListeners = new Set<(previous: string | null, next: string | null) => void>();
+/** Called whenever the open project changes, with the project that was open before. */
+export function onCurrentProjectChange(
+	listener: (previous: string | null, next: string | null) => void,
+) {
+	projectChangeListeners.add(listener);
+}
 export function setCurrentProjectPath(v: string | null) {
+	const previous = currentProjectPath;
 	currentProjectPath = v;
+	if (previous !== v) for (const listener of projectChangeListeners) listener(previous, v);
 }
 export function setCurrentVideoPath(v: string | null) {
 	currentVideoPath = v;

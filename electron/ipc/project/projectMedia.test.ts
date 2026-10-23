@@ -8,7 +8,7 @@ import {
 	assertProjectFolderRenameAllowed,
 	getProjectMediaToTrash,
 	moveProjectMediaIntoFolder,
-	renameProjectMediaFolder,
+	reconcileProjectFolder,
 } from "./projectMedia";
 
 let root: string;
@@ -100,19 +100,34 @@ describe("project folders", () => {
 		expect(await exists(path.join(recordings, "recording-1792000000000.mp4"))).toBe(true);
 	});
 
-	it("renames the folder with the project and keeps the paths pointing inside it", async () => {
+	it("renames a project's folder to its new name once it is filed, keeping paths inside it", async () => {
 		const { video } = await makeRecording("1792000000001");
 		const project = await makeProject("Old name", { videoPath: video });
 		await moveProjectMediaIntoFolder(project, recordings, write);
 		const renamed = path.join(projects, "New name.recordly");
 		await fs.rename(project, renamed);
 
-		await renameProjectMediaFolder(recordings, project, renamed, write);
+		await reconcileProjectFolder(renamed, recordings, write, []);
 
 		expect(await exists(path.join(recordings, "Old name"))).toBe(false);
 		expect((await readJson(renamed)).videoPath).toBe(
 			path.join(recordings, "New name", "recording-1792000000001.mp4"),
 		);
+	});
+
+	it("leaves a folder alone when another project still uses it", async () => {
+		const { video } = await makeRecording("1792000000006");
+		const project = await makeProject("Shared", { videoPath: video });
+		await moveProjectMediaIntoFolder(project, recordings, write);
+		const other = await makeProject("Other", {
+			videoPath: path.join(recordings, "Shared", "recording-1792000000006.mp4"),
+		});
+		const renamed = path.join(projects, "Renamed.recordly");
+		await fs.rename(project, renamed);
+
+		await reconcileProjectFolder(renamed, recordings, write, [other]);
+
+		expect(await exists(path.join(recordings, "Shared"))).toBe(true);
 	});
 
 	it("refuses names that clash with an app folder or an existing recordings folder", async () => {

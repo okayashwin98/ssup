@@ -33,7 +33,6 @@ type UseProjectOpenActionsInput = {
 	applySessionPresentation: (session: null) => void;
 	handleSaveProject: () => Promise<unknown>;
 	handleSaveProjectAs: () => Promise<unknown>;
-	reloadProjectFromDisk: (projectPath: string) => Promise<void>;
 };
 
 export function useProjectOpenActions({
@@ -52,7 +51,6 @@ export function useProjectOpenActions({
 	applySessionPresentation,
 	handleSaveProject,
 	handleSaveProjectAs,
-	reloadProjectFromDisk,
 }: UseProjectOpenActionsInput) {
 	const confirmReplaceSourceWithUnsavedChanges = useCallback(
 		async (_actionLabel: string) => {
@@ -246,20 +244,14 @@ export function useProjectOpenActions({
 	);
 	const handleRenameLibraryProject = useCallback(
 		async (path: string, name: string) => {
-			const isOpen = project.currentProjectPath === path;
-			// Save first: the rename moves the project's recordings folder.
-			if (isOpen && hasUnsavedChanges) await saveProject(false, { silent: true });
 			const result = await window.electronAPI.renameLibraryProject(path, name);
 			if (!result.success || !result.path)
 				throw new Error(result.error || "Could not rename project");
-			if (isOpen) {
-				project.setCurrentProjectPath(result.path);
-				await reloadProjectFromDisk(result.path);
-			}
+			if (project.currentProjectPath === path) project.setCurrentProjectPath(result.path);
 			await refreshProjectLibrary();
 			return result.path;
 		},
-		[project, refreshProjectLibrary, hasUnsavedChanges, saveProject, reloadProjectFromDisk],
+		[project, refreshProjectLibrary],
 	);
 
 	return {

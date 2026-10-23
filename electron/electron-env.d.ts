@@ -878,8 +878,6 @@ interface Window {
 			success: boolean;
 			path?: string;
 			projectId?: string;
-			/** The recording's files moved into the project's folder; reload the project. */
-			relocated?: boolean;
 			message?: string;
 			canceled?: boolean;
 		}>;

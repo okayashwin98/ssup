@@ -29,7 +29,6 @@ type UseProjectSaveActionsInput = {
 	captureProjectThumbnail: () => Promise<string | null>;
 	refreshProjectLibrary: () => Promise<void>;
 	remountPreview: () => void;
-	reloadProjectFromDisk: (projectPath: string) => Promise<void>;
 };
 
 export function useProjectSaveActions({
@@ -46,7 +45,6 @@ export function useProjectSaveActions({
 	captureProjectThumbnail,
 	refreshProjectLibrary,
 	remountPreview,
-	reloadProjectFromDisk,
 }: UseProjectSaveActionsInput) {
 	const {
 		currentProjectPath,
@@ -150,9 +148,6 @@ export function useProjectSaveActions({
 							),
 						),
 					);
-					// The recording's files just moved into the project's folder.
-					if ("relocated" in result && result.relocated && result.path)
-						await reloadProjectFromDisk(result.path);
 					if (refreshLibrary) await refreshProjectLibrary();
 
 					return true;
@@ -178,7 +173,6 @@ export function useProjectSaveActions({
 			captureProjectThumbnail,
 			refreshProjectLibrary,
 			remountPreview,
-			reloadProjectFromDisk,
 		],
 	);
 
