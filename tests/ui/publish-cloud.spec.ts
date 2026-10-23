@@ -165,3 +165,17 @@ test("shared cards can be renamed", async ({ page }) => {
 	await expect(page.getByRole("button", { name: "Site walkthrough", exact: true })).toBeVisible();
 	await expect(page.getByRole("button", { name: "Product walkthrough", exact: true })).toHaveCount(0);
 });
+
+test("a failed rename shows a clear message that clears on the next action", async ({ page }) => {
+	await page.goto("/tests/ui/shared-recordings.html?renameFails");
+	await page
+		.getByRole("button", { name: "Options for Product walkthrough", exact: true })
+		.click();
+	await page.getByRole("menuitem", { name: "Rename", exact: true }).click();
+	const input = page.getByRole("textbox", { name: "Project name" });
+	await input.fill("Site walkthrough");
+	await input.press("Enter");
+	await expect(page.getByText("Could not rename recording: Not found")).toBeVisible();
+	await page.getByRole("button", { name: "Product walkthrough", exact: true }).click();
+	await expect(page.getByText("Could not rename recording: Not found")).toHaveCount(0);
+});

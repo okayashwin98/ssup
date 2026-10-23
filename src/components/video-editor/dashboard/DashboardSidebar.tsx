@@ -63,7 +63,7 @@ export function DashboardSidebar({
 						onClick={() => setSection("projects")}
 					>
 						<House weight="fill" className="size-[18px]" />
-						Home
+						Personal
 					</Button>
 					<Button
 						variant="ghost"

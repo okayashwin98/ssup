@@ -36,6 +36,8 @@ window.electronAPI = {
 	cloudShareManage: async (input: { action: string; shareCode?: string; title?: string }) => {
 		if (input.action === "delete")
 			recordings = recordings.filter((video) => video.code !== input.shareCode);
+		if (input.action === "rename" && new URLSearchParams(location.search).has("renameFails"))
+			return { success: false, error: "Not found" };
 		if (input.action === "rename")
 			recordings = recordings.map((video) =>
 				video.code === input.shareCode ? { ...video, title: input.title ?? video.title } : video,

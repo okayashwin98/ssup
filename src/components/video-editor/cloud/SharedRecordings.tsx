@@ -100,7 +100,8 @@ export function SharedRecordings({
 			shareCode: code,
 			title,
 		});
-		if (!result.success) throw new Error(result.error || "Could not rename recording.");
+		if (!result.success)
+			throw new Error(`Could not rename recording: ${result.error || "unknown error"}`);
 		setRecordings((current) =>
 			current.map((recording) =>
 				recording.code === code ? { ...recording, title: title.trim() } : recording,
@@ -133,6 +134,8 @@ export function SharedRecordings({
 				sort === "name" ? a.name.localeCompare(b.name) : b.updatedAt - a.updatedAt,
 			);
 		const run = async (action: () => Promise<unknown>) => {
+			// A new action replaces any earlier failure message.
+			setError(undefined);
 			try {
 				await action();
 			} catch (cause) {
