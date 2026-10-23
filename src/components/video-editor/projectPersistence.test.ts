@@ -40,6 +40,11 @@ describe("resolveVideoUrl", () => {
 });
 
 describe("normalizeProjectEditor", () => {
+	it("keeps zooms on unless the project turned them off", () => {
+		expect(normalizeProjectEditor({}).zoomsEnabled).toBe(true);
+		expect(normalizeProjectEditor({ zoomsEnabled: false }).zoomsEnabled).toBe(false);
+	});
+
 	it("ignores retired temporal blur fields when opening an older project", () => {
 		const savedEditor = {
 			zoomMotionBlur: 0.6,

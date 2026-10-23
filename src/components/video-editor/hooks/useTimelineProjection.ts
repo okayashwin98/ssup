@@ -25,7 +25,10 @@ type Input = {
 	initializedRef: MutableRefObject<boolean>;
 	autoFullTrackIdRef: MutableRefObject<string | null>;
 	autoFullTrackEndRef: MutableRefObject<number | null>;
+	zoomsEnabled: boolean;
 };
+
+const NO_ZOOMS: ZoomRegion[] = [];
 
 export function useTimelineProjection({
 	timeline,
@@ -35,6 +38,7 @@ export function useTimelineProjection({
 	initializedRef,
 	autoFullTrackIdRef,
 	autoFullTrackEndRef,
+	zoomsEnabled,
 }: Input) {
 	const { clipRegions, trimRegions, speedRegions, zoomRegions, autoCaptions } = timeline;
 
@@ -102,7 +106,8 @@ export function useTimelineProjection({
 		(timeMs: number) => mapSourceTimeToTimelineTime(timeMs, clipRegions),
 		[clipRegions],
 	);
-	const effectiveZoomRegions: ZoomRegion[] = zoomRegions;
+	// Preview and export both read this, so the switch covers them together.
+	const effectiveZoomRegions: ZoomRegion[] = zoomsEnabled ? zoomRegions : NO_ZOOMS;
 	const effectiveCaptionRegions = useMemo(
 		() => projectCaptionCues(autoCaptions, clipRegions),
 		[autoCaptions, clipRegions],

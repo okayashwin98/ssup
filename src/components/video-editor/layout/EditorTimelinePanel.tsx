@@ -1,4 +1,5 @@
 import type { RefObject } from "react";
+import { Switch } from "@/components/ui/switch";
 import type { useVideoEditorAudio } from "../audio/useVideoEditorAudio";
 import { retimeCaptionFragment } from "../captionTimeline";
 import type { useAnnotationRegionCommands } from "../hooks/useAnnotationRegionCommands";
@@ -32,7 +33,12 @@ type Props = {
 	disableSuggestedZooms: boolean;
 	currentTime: number;
 	handleSelectAnnotation: (id: string | null) => void;
+	zoomsEnabled: boolean;
+	onZoomsEnabledChange: (enabled: boolean) => void;
 };
+
+// While zooms are off the zoom track is read-only.
+const ignoreZoomEdit = () => undefined;
 
 export function EditorTimelinePanel(props: Props) {
 	const {
@@ -55,6 +61,8 @@ export function EditorTimelinePanel(props: Props) {
 		disableSuggestedZooms,
 		currentTime,
 		handleSelectAnnotation,
+		zoomsEnabled,
+		onZoomsEnabledChange,
 	} = props;
 
 	return (
@@ -79,12 +87,13 @@ export function EditorTimelinePanel(props: Props) {
 				onAutoSuggestZoomsConsumed={handleAutoSuggestZoomsConsumed}
 				disableSuggestedZooms={disableSuggestedZooms}
 				zoomRegions={timeline.zoomRegions}
-				onZoomAdded={zoomCommands.handleZoomAdded}
-				onZoomSuggested={zoomCommands.handleZoomSuggested}
-				onZoomSpanChange={zoomCommands.handleZoomSpanChange}
-				onZoomDelete={zoomCommands.handleZoomDelete}
-				selectedZoomId={timeline.selectedZoomId}
-				onSelectZoom={zoomCommands.handleSelectZoom}
+				zoomsDisabled={!zoomsEnabled}
+				onZoomAdded={zoomsEnabled ? zoomCommands.handleZoomAdded : ignoreZoomEdit}
+				onZoomSuggested={zoomsEnabled ? zoomCommands.handleZoomSuggested : ignoreZoomEdit}
+				onZoomSpanChange={zoomsEnabled ? zoomCommands.handleZoomSpanChange : ignoreZoomEdit}
+				onZoomDelete={zoomsEnabled ? zoomCommands.handleZoomDelete : ignoreZoomEdit}
+				selectedZoomId={zoomsEnabled ? timeline.selectedZoomId : null}
+				onSelectZoom={zoomsEnabled ? zoomCommands.handleSelectZoom : ignoreZoomEdit}
 				trimRegions={timeline.trimRegions}
 				clipRegions={timeline.clipRegions}
 				onClipSplit={clipCommands.handleClipSplit}
@@ -150,6 +159,19 @@ export function EditorTimelinePanel(props: Props) {
 				onSourceAudioAvailabilityChange={timeline.setHasClipSourceAudio}
 				onSourceAudioTracksMetaChange={audio.onSourceAudioTracksMetaChange}
 			/>
+			<div className="flex shrink-0 items-center pt-2">
+				<Switch
+					size="sm"
+					aria-label="Zooms"
+					checked={zoomsEnabled}
+					onCheckedChange={(enabled) => {
+						if (!enabled) timeline.setSelectedZoomId(null);
+						onZoomsEnabledChange(enabled);
+					}}
+				>
+					<span className="text-xs text-muted-foreground">Zooms</span>
+				</Switch>
+			</div>
 		</div>
 	);
 }

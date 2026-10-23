@@ -82,6 +82,8 @@ export interface TimelineEditorProps {
 	videoSourcePath?: string | null;
 	cursorTelemetrySourcePath?: string | null;
 	showSourceAudioTrack?: boolean;
+	/** Zooms switched off: the zoom track is shown faded and ignores input. */
+	zoomsDisabled?: boolean;
 	sourceAudioResourceVersion?: number;
 	onSourceAudioAvailabilityChange?: (available: boolean) => void;
 	sourceAudioTrackSettings?: SourceAudioTrackSettings;
@@ -165,6 +167,7 @@ const TimelineEditor = forwardRef<TimelineEditorHandle, TimelineEditorProps>(
 			videoSourcePath,
 			cursorTelemetrySourcePath,
 			showSourceAudioTrack = false,
+			zoomsDisabled = false,
 			sourceAudioResourceVersion = 0,
 			onSourceAudioAvailabilityChange,
 			sourceAudioTrackSettings = {},
@@ -511,6 +514,7 @@ const TimelineEditor = forwardRef<TimelineEditorHandle, TimelineEditorProps>(
 							sourceAudioTracks={sourceAudioTracks}
 							getSourceAudioTrackSettingsForClip={getSourceAudioTrackSettingsForClip}
 							showSourceAudioTrack={showSourceAudioTrack}
+							zoomsDisabled={zoomsDisabled}
 							liveSpanPreviewById={liveZoomPreview.previewSpans}
 							liveHiddenItemIds={Array.from(liveZoomPreview.hiddenZoomIds)}
 							isDragging={isDragging}

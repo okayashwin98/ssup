@@ -61,6 +61,8 @@ export function useAppearanceState(preferences: EditorPreferences) {
 	);
 	const [showCursor, setShowCursor] = useState(preferences.showCursor);
 	const [loopCursor, setLoopCursor] = useState(preferences.loopCursor);
+	// Per project: off keeps the zoom regions but leaves them out of preview and export.
+	const [zoomsEnabled, setZoomsEnabled] = useState(true);
 	const [cursorStyle, setCursorStyle] = useState<CursorStyle>(
 		preferences.cursorStyle ?? DEFAULT_CURSOR_STYLE,
 	);
@@ -150,6 +152,8 @@ export function useAppearanceState(preferences: EditorPreferences) {
 		setShowCursor,
 		loopCursor,
 		setLoopCursor,
+		zoomsEnabled,
+		setZoomsEnabled,
 		cursorStyle,
 		setCursorStyle,
 		cursorSize,

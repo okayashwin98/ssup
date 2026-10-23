@@ -14,6 +14,18 @@ type Input = {
 	startPlayback: () => void;
 };
 
+const NON_TEXT_INPUT_TYPES = new Set([
+	"button",
+	"checkbox",
+	"color",
+	"file",
+	"image",
+	"radio",
+	"range",
+	"reset",
+	"submit",
+]);
+
 export function useEditorGlobalInteractions({
 	timeline,
 	videoPlaybackRef,
@@ -49,8 +61,9 @@ export function useEditorGlobalInteractions({
 			if (event.defaultPrevented || event.isComposing) return;
 			const target = event.target as HTMLElement | null;
 			if (target?.closest?.("[data-recording-library]")) return;
+			// Only typing keeps Space; sliders, switches and buttons must not swallow play/pause.
 			const editable =
-				target instanceof HTMLInputElement ||
+				(target instanceof HTMLInputElement && !NON_TEXT_INPUT_TYPES.has(target.type)) ||
 				target instanceof HTMLTextAreaElement ||
 				target instanceof HTMLSelectElement ||
 				target?.isContentEditable;

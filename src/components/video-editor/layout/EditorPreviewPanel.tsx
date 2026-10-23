@@ -273,6 +273,7 @@ export function EditorPreviewPanel(props: Props) {
 					</DropdownMenu>
 					<Button
 						onClick={() => timelineRef.current?.addZoom()}
+						disabled={!appearance.zoomsEnabled}
 						variant="ghost"
 						size="icon"
 						className="h-9 w-9"
@@ -282,6 +283,7 @@ export function EditorPreviewPanel(props: Props) {
 					</Button>
 					<Button
 						onClick={() => timelineRef.current?.suggestZooms()}
+						disabled={!appearance.zoomsEnabled}
 						variant="ghost"
 						size="icon"
 						className="h-9 w-9"

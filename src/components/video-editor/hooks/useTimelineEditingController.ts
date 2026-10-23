@@ -82,6 +82,7 @@ export function useTimelineEditingController(input: Input) {
 		initializedRef: input.clipInitializedRef,
 		autoFullTrackIdRef: input.autoFullTrackClipIdRef,
 		autoFullTrackEndRef: input.autoFullTrackClipEndMsRef,
+		zoomsEnabled: input.appearance.zoomsEnabled,
 	});
 	const audio = useVideoEditorAudio({
 		currentSourcePath: input.currentSourcePath,

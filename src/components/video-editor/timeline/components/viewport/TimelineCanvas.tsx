@@ -83,6 +83,7 @@ interface TimelineCanvasProps {
 	sourceAudioTracks?: SourceAudioTrackWithPeaks[];
 	getSourceAudioTrackSettingsForClip?: (clipId: string | null) => SourceAudioTrackSettings;
 	showSourceAudioTrack?: boolean;
+	zoomsDisabled?: boolean;
 	liveSpanPreviewById?: Record<string, { start: number; end: number }>;
 	liveHiddenItemIds?: string[];
 	isDragging?: boolean;
@@ -419,6 +420,7 @@ interface TimelineCanvasRowsProps {
 	sourceAudioTracks?: SourceAudioTrackWithPeaks[];
 	getSourceAudioTrackSettingsForClip?: (clipId: string | null) => SourceAudioTrackSettings;
 	showSourceAudioTrack?: boolean;
+	zoomsDisabled?: boolean;
 	liveSpanPreviewById?: Record<string, { start: number; end: number }>;
 	liveHiddenItemIds?: string[];
 	direction: string;
@@ -496,6 +498,7 @@ const TimelineCanvasRows = memo(function TimelineCanvasRows({
 	sourceAudioTracks = [],
 	getSourceAudioTrackSettingsForClip,
 	showSourceAudioTrack = false,
+	zoomsDisabled = false,
 	liveSpanPreviewById,
 	liveHiddenItemIds,
 	direction,
@@ -790,6 +793,7 @@ const TimelineCanvasRows = memo(function TimelineCanvasRows({
 					0
 				}
 				isEmpty={zoomItems.length === 0}
+				disabled={zoomsDisabled}
 				onMouseEnter={onZoomRowMouseEnter}
 				onMouseMove={onZoomRowMouseMove}
 				onMouseLeave={onZoomRowMouseLeave}
@@ -924,6 +928,7 @@ export default function TimelineCanvas({
 	sourceAudioTracks = [],
 	getSourceAudioTrackSettingsForClip,
 	showSourceAudioTrack = false,
+	zoomsDisabled = false,
 	liveSpanPreviewById,
 	liveHiddenItemIds,
 	isDragging = false,
@@ -1199,6 +1204,7 @@ export default function TimelineCanvas({
 					sourceAudioTracks={sourceAudioTracks}
 					getSourceAudioTrackSettingsForClip={getSourceAudioTrackSettingsForClip}
 					showSourceAudioTrack={showSourceAudioTrack}
+					zoomsDisabled={zoomsDisabled}
 					liveSpanPreviewById={liveSpanPreviewById}
 					liveHiddenItemIds={liveHiddenItemIds}
 					direction={direction}

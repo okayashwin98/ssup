@@ -424,6 +424,8 @@ export function EditorShell(props: Props) {
 					disableSuggestedZooms={!appearance.autoApplyFreshRecordingAutoZooms}
 					currentTime={ui.currentTime}
 					handleSelectAnnotation={handleSelectAnnotation}
+					zoomsEnabled={appearance.zoomsEnabled}
+					onZoomsEnabledChange={appearance.setZoomsEnabled}
 				/>
 			</div>
 			{library.importing && (

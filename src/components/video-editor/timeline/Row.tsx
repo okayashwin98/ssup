@@ -11,6 +11,7 @@ interface RowProps extends RowDefinition {
 	label?: string;
 	hint?: string;
 	isEmpty?: boolean;
+	disabled?: boolean;
 	labelColor?: string;
 	onMouseEnter?: React.MouseEventHandler<HTMLDivElement>;
 	onMouseMove?: React.MouseEventHandler<HTMLDivElement>;
@@ -29,6 +30,7 @@ export default function Row({
 	label,
 	hint,
 	isEmpty,
+	disabled = false,
 	labelColor = "#666",
 	onMouseEnter,
 	onMouseMove,
@@ -41,6 +43,9 @@ export default function Row({
 	return (
 		<div
 			data-timeline-row={id}
+			aria-disabled={disabled || undefined}
+			// Items set their own pointer-events, so inert is what stops drags and resizes.
+			inert={disabled}
 			className="bg-transparent relative"
 			style={{
 				...rowWrapperStyle,
@@ -53,6 +58,7 @@ export default function Row({
 							pointerEvents: "none" as const,
 						}
 					: {}),
+				...(disabled ? { opacity: 0.35, pointerEvents: "none" as const } : {}),
 				marginBottom: 2,
 				flexGrow: 0,
 				flexShrink: 0,
