@@ -1,7 +1,8 @@
 // @see - https://www.electron.build/configuration/configuration
 {
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
-  "appId": "dev.recordly.app",
+  // Own identity so macOS never confuses this build with the original Recordly app.
+  "appId": "com.supershare.app",
   "electronUpdaterCompatibility": ">=2.16",
   "asar": true,
   "asarUnpack": [
@@ -49,15 +50,8 @@
       "to": "assets/wallpapers"
     }
   ],
-  "publish": [
-    {
-      "provider": "github",
-      "owner": "webadderall",
-      "repo": "Recordly",
-      "tagNamePrefix": "v",
-      "publishAutoUpdate": true
-    }
-  ],
+  // No release channel: upstream Recordly updates would replace this app.
+  "publish": null,
 
   "mac": {
     "hardenedRuntime": true,
@@ -76,25 +70,25 @@
     "icon": "icons/icons/mac/icon.icns",
     "artifactName": "${productName}-${arch}.${ext}",
     "extendInfo": {
-      "NSAudioCaptureUsageDescription": "Recordly needs audio capture permission to record system audio.",
-      "NSCameraUsageDescription": "Recordly needs camera access to record webcam video.",
-      "NSMicrophoneUsageDescription": "Recordly needs microphone access to record voice audio.",
+      "NSAudioCaptureUsageDescription": "SuperShare needs audio capture permission to record system audio.",
+      "NSCameraUsageDescription": "SuperShare needs camera access to record webcam video.",
+      "NSMicrophoneUsageDescription": "SuperShare needs microphone access to record voice audio.",
       "NSCameraUseContinuityCameraDeviceType": true,
       "com.apple.security.device.audio-input": true,
       "CFBundleDocumentTypes": [
         {
-          "CFBundleTypeName": "Recordly Project",
+          "CFBundleTypeName": "SuperShare Project",
           "CFBundleTypeRole": "Editor",
           "CFBundleTypeExtensions": ["recordly"],
           "CFBundleTypeIconFile": "icon.icns",
           "LSHandlerRank": "Owner",
-          "LSItemContentTypes": ["dev.recordly.app.project"]
+          "LSItemContentTypes": ["com.supershare.app.project"]
         }
       ],
       "UTExportedTypeDeclarations": [
         {
-          "UTTypeIdentifier": "dev.recordly.app.project",
-          "UTTypeDescription": "Recordly Project",
+          "UTTypeIdentifier": "com.supershare.app.project",
+          "UTTypeDescription": "SuperShare Project",
           "UTTypeConformsTo": ["public.json"],
           "UTTypeTagSpecification": {
             "public.filename-extension": ["recordly"],
