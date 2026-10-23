@@ -152,3 +152,16 @@ for (const destination of ["Local", "Link"]) {
 		await expect(dialog.locator("pre")).toContainText("VIDEO_DECODE_ENCODING_ERROR");
 	});
 }
+
+test("shared cards can be renamed", async ({ page }) => {
+	await page.goto("/tests/ui/shared-recordings.html");
+	await page
+		.getByRole("button", { name: "Options for Product walkthrough", exact: true })
+		.click();
+	await page.getByRole("menuitem", { name: "Rename", exact: true }).click();
+	const input = page.getByRole("textbox", { name: "Project name" });
+	await input.fill("Site walkthrough");
+	await input.press("Enter");
+	await expect(page.getByRole("button", { name: "Site walkthrough", exact: true })).toBeVisible();
+	await expect(page.getByRole("button", { name: "Product walkthrough", exact: true })).toHaveCount(0);
+});

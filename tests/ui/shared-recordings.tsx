@@ -33,9 +33,13 @@ window.electronAPI = {
 		document.getElementById("fixture-result")!.textContent = `Opened ${url}`;
 		return { success: true };
 	},
-	cloudShareManage: async (input: { action: string; shareCode?: string }) => {
+	cloudShareManage: async (input: { action: string; shareCode?: string; title?: string }) => {
 		if (input.action === "delete")
 			recordings = recordings.filter((video) => video.code !== input.shareCode);
+		if (input.action === "rename")
+			recordings = recordings.map((video) =>
+				video.code === input.shareCode ? { ...video, title: input.title ?? video.title } : video,
+			);
 		return { success: true, videos: recordings };
 	},
 } as unknown as typeof window.electronAPI;
@@ -54,7 +58,6 @@ createRoot(document.getElementById("root")!).render(
 				token="fixture"
 				endpoint="https://example.test/api/upload"
 				standalone
-				accountLabel="Demo creator"
 			/>
 			<p id="fixture-result" role="status" />
 		</main>

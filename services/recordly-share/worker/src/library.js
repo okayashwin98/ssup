@@ -5,6 +5,20 @@ import { abortStoredMultipart, withRecordingLock } from "./hostedUploads.js";
 import { recordingExpiresAt } from "./video.js";
 import { errorResponse, jsonResponse } from "./http.js";
 
+export async function handleRename(request, env, shareCode) {
+	const body = await request.json().catch(() => null);
+	const title = typeof body?.title === "string" ? body.title.trim().slice(0, 200) : "";
+	if (!title) return errorResponse("Enter a name for the recording");
+
+	const result = await env.DB.prepare("UPDATE videos SET title = ? WHERE share_code = ?")
+		.bind(title, shareCode)
+		.run();
+
+	if (result.meta.changes === 0) return errorResponse("Video not found", 404);
+
+	return jsonResponse({ ok: true, title });
+}
+
 export async function handleRenew(env, shareCode) {
 	const newExpiry = recordingExpiresAt(env);
 

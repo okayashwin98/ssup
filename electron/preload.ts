@@ -1047,8 +1047,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	cloudShareManage: (input: {
 		endpoint: string;
 		token: string;
-		action: "list" | "delete";
+		action: "list" | "delete" | "rename";
 		shareCode?: string;
+		title?: string;
 	}) => ipcRenderer.invoke("cloud-share-manage", input),
 	cloudShareCancel: (uploadId: string) => ipcRenderer.invoke("cloud-share-cancel", uploadId),
 	cloudShareDownload: (input: { endpoint: string; shareCode: string; title: string }) =>

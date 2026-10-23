@@ -164,6 +164,26 @@ it('rejects expired and tampered dashboard sessions', async () => {
   }
 });
 
+describe('POST /api/rename', () => {
+  it('renames a shared recording with the password and rejects without it', async () => {
+    const code = await createAndCompleteShare({ title: 'Old name' });
+    const rename = (headers, title) => SELF.fetch(`${BASE}/api/rename/${code}`, {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title }),
+    });
+    expect((await rename({}, 'Hacked')).status).toBe(401);
+    expect((await rename(AUTH, '   ')).status).toBe(400);
+    const res = await rename(AUTH, '  Site walkthrough  ');
+    expect(res.status).toBe(200);
+    const data = await (await SELF.fetch(`${BASE}/s/${code}/data`)).json();
+    expect(data.video.title).toBe('Site walkthrough');
+    expect((await SELF.fetch(`${BASE}/api/rename/missing0`, {
+      method: 'POST', headers: { ...AUTH, 'Content-Type': 'application/json' }, body: JSON.stringify({ title: 'x' }),
+    })).status).toBe(404);
+  });
+});
+
 describe('owner profile', () => {
   it('requires the password to update and serves the photo publicly', async () => {
     const png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';

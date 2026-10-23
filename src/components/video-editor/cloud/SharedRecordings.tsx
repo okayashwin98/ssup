@@ -92,6 +92,22 @@ export function SharedRecordings({
 			setDeleting(undefined);
 		}
 	};
+	const rename = async (code: string, title: string) => {
+		const result = await window.electronAPI.cloudShareManage({
+			token,
+			endpoint,
+			action: "rename",
+			shareCode: code,
+			title,
+		});
+		if (!result.success) throw new Error(result.error || "Could not rename recording.");
+		setRecordings((current) =>
+			current.map((recording) =>
+				recording.code === code ? { ...recording, title: title.trim() } : recording,
+			),
+		);
+		return code;
+	};
 	if (standalone) {
 		const entries = recordings
 			.map((recording) => ({
@@ -188,7 +204,7 @@ export function SharedRecordings({
 										}
 										run={run}
 										onShareProject={async () => undefined}
-										onRenameProject={async (path) => path}
+										onRenameProject={rename}
 										folders={[]}
 										save={() => undefined}
 										assignFolder={() => undefined}

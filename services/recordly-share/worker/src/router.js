@@ -24,7 +24,13 @@ import {
 	verifyPasswordAuth,
 } from "./auth.js";
 import { timingSafeEqual } from "./crypto.js";
-import { handleCheckViews, handleDelete, handleListVideos, handleRenew } from "./library.js";
+import {
+	handleCheckViews,
+	handleDelete,
+	handleListVideos,
+	handleRename,
+	handleRenew,
+} from "./library.js";
 import {
 	decodeUploadId,
 	handleMetadata,
@@ -248,6 +254,12 @@ export async function handleRequest(request, env) {
 		const metadataMatch = path.match(/^\/api\/metadata\/([a-z0-9]+)$/);
 		if (metadataMatch && request.method === "POST") {
 			return handleMetadata(request, env, metadataMatch[1]);
+		}
+
+		// Personal share service only; hosted accounts use their own recording routes.
+		const renameMatch = path.match(/^\/api\/rename\/([a-z0-9]+)$/);
+		if (renameMatch && request.method === "POST" && !hosted) {
+			return handleRename(request, env, renameMatch[1]);
 		}
 
 		const renewMatch = path.match(/^\/api\/renew\/([a-z0-9]+)$/);

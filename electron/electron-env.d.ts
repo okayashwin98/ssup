@@ -982,8 +982,10 @@ interface Window {
 		cloudShareManage: (input: {
 			endpoint: string;
 			token: string;
-			action: "list" | "delete";
+			action: "list" | "delete" | "rename";
 			shareCode?: string;
+			/** New name, for rename. */
+			title?: string;
 		}) => Promise<{
 			success: boolean;
 			error?: string;

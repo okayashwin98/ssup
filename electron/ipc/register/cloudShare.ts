@@ -311,7 +311,13 @@ export function registerCloudShareHandlers() {
 		"cloud-share-manage",
 		async (
 			_event,
-			input: { endpoint?: unknown; token?: unknown; action?: unknown; shareCode?: unknown },
+			input: {
+				endpoint?: unknown;
+				token?: unknown;
+				action?: unknown;
+				shareCode?: unknown;
+				title?: unknown;
+			},
 		) => {
 			try {
 				const endpoint = normalizeCloudEndpoint(input?.endpoint);
@@ -321,22 +327,38 @@ export function registerCloudShareHandlers() {
 					Buffer.byteLength(input.token) > MAX_AUTH_TOKEN_BYTES
 				)
 					throw new Error("Sign in to manage shared recordings.");
-				if (input.action !== "list" && input.action !== "delete")
+				if (
+					input.action !== "list" &&
+					input.action !== "delete" &&
+					input.action !== "rename"
+				)
 					throw new Error("Invalid recording action.");
 				if (
-					input.action === "delete" &&
+					input.action !== "list" &&
 					(typeof input.shareCode !== "string" ||
 						!/^[a-z0-9]{1,128}$/.test(input.shareCode))
 				)
 					throw new Error("Invalid recording ID.");
+				const title =
+					typeof input.title === "string" ? input.title.trim().slice(0, 200) : "";
+				if (input.action === "rename" && !title)
+					throw new Error("Enter a name for the recording.");
 				const response = await fetch(
 					new URL(
-						input.action === "list" ? "/api/videos" : `/api/delete/${input.shareCode}`,
+						input.action === "list"
+							? "/api/videos"
+							: `/api/${input.action}/${input.shareCode}`,
 						endpoint,
 					),
 					{
-						method: input.action === "list" ? "GET" : "DELETE",
-						headers: { authorization: `Bearer ${input.token}` },
+						method: { list: "GET", delete: "DELETE", rename: "POST" }[input.action],
+						headers: {
+							authorization: `Bearer ${input.token}`,
+							...(input.action === "rename"
+								? { "content-type": "application/json" }
+								: {}),
+						},
+						...(input.action === "rename" ? { body: JSON.stringify({ title }) } : {}),
 						redirect: "error",
 						signal: AbortSignal.timeout(30000),
 					},
@@ -345,7 +367,7 @@ export function registerCloudShareHandlers() {
 					throw new Error(
 						await responseError(response, "Could not manage shared recordings"),
 					);
-				if (input.action === "delete") return { success: true };
+				if (input.action !== "list") return { success: true };
 				return {
 					success: true,
 					videos: parseCloudRecordingList(await readJsonResponse(response), endpoint),

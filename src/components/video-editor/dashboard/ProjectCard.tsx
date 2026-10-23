@@ -205,19 +205,19 @@ export function ProjectCard({
 										? "Preview file"
 										: "Open project"}
 							</Dropdown.Item>
+							<Dropdown.Item
+								id="rename"
+								onAction={() => {
+									setName(entry.name);
+									requestAnimationFrame(() =>
+										requestAnimationFrame(() => setEditing(true)),
+									);
+								}}
+							>
+								Rename
+							</Dropdown.Item>
 							{!webUrl && (
 								<>
-									<Dropdown.Item
-										id="rename"
-										onAction={() => {
-											setName(entry.name);
-											requestAnimationFrame(() =>
-												requestAnimationFrame(() => setEditing(true)),
-											);
-										}}
-									>
-										Rename
-									</Dropdown.Item>
 									<Dropdown.SubmenuTrigger>
 										<Dropdown.Item id="folders" textValue="Add to folder">
 											Add to folder
