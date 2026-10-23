@@ -16,6 +16,7 @@ import { AudioMediaProcessor } from "./audioMediaProcessor";
 import {
 	AUDIO_BITRATE,
 	ENCODE_BACKPRESSURE_LIMIT,
+	getAacEncoderPrimingFrames,
 	getSourceTrackIdFromPath,
 	MP4_AUDIO_CODEC,
 	OFFLINE_AUDIO_SAMPLE_RATE,
@@ -256,7 +257,12 @@ export class OfflineAudioProcessor extends AudioMediaProcessor {
 				async (rendered, outputOffsetSec) => {
 					if (encodeError) throw encodeError;
 					if (muxError) throw muxError;
-					await this.feedBufferToEncoder(encoder, rendered, outputOffsetSec);
+					await this.feedBufferToEncoder(
+						encoder,
+						rendered,
+						outputOffsetSec,
+						getAacEncoderPrimingFrames(),
+					);
 				},
 			);
 
@@ -420,18 +426,21 @@ export class OfflineAudioProcessor extends AudioMediaProcessor {
 		source.start(localStartSec, bufferOffsetSec, duration);
 	}
 
-	// Feed a rendered AudioBuffer chunk to an AudioEncoder with a timestamp offset.
+	// Feed a rendered AudioBuffer chunk to an AudioEncoder with a timestamp offset. The first
+	// `skipLeadingFrames` frames of the whole stream are left out, for the encoder's padding.
 	protected async feedBufferToEncoder(
 		encoder: AudioEncoder,
 		buffer: AudioBuffer,
 		timestampOffsetSec: number,
+		skipLeadingFrames = 0,
 	): Promise<void> {
 		const sampleRate = buffer.sampleRate;
 		const numChannels = buffer.numberOfChannels;
 		const totalFrames = buffer.length;
+		const chunkStartFrame = Math.round(timestampOffsetSec * sampleRate);
 
 		for (
-			let offset = 0;
+			let offset = Math.max(0, Math.min(totalFrames, skipLeadingFrames - chunkStartFrame));
 			offset < totalFrames && !this.cancelled;
 			offset += OFFLINE_ENCODE_CHUNK_FRAMES
 		) {
@@ -448,7 +457,9 @@ export class OfflineAudioProcessor extends AudioMediaProcessor {
 				sampleRate,
 				numberOfFrames: frameCount,
 				numberOfChannels: numChannels,
-				timestamp: Math.round((offset / sampleRate + timestampOffsetSec) * 1_000_000),
+				timestamp: Math.round(
+					((chunkStartFrame + offset - skipLeadingFrames) / sampleRate) * 1_000_000,
+				),
 				data: planarData,
 			});
 

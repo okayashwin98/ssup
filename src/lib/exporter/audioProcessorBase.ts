@@ -1,6 +1,6 @@
 import { WebDemuxer } from "web-demuxer";
-import { resolveMediaElementSource } from "./localMediaSource";
 import type { TrimLikeRegion } from "./audioProcessorShared";
+import { resolveMediaElementSource } from "./localMediaSource";
 
 export class AudioProcessorBase {
 	protected cancelled = false;
@@ -91,28 +91,46 @@ export class AudioProcessorBase {
 		}
 	}
 
-	protected cloneWithTimestamp(src: AudioData, newTimestamp: number): AudioData {
+	/** The audio stream's start time, which excludes AAC encoder priming; null if unknown. */
+	protected async getAudioStreamStartUs(demuxer: WebDemuxer): Promise<number | null> {
+		try {
+			const mediaInfo = await demuxer.getMediaInfo();
+			const startSec = mediaInfo.streams.find(
+				(stream) => stream.codec_type_string === "audio",
+			)?.start_time;
+			return typeof startSec === "number" && Number.isFinite(startSec)
+				? Math.round(startSec * 1_000_000)
+				: null;
+		} catch {
+			return null;
+		}
+	}
+
+	/** Copies audio with a new timestamp, optionally without its first `skipFrames` frames. */
+	protected cloneWithTimestamp(src: AudioData, newTimestamp: number, skipFrames = 0): AudioData {
 		const isPlanar = src.format?.includes("planar") ?? false;
 		const numPlanes = isPlanar ? src.numberOfChannels : 1;
+		const copyOptions = (planeIndex: number) =>
+			skipFrames > 0 ? { planeIndex, frameOffset: skipFrames } : { planeIndex };
 
 		let totalSize = 0;
 		for (let planeIndex = 0; planeIndex < numPlanes; planeIndex++) {
-			totalSize += src.allocationSize({ planeIndex });
+			totalSize += src.allocationSize(copyOptions(planeIndex));
 		}
 
 		const buffer = new ArrayBuffer(totalSize);
 		let offset = 0;
 
 		for (let planeIndex = 0; planeIndex < numPlanes; planeIndex++) {
-			const planeSize = src.allocationSize({ planeIndex });
-			src.copyTo(new Uint8Array(buffer, offset, planeSize), { planeIndex });
+			const planeSize = src.allocationSize(copyOptions(planeIndex));
+			src.copyTo(new Uint8Array(buffer, offset, planeSize), copyOptions(planeIndex));
 			offset += planeSize;
 		}
 
 		return new AudioData({
 			format: src.format!,
 			sampleRate: src.sampleRate,
-			numberOfFrames: src.numberOfFrames,
+			numberOfFrames: src.numberOfFrames - skipFrames,
 			numberOfChannels: src.numberOfChannels,
 			timestamp: newTimestamp,
 			data: buffer,

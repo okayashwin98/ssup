@@ -1,20 +1,20 @@
 import type { WebDemuxer } from "web-demuxer";
-import { requiresClipTimelineRendering } from "./clipTimeline";
 import type {
 	AudioRegion,
 	ClipRegion,
 	SourceAudioTrackSettings,
 	SpeedRegion,
 } from "@/components/video-editor/types";
-import { resolveSourceTrackRoutingPolicy } from "./sourceTrackRoutingPolicy";
-import { AudioTranscodeProcessor } from "./audioTranscodeProcessor";
 import {
 	hasNonDefaultSourceTrackSettings,
 	MIN_SPEED_REGION_DELTA_MS,
 	MP4_AUDIO_CODEC,
 	type TrimLikeRegion,
 } from "./audioProcessorShared";
+import { AudioTranscodeProcessor } from "./audioTranscodeProcessor";
+import { requiresClipTimelineRendering } from "./clipTimeline";
 import type { VideoMuxer } from "./muxer";
+import { resolveSourceTrackRoutingPolicy } from "./sourceTrackRoutingPolicy";
 
 export {
 	getSourceTrackIdFromPath,
@@ -41,6 +41,7 @@ export class AudioProcessor extends AudioTranscodeProcessor {
 		audioStream: ReadableStream<EncodedAudioChunk>,
 		audioConfig: AudioDecoderConfig,
 		muxer: VideoMuxer,
+		streamStartUs: number | null = null,
 	): Promise<boolean> {
 		if (!this.isPassthroughAudioCodec(audioConfig.codec)) {
 			return false;
@@ -57,6 +58,12 @@ export class AudioProcessor extends AudioTranscodeProcessor {
 				if (done || !chunk) break;
 
 				if (passthroughTimestampOffsetUs === null) {
+					// Copied packets would keep the encoder's priming, which the export file
+					// can't mark as hidden, putting the audio late; decode and trim it instead.
+					const halfSampleUs = 500_000 / (audioConfig.sampleRate || 48_000);
+					if (streamStartUs !== null && chunk.timestamp < streamStartUs - halfSampleUs) {
+						return false;
+					}
 					passthroughTimestampOffsetUs = chunk.timestamp;
 				}
 
@@ -219,6 +226,8 @@ export class AudioProcessor extends AudioTranscodeProcessor {
 				return;
 			}
 
+			// Asked before reading: the demuxer refuses other requests while a read is running.
+			const streamStartUs = await this.getAudioStreamStartUs(demuxer);
 			const audioStream =
 				typeof readEndSec === "number"
 					? demuxer.read("audio", 0, readEndSec)
@@ -228,6 +237,7 @@ export class AudioProcessor extends AudioTranscodeProcessor {
 				audioStream as ReadableStream<EncodedAudioChunk>,
 				audioConfig,
 				muxer,
+				streamStartUs,
 			);
 
 			if (copiedSourceAudio) {

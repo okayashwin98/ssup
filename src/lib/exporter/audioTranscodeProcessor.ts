@@ -1,13 +1,14 @@
 import type { WebDemuxer } from "web-demuxer";
-import { OfflineAudioProcessor } from "./offlineAudioProcessor";
 import {
 	AUDIO_BITRATE,
 	DECODE_BACKPRESSURE_LIMIT,
 	ENCODE_BACKPRESSURE_LIMIT,
+	getAacEncoderPrimingFrames,
 	MP4_AUDIO_CODEC,
 	type TrimLikeRegion,
 } from "./audioProcessorShared";
 import type { VideoMuxer } from "./muxer";
+import { OfflineAudioProcessor } from "./offlineAudioProcessor";
 
 export class AudioTranscodeProcessor extends OfflineAudioProcessor {
 	protected async processTrimOnlyAudio(
@@ -30,12 +31,18 @@ export class AudioTranscodeProcessor extends OfflineAudioProcessor {
 			return;
 		}
 
+		// Asked before reading: the demuxer refuses other requests while a read is running.
+		const streamStartUs = await this.getAudioStreamStartUs(demuxer);
 		const audioStream =
 			typeof readEndSec === "number"
 				? demuxer.read("audio", 0, readEndSec)
 				: demuxer.read("audio");
 
+		const encoderPrimingUs =
+			(getAacEncoderPrimingFrames() / (audioConfig.sampleRate || 48_000)) * 1_000_000;
 		let sourceTimestampOffsetUs: number | null = null;
+		let firstDecodedChunkUs: number | null = null;
+		let decoderRebaseUs: number | null = null;
 
 		await this.transcodeAudioStream(
 			audioStream as ReadableStream<EncodedAudioChunk>,
@@ -44,16 +51,39 @@ export class AudioTranscodeProcessor extends OfflineAudioProcessor {
 			{
 				observeChunkTimestampUs: (timestampUs) => {
 					if (sourceTimestampOffsetUs === null) {
-						sourceTimestampOffsetUs = timestampUs;
+						// AAC priming decodes before the stream's start; time zero is the start.
+						sourceTimestampOffsetUs =
+							streamStartUs === null
+								? timestampUs
+								: Math.max(timestampUs, streamStartUs);
 					}
 				},
 				shouldSkipChunk: (timestampMs) => this.isInTrimRegion(timestampMs, sortedTrims),
+				observeDecodedChunkTimestampUs: (timestampUs) => {
+					firstDecodedChunkUs ??= timestampUs;
+				},
 				transformAudioData: (data) => {
-					const timestampMs = data.timestamp / 1000;
-					const trimOffsetMs = this.computeTrimOffset(timestampMs, sortedTrims);
+					// The decoder numbers its output from zero when the first packet's time is
+					// negative, yet the sound still starts with that packet: map it back.
+					decoderRebaseUs ??= (firstDecodedChunkUs ?? data.timestamp) - data.timestamp;
+					const sourceTimestampUs = data.timestamp + decoderRebaseUs;
+					const trimOffsetMs = this.computeTrimOffset(
+						sourceTimestampUs / 1000,
+						sortedTrims,
+					);
 					const adjustedTimestampUs =
-						data.timestamp - (sourceTimestampOffsetUs ?? 0) - trimOffsetMs * 1000;
-					return this.cloneWithTimestamp(data, Math.max(0, adjustedTimestampUs));
+						sourceTimestampUs -
+						(sourceTimestampOffsetUs ?? 0) -
+						trimOffsetMs * 1000 -
+						encoderPrimingUs;
+					if (adjustedTimestampUs >= 0)
+						return this.cloneWithTimestamp(data, adjustedTimestampUs);
+					// Drop the source's priming and what the encoder's own padding will replace.
+					const skipFrames = Math.round(
+						(-adjustedTimestampUs * data.sampleRate) / 1_000_000,
+					);
+					if (skipFrames >= data.numberOfFrames) return null;
+					return this.cloneWithTimestamp(data, 0, skipFrames);
 				},
 			},
 		);
@@ -66,6 +96,7 @@ export class AudioTranscodeProcessor extends OfflineAudioProcessor {
 		options: {
 			observeChunkTimestampUs?: (timestampUs: number) => void;
 			shouldSkipChunk?: (timestampMs: number) => boolean;
+			observeDecodedChunkTimestampUs?: (timestampUs: number) => void;
 			transformAudioData?: (data: AudioData) => AudioData | null;
 		} = {},
 	): Promise<void> {
@@ -207,6 +238,7 @@ export class AudioTranscodeProcessor extends OfflineAudioProcessor {
 				const timestampMs = chunk.timestamp / 1000;
 				if (options.shouldSkipChunk?.(timestampMs)) continue;
 
+				options.observeDecodedChunkTimestampUs?.(chunk.timestamp);
 				decoder.decode(chunk);
 				pumpEncodedFrames();
 
