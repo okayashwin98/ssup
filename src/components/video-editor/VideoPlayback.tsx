@@ -2227,9 +2227,8 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			};
 		}, [pixiReady, videoReady, applyWebcamBubbleLayout]);
 
-		// While paused and untouched the preview stops drawing; left alone it redrew
-		// 60 times a second even behind the dashboard. The ticker keeps running so
-		// playback logic is unaffected; only the draw is skipped. Any change wakes it.
+		// Paused and untouched, the preview skips drawing (it redrew at 60 fps even behind
+		// the dashboard); the ticker still runs, and any change wakes the draw.
 		const drawAwakeRef = useRef(true);
 		const idleSleepTimerRef = useRef<number | undefined>(undefined);
 		const wakeRendering = useCallback(() => {
@@ -2243,7 +2242,8 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			const app = appRef.current;
 			if (!pixiReady || !app?.ticker) return;
 			const drawIfAwake = () => {
-				if (drawAwakeRef.current || isPlayingRef.current || isSeekingRef.current) app.render();
+				if (drawAwakeRef.current || isPlayingRef.current || isSeekingRef.current)
+					app.render();
 			};
 			app.ticker.remove(app.render, app);
 			app.ticker.add(drawIfAwake, undefined, UPDATE_PRIORITY.LOW);
@@ -2270,10 +2270,17 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			for (const element of media)
 				for (const type of mediaEvents) element.addEventListener(type, wakeRendering);
 			window.addEventListener("resize", wakeRendering);
+			// Resizing the canvas clears it, whatever caused the container to change size.
+			const resizeObserver =
+				typeof ResizeObserver === "undefined" ? null : new ResizeObserver(wakeRendering);
+			if (container) resizeObserver?.observe(container);
 			return () => {
-				for (const type of pointerEvents) container?.removeEventListener(type, wakeRendering);
+				resizeObserver?.disconnect();
+				for (const type of pointerEvents)
+					container?.removeEventListener(type, wakeRendering);
 				for (const element of media)
-					for (const type of mediaEvents) element.removeEventListener(type, wakeRendering);
+					for (const type of mediaEvents)
+						element.removeEventListener(type, wakeRendering);
 				window.removeEventListener("resize", wakeRendering);
 			};
 		}, [pixiReady, videoReady, wakeRendering]);

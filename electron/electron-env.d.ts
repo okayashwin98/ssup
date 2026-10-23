@@ -221,6 +221,13 @@ interface Window {
 		hudOverlaySetIgnoreMouse: (ignore: boolean) => void;
 		hudOverlaySetSourceSelectionActive: (active: boolean) => void;
 		hudOverlayDrag: (phase: "start" | "move" | "end", screenX: number, screenY: number) => void;
+		/** Moves the HUD window to the display under the cursor; null when it is already there. */
+		hudOverlayFollowPointer?: () => Promise<{
+			originX: number;
+			originY: number;
+			cursorX: number;
+			cursorY: number;
+		} | null>;
 		hudOverlayHide: () => void;
 		hudOverlayClose: () => void;
 		getEditorMode: () => Promise<boolean>;

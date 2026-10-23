@@ -1,5 +1,11 @@
 import { resolveEditorStartupView } from "./editorStartupView";
-import { currentProjectPath, currentVideoPath, currentRecordingSession } from "./ipc/state";
+import { getCountdownWindowBounds } from "./countdownPlacement";
+import {
+	currentProjectPath,
+	currentRecordingSession,
+	currentVideoPath,
+	selectedSource,
+} from "./ipc/state";
 import { isHudInEditorMode } from "./hudEditorMode";
 import fs from "node:fs";
 import { createRequire } from "node:module";
@@ -432,6 +438,25 @@ ipcMain.on("hud-overlay-drag", (_event, phase: string, screenX: number, screenY:
 		hudDragLastCursor = null;
 		hudDragFixedSize = null;
 	}
+});
+
+// The bar lives in a window covering one display; when a drag leaves that display,
+// move the window to the display under the cursor so the bar can follow.
+ipcMain.handle("hud-overlay-follow-pointer", () => {
+	if (!hudOverlayWindow || hudOverlayWindow.isDestroyed()) return null;
+	if (!isHudOverlayMousePassthroughSupported()) return null;
+	const screen = getScreen();
+	const cursor = screen.getCursorScreenPoint();
+	const target = screen.getDisplayNearestPoint(cursor);
+	if (target.id === getHudOverlayDisplay().id) return null;
+	hudOverlayWindow.setBounds(getHudOverlayWindowBounds(target.workArea, true), false);
+	positionUpdateToastWindow();
+	return {
+		originX: target.workArea.x,
+		originY: target.workArea.y,
+		cursorX: cursor.x,
+		cursorY: cursor.y,
+	};
 });
 
 ipcMain.on("hud-overlay-hide", () => {
@@ -1116,18 +1141,20 @@ export function createSourceSelectorWindow(): BrowserWindow {
 }
 
 export function createCountdownWindow(): BrowserWindow {
-	const primaryDisplay = getScreen().getPrimaryDisplay();
-	const { width, height } = primaryDisplay.workAreaSize;
-
-	const windowSize = 200;
-	const x = Math.floor((width - windowSize) / 2);
-	const y = Math.floor((height - windowSize) / 2);
+	const screen = getScreen();
+	const { x, y, width, height } = getCountdownWindowBounds(
+		screen.getAllDisplays(),
+		screen.getPrimaryDisplay(),
+		// Linux capture display ids can differ from Electron's, so only trust them elsewhere.
+		process.platform === "linux" ? undefined : selectedSource?.display_id,
+		200,
+	);
 
 	const win = new BrowserWindow({
-		width: windowSize,
-		height: windowSize,
-		x: x,
-		y: y,
+		width,
+		height,
+		x,
+		y,
 		frame: false,
 		transparent: true,
 		resizable: false,

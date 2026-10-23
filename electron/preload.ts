@@ -193,6 +193,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	hudOverlayDrag: (phase: "start" | "move" | "end", screenX: number, screenY: number) => {
 		ipcRenderer.send("hud-overlay-drag", phase, screenX, screenY);
 	},
+	hudOverlayFollowPointer: () => ipcRenderer.invoke("hud-overlay-follow-pointer"),
 	hudOverlayHide: () => {
 		ipcRenderer.send("hud-overlay-hide");
 	},
