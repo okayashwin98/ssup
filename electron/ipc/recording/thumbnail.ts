@@ -16,11 +16,18 @@ let queue = Promise.resolve();
 export async function getRecordingThumbnail(candidate: string): Promise<string> {
 	const root = await fs.realpath(await getRecordingsDir());
 	const file = await resolveApprovedLocalMediaPath(candidate);
-	if (!file || path.dirname(file) !== root || !/\.(mp4|mov|webm|mkv|m4v)$/i.test(file))
+	// Loose recordings and those filed in a project's folder (never the Projects folder).
+	const parts = file ? path.relative(root, file).split(path.sep) : [];
+	const inLibrary =
+		parts.length === 1 ||
+		(parts.length === 2 && !parts[0].startsWith(".") && parts[0] !== "Projects");
+	if (!file || !inLibrary || !/\.(mp4|mov|webm|mkv|m4v)$/i.test(file))
 		throw new Error("Recording is outside the Videos library");
 	const stat = await fs.stat(file);
 	if (!stat.isFile()) throw new Error("Recording is not a file");
-	const key = createHash("sha256").update(`${file}:${stat.mtimeMs}:${stat.size}`).digest("hex");
+	const key = createHash("sha256")
+		.update(`${file}:${stat.mtimeMs}:${stat.size}:320`)
+		.digest("hex");
 	const existing = pending.get(key);
 	if (existing) return existing;
 	const cache = path.join(app.getPath("userData"), "recording-thumbnails", `${key}.jpg`);
@@ -45,7 +52,7 @@ export async function getRecordingThumbnail(candidate: string): Promise<string> 
 					"1",
 					"-an",
 					"-vf",
-					"scale=160:90:force_original_aspect_ratio=increase,crop=160:90",
+					"scale=320:180:force_original_aspect_ratio=increase,crop=320:180",
 					"-q:v",
 					"5",
 					"-f",

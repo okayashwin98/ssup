@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { FolderSimple } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { formatFileSize } from "@/lib/fileSize";
 import { formatRelativeDate } from "@/lib/relativeDate";
@@ -37,11 +36,7 @@ export function RawFolderCard({
 					open={hovering}
 				/>
 			</Button>
-			<div className="flex min-w-0 items-start gap-2 pt-5">
-				<FolderSimple
-					weight="fill"
-					className="mt-0.5 size-4 shrink-0 text-muted-foreground"
-				/>
+			<div className="min-w-0 pt-5">
 				<div className="min-w-0 flex-1">
 					<p title={name} className="truncate text-[12px] font-medium leading-5">
 						{name}
