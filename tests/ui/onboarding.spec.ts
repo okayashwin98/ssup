@@ -11,8 +11,8 @@ test("settings opens permissions and the carousel banner adapts to each page", a
 	});
 	await page.getByRole("radio", { name: "Settings", exact: true }).click();
 	await page.getByRole("button", { name: "Show onboarding" }).click();
-	const tour = page.getByRole("dialog", { name: "Welcome to Recordly" });
-	await expect(tour.getByRole("heading", { name: "Allow Recordly to record" })).toBeVisible();
+	const tour = page.getByRole("dialog", { name: "Welcome to SuperShare" });
+	await expect(tour.getByRole("heading", { name: "Allow SuperShare to record" })).toBeVisible();
 	await expect(tour.getByText("Allowed", { exact: true })).toHaveCount(2);
 	await expect
 		.poll(() =>
@@ -69,7 +69,7 @@ test("settings opens permissions and the carousel banner adapts to each page", a
 	await pages.getByRole("button", { name: "Permissions", exact: true }).focus();
 	await page.keyboard.press("Enter");
 	await expect(tour).toHaveAttribute("data-onboarding-state", "permissions");
-	await expect(tour.getByRole("heading", { name: "Allow Recordly to record" })).toBeVisible();
+	await expect(tour.getByRole("heading", { name: "Allow SuperShare to record" })).toBeVisible();
 	expect(await tour.boundingBox()).toEqual(permissionBounds);
 	expect(await banner.boundingBox()).toEqual(bannerBounds);
 	const permissionHeading = (await tour.getByRole("heading", { level: 2 }).boundingBox())!;
@@ -90,7 +90,7 @@ test("settings opens permissions and the carousel banner adapts to each page", a
 	await expect(page.locator("html")).toHaveAttribute("data-hud-opened", "true");
 	await page.getByRole("radio", { name: "Settings", exact: true }).click();
 	await page.getByRole("button", { name: "Show onboarding" }).click();
-	await expect(tour.getByRole("heading", { name: "Allow Recordly to record" })).toBeVisible();
+	await expect(tour.getByRole("heading", { name: "Allow SuperShare to record" })).toBeVisible();
 });
 
 test("first launch persists completion and signed-in users can continue", async ({ page }) => {
@@ -103,9 +103,9 @@ test("first launch persists completion and signed-in users can continue", async 
 		};
 	});
 	await page.goto("/?windowType=editor");
-	const tour = page.getByRole("dialog", { name: "Welcome to Recordly" });
+	const tour = page.getByRole("dialog", { name: "Welcome to SuperShare" });
 	await tour.getByRole("button", { name: "Continue", exact: true }).click();
-	await expect(tour.getByRole("heading", { name: "Allow Recordly to record" })).toBeVisible();
+	await expect(tour.getByRole("heading", { name: "Allow SuperShare to record" })).toBeVisible();
 	await expect(tour.locator("[data-permissions-confetti]")).toBeVisible();
 	await tour.getByRole("button", { name: "Start recording", exact: true }).click();
 	await expect
@@ -128,7 +128,7 @@ test("onboarding fits a compact window with reduced motion", async ({ page }) =>
 	});
 	await page.getByRole("radio", { name: "Settings", exact: true }).click();
 	await page.getByRole("button", { name: "Show onboarding" }).click();
-	const tour = page.getByRole("dialog", { name: "Welcome to Recordly" });
+	const tour = page.getByRole("dialog", { name: "Welcome to SuperShare" });
 	await expect(
 		tour.getByRole("button", { name: "Start recording", exact: true }),
 	).toBeInViewport();
@@ -165,8 +165,8 @@ test("short dark windows keep the banner and navigation visible while the accoun
 	await page.getByRole("button", { name: "Show onboarding" }).click();
 	await page.setViewportSize({ width: 390, height: 600 });
 	await page.evaluate(() => document.documentElement.classList.add("dark"));
-	const tour = page.getByRole("dialog", { name: "Welcome to Recordly" });
-	await expect(tour.getByRole("heading", { name: "Allow Recordly to record" })).toBeVisible();
+	const tour = page.getByRole("dialog", { name: "Welcome to SuperShare" });
+	await expect(tour.getByRole("heading", { name: "Allow SuperShare to record" })).toBeVisible();
 	await expect(
 		tour.getByRole("button", { name: "Start recording", exact: true }),
 	).toBeInViewport();
@@ -199,14 +199,14 @@ test("short dark windows keep the banner and navigation visible while the accoun
 	await expect(tour).toHaveJSProperty("scrollWidth", bounds!.width);
 	await page.screenshot({ path: "test-results/onboarding-narrow-account.png" });
 	await tour.getByRole("button", { name: "Continue", exact: true }).click();
-	await expect(tour.getByRole("heading", { name: "Allow Recordly to record" })).toBeVisible();
+	await expect(tour.getByRole("heading", { name: "Allow SuperShare to record" })).toBeVisible();
 });
 
 test("sign-in is mandatory even after onboarding was completed", async ({ page }) => {
 	await installDesktopBridge(page, "preview.mp4", { signedIn: false });
 	await page.addInitScript(() => sessionStorage.setItem("recordly.demo-session", "1"));
 	await page.goto("/?windowType=editor");
-	const tour = page.getByRole("dialog", { name: "Welcome to Recordly" });
+	const tour = page.getByRole("dialog", { name: "Welcome to SuperShare" });
 	await expect(tour).toHaveAttribute("data-onboarding-state", "login");
 	await expect(tour.getByRole("button", { name: "Continue without signing in" })).toHaveCount(0);
 	await expect(tour.getByText("Optional", { exact: true })).toHaveCount(0);
@@ -232,7 +232,7 @@ test("Supabase email callback advances to permissions only after a session is re
 }) => {
 	await installDesktopBridge(page, "preview.mp4", { signedIn: false });
 	await page.goto("/?windowType=editor");
-	const tour = page.getByRole("dialog", { name: "Welcome to Recordly" });
+	const tour = page.getByRole("dialog", { name: "Welcome to SuperShare" });
 	await tour.getByPlaceholder("you@example.com").fill("test@email.com");
 	const otpRequest = page.waitForRequest((request) => request.url().includes("/auth/v1/otp"));
 	await tour.getByRole("button", { name: "Email me a magic link" }).click();
@@ -249,7 +249,7 @@ test("Supabase email callback advances to permissions only after a session is re
 		code_verifier: expect.any(String),
 	});
 	await expect(tour).toHaveAttribute("data-onboarding-state", "permissions");
-	await expect(tour.getByRole("heading", { name: "Allow Recordly to record" })).toBeVisible();
+	await expect(tour.getByRole("heading", { name: "Allow SuperShare to record" })).toBeVisible();
 	await expect(
 		tour
 			.getByRole("navigation", { name: "Onboarding pages" })
@@ -295,9 +295,9 @@ test("missing macOS permissions gate Start recording until access is allowed", a
 	await page.goto("/?windowType=editor");
 	await page.getByRole("radio", { name: "Settings", exact: true }).click();
 	await page.getByRole("button", { name: "Show onboarding" }).click();
-	const tour = page.getByRole("dialog", { name: "Welcome to Recordly" });
+	const tour = page.getByRole("dialog", { name: "Welcome to SuperShare" });
 	const start = tour.getByRole("button", { name: "Start recording", exact: true });
-	await expect(tour.getByRole("heading", { name: "Allow Recordly to record" })).toBeVisible();
+	await expect(tour.getByRole("heading", { name: "Allow SuperShare to record" })).toBeVisible();
 	await expect(start).toBeDisabled();
 	await page.setViewportSize({ width: 390, height: 600 });
 	await expect
@@ -355,8 +355,8 @@ for (const platform of ["win32", "linux"]) {
 		await page.goto("/?windowType=editor");
 		await page.getByRole("radio", { name: "Settings", exact: true }).click();
 		await page.getByRole("button", { name: "Show onboarding" }).click();
-		const tour = page.getByRole("dialog", { name: "Welcome to Recordly" });
-		await expect(tour.getByRole("heading", { name: "Allow Recordly to record" })).toBeVisible();
+		const tour = page.getByRole("dialog", { name: "Welcome to SuperShare" });
+		await expect(tour.getByRole("heading", { name: "Allow SuperShare to record" })).toBeVisible();
 		await expect(
 			tour.getByRole("button", { name: "Start recording", exact: true }),
 		).toBeEnabled();
@@ -403,8 +403,8 @@ test("a permission request opens its page even after onboarding was already comp
 		});
 	});
 	await page.goto("/?windowType=editor");
-	const tour = page.getByRole("dialog", { name: "Welcome to Recordly" });
-	await expect(tour.getByRole("heading", { name: "Allow Recordly to record" })).toBeVisible();
+	const tour = page.getByRole("dialog", { name: "Welcome to SuperShare" });
+	await expect(tour.getByRole("heading", { name: "Allow SuperShare to record" })).toBeVisible();
 	await expect(
 		tour.getByRole("button", { name: "Continue without signing in" }),
 	).not.toBeVisible();

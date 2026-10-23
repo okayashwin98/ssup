@@ -10,7 +10,7 @@ test("sign-in offers only providers enabled in Supabase", async ({ page }) => {
 		}),
 	);
 	await page.goto("/?windowType=editor");
-	const login = page.getByRole("dialog", { name: "Welcome to Recordly" });
+	const login = page.getByRole("dialog", { name: "Welcome to SuperShare" });
 	await expect(login).toBeVisible({ timeout: 20000 });
 	await expect(
 		login.getByRole("button", { name: "Continue with Google", exact: true }),
@@ -51,7 +51,7 @@ test("email sign-in reports Supabase errors and allows retry without granting ac
 		return route.fulfill({ json: {} });
 	});
 	await page.goto("/?windowType=editor");
-	const login = page.getByRole("dialog", { name: "Welcome to Recordly" });
+	const login = page.getByRole("dialog", { name: "Welcome to SuperShare" });
 	await login.getByRole("textbox", { name: /^Email\*?$/ }).fill("owner@example.test");
 	await login.getByRole("button", { name: "Email me a magic link" }).click();
 	await expect(login.getByText("Please wait before requesting another email.")).toBeVisible();
@@ -71,7 +71,7 @@ test("a rejected Supabase callback keeps sign-in mandatory", async ({ page }) =>
 		}),
 	);
 	await page.goto("/?windowType=editor");
-	const login = page.getByRole("dialog", { name: "Welcome to Recordly" });
+	const login = page.getByRole("dialog", { name: "Welcome to SuperShare" });
 	await login.getByRole("textbox", { name: /^Email\*?$/ }).fill("owner@example.test");
 	await login.getByRole("button", { name: "Email me a magic link" }).click();
 	await expect(login.getByText(/Check your inbox/)).toBeVisible();
@@ -98,7 +98,7 @@ for (const [label, provider] of [
 			};
 		});
 		await page.goto("/?windowType=editor");
-		const login = page.getByRole("dialog", { name: "Welcome to Recordly" });
+		const login = page.getByRole("dialog", { name: "Welcome to SuperShare" });
 		await login.getByRole("button", { name: `Continue with ${label}`, exact: true }).click();
 		await expect(page.locator("html")).toHaveAttribute("data-auth-url", /auth\/v1\/authorize/);
 		const url = new URL((await page.locator("html").getAttribute("data-auth-url"))!);
@@ -115,7 +115,7 @@ test("restored Supabase sessions show the account and sign-out requires authenti
 }) => {
 	await installDesktopBridge(page);
 	await page.goto("/?windowType=editor");
-	await page.getByRole("button", { name: "Recordly account", exact: true }).click();
+	await page.getByRole("button", { name: "SuperShare account", exact: true }).click();
 	const account = page.getByRole("dialog", { name: "Your account", exact: true });
 	await expect(account.getByText("test@email.com")).toBeVisible();
 	await expect(account.locator('img[src$="login-banner.png"]')).toBeVisible();
@@ -135,7 +135,7 @@ test("sign-in banner fills spare space and keeps the email action usable in a sh
 	await page.emulateMedia({ reducedMotion: "reduce" });
 	await installDesktopBridge(page, "preview.mp4", { signedIn: false });
 	await page.goto("/?windowType=editor");
-	const login = page.getByRole("dialog", { name: "Welcome to Recordly" });
+	const login = page.getByRole("dialog", { name: "Welcome to SuperShare" });
 	const banner = login.locator("[data-onboarding-artwork]");
 	const submit = login.getByRole("button", { name: "Email me a magic link" });
 	const pages = login.getByRole("navigation", { name: "Onboarding pages" });

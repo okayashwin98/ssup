@@ -1,18 +1,13 @@
-import { Alert, Button, Card, Link, Toast, toast } from "@heroui/react";
+import { Alert, Button, Card, Toast, toast } from "@heroui/react";
 import { LinkSimpleIcon, WarningCircleIcon } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
 
 export function Brand() {
 	return (
-		<Link
-			href="https://github.com/webadderallorg/Recordly"
-			target="_blank"
-			rel="noopener noreferrer"
-			className="brand"
-		>
+		<span className="brand">
 			<img src="/icon-64.png" alt="" width="28" height="28" />
-			<span>Recordly</span>
-		</Link>
+			<span>SuperShare</span>
+		</span>
 	);
 }
 

@@ -102,7 +102,7 @@ export function OnboardingPermissions({
 				) : (
 					<>
 						<OnboardingHeader
-							title="Allow Recordly to record"
+							title="Allow SuperShare to record"
 							description={
 								platform === "mac"
 									? "Enable these permissions in macOS System Settings."
@@ -165,7 +165,7 @@ export function OnboardingPermissions({
 									<p className="flex-1 text-xs leading-relaxed text-muted">
 										{screenGranted && accessibilityGranted
 											? "Your screen is captured only when you start recording. Microphone and camera access are requested when you use them."
-											: "Return after enabling access. macOS may require restarting Recordly."}
+											: "Return after enabling access. macOS may require restarting SuperShare."}
 									</p>
 									{(!screenGranted || !accessibilityGranted) && (
 										<Button

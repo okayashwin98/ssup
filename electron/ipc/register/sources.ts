@@ -176,7 +176,9 @@ export async function getDesktopSources(
 	const ownWindowNames = new Set(
 		[
 			app.getName(),
+			// Older builds were called Recordly; both names are this app's own windows.
 			"Recordly",
+			"SuperShare",
 			...BrowserWindow.getAllWindows().flatMap((win) => {
 				const title = win.getTitle().trim();
 				return title ? [title] : [];

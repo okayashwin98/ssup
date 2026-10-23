@@ -39,7 +39,7 @@ export const recordlyAuth = recordlyAuthConfigured
 function requireAuth() {
 	if (!recordlyAuth) {
 		throw new Error(
-			"Recordly Auth is not configured. Add the Supabase URL and publishable key.",
+			"SuperShare Auth is not configured. Add the Supabase URL and publishable key.",
 		);
 	}
 	return recordlyAuth;
@@ -106,7 +106,7 @@ async function exchangeAuthCallback(url: string): Promise<void> {
 	if (providerError) throw new Error(providerError);
 	const code = params.get("code");
 	if (!code) {
-		throw new Error("Request a new sign-in link from Recordly, then open it on this computer.");
+		throw new Error("Request a new sign-in link from SuperShare, then open it on this computer.");
 	}
 	const client = requireAuth();
 	const { error } = await client.auth.exchangeCodeForSession(code);

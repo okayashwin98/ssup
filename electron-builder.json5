@@ -10,7 +10,7 @@
     "node_modules/uiohook-napi/**",
     "electron/native/bin/**"
   ],
-  "productName": "Recordly",
+  "productName": "SuperShare",
   "protocols": [
     {
       "name": "Recordly authentication",

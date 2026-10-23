@@ -47,3 +47,7 @@ if (!runScript("rebuild:native")) {
 if (!runScript("build:platform-native-helpers")) {
 	process.exit(1);
 }
+
+if (!runScript("brand:dev-electron")) {
+	process.exit(1);
+}

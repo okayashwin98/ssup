@@ -1,6 +1,6 @@
 {
 	"cloud": {
-		"signInRequired": "Melde dich bei Recordly an, bevor du einen Freigabelink erstellst.",
+		"signInRequired": "Melde dich bei SuperShare an, bevor du einen Freigabelink erstellst.",
 		"prepareFailed": "Der aktuelle Schnitt konnte nicht zum Teilen vorbereitet werden.",
 		"uploadFailed": "Cloud-Upload fehlgeschlagen.",
 		"linkCreated": "Freigabelink erstellt",
@@ -25,7 +25,7 @@
 		"enterEmail": "Gib zuerst deine E-Mail-Adresse ein.",
 		"resetSent": "E-Mail zum Zurücksetzen des Passworts gesendet.",
 		"accountHeading": "Dein Recordly-Konto",
-		"signInHeading": "Bei Recordly anmelden",
+		"signInHeading": "Bei SuperShare anmelden",
 		"signInShareDescription": "Melde dich an, um dieses Video zu veröffentlichen und seinen Freigabelink zu verwalten.",
 		"signInDescription": "Greife auf deine Aufnahmen und Freigabelinks zu.",
 		"signingOut": "Abmeldung läuft…",
@@ -171,7 +171,7 @@
 	"account": { "title": "Konto", "comingSoon": "Konto demnächst verfügbar" },
 	"nativeCaptureUnavailable": {
 		"title": "Es ist nichts kaputt, aber wir können kein animiertes Cursor-Overlay rendern.",
-		"description": "Ihr Gerät unterstützt keine native Erfassung. Dies kann verschiedene Gründe haben, die wir noch nicht ermittelt haben. Recordly funktioniert weiterhin, aber eine Cursor-Glättung ist nicht möglich.",
+		"description": "Ihr Gerät unterstützt keine native Erfassung. Dies kann verschiedene Gründe haben, die wir noch nicht ermittelt haben. SuperShare funktioniert weiterhin, aber eine Cursor-Glättung ist nicht möglich.",
 		"confirm": "Okay"
 	},
 	"exportStatus": {

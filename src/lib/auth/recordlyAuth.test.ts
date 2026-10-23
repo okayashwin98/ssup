@@ -157,6 +157,6 @@ it("does not accept dashboard implicit session tokens as a PKCE callback", async
 	const { completeAuthCallback } = await import("./recordlyAuth");
 	await expect(
 		completeAuthCallback("recordly://auth/callback#access_token=test&refresh_token=test"),
-	).rejects.toThrow("Request a new sign-in link from Recordly");
+	).rejects.toThrow("Request a new sign-in link from SuperShare");
 	expect(exchange).not.toHaveBeenCalled();
 });

@@ -32,7 +32,7 @@ test("account settings save the Supabase profile and share it with the dashboard
 	);
 	await expect(
 		page
-			.getByRole("button", { name: "Recordly account", exact: true })
+			.getByRole("button", { name: "SuperShare account", exact: true })
 			.locator('[aria-label="Jordan Chen"]'),
 	).toBeVisible();
 	await page.reload();
@@ -157,7 +157,7 @@ test("Settings refreshes macOS permissions and opens the permissions carousel", 
 	await permissions.getByRole("button", { name: "Check again", exact: true }).click();
 	await expect(permissions.getByText("Allowed", { exact: true })).toHaveCount(2);
 	await permissions.getByRole("button", { name: "Review permissions", exact: true }).click();
-	const tour = page.getByRole("dialog", { name: "Welcome to Recordly" });
+	const tour = page.getByRole("dialog", { name: "Welcome to SuperShare" });
 	await expect(tour).toHaveAttribute("data-onboarding-state", "permissions");
 	await expect(tour.getByRole("button", { name: "Start recording", exact: true })).toBeEnabled();
 });

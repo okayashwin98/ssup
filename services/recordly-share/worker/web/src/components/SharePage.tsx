@@ -185,15 +185,15 @@ export default function SharePage() {
 			const result = await fetchShareData(code);
 			if (isExpired(result)) {
 				setView("expired");
-				document.title = "Recording unavailable — Recordly";
+				document.title = "Recording unavailable — SuperShare";
 			} else if (isPasswordRequired(result)) {
 				setView("password");
 				setTitle(result.title);
-				document.title = `${result.title} — Recordly`;
+				document.title = `${result.title} — SuperShare`;
 			} else if (isShareData(result)) {
 				setData(result);
 				setView("recording");
-				document.title = `${result.video.title} — Recordly`;
+				document.title = `${result.video.title} — SuperShare`;
 			} else setView("error");
 		} catch {
 			setView("error");
