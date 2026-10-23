@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { ChoiceGroup, ChoiceItem } from "@/components/ui/choice-group";
+import { AccentColorSetting } from "@/components/settings/AccentColorSetting";
 import { useTheme } from "@/contexts/ThemeContext";
 import { getAssetPath, getRenderableVideoUrl, getWallpaperThumbnailUrl } from "@/lib/assetPath";
 import { cn } from "@/lib/utils";
@@ -2313,6 +2314,8 @@ export function SettingsPanel({
 							</ChoiceItem>
 						</ChoiceGroup>
 					</SettingsRow>
+
+					<AccentColorSetting />
 
 					<SettingsRow title={t("common.app.language", "Language")} stacked>
 						<Select

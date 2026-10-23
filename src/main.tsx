@@ -5,8 +5,10 @@ import App from "./App.tsx";
 import { I18nProvider } from "./contexts/I18nContext.tsx";
 import { ThemeProvider } from "./contexts/ThemeContext.tsx";
 import "./index.css";
+import { installAccentColor } from "./lib/accentColor";
 
 installFeedbackDiagnostics();
+installAccentColor();
 
 document.documentElement.dataset.platform = /mac/i.test(navigator.platform) ? "macos" : "other";
 

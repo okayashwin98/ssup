@@ -288,7 +288,7 @@ export function CloudShareButton({
 						<div className="space-y-2">
 							<div className="h-2 overflow-hidden rounded-full bg-foreground/10">
 								<div
-									className="h-full bg-[#2563EB] transition-all"
+									className="h-full bg-accent transition-all"
 									style={{ width: `${progress}%` }}
 								/>
 							</div>

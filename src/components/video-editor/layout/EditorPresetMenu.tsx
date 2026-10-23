@@ -105,7 +105,7 @@ export function EditorPresetMenu({ t, presets }: Props) {
 											>
 												<span className="truncate pr-3">{preset.name}</span>
 												{isActive ? (
-													<Check className="h-3.5 w-3.5 shrink-0 text-[#2563EB]" />
+													<Check className="h-3.5 w-3.5 shrink-0 text-accent" />
 												) : null}
 											</Button>
 											<Button

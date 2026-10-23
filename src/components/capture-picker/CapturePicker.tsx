@@ -241,7 +241,7 @@ export function CapturePicker() {
 						height: target.rect.height,
 						background: "rgba(10,132,255,0.16)",
 						boxShadow: "0 0 0 100vmax rgba(0,0,0,0.38)",
-						outline: "2px solid #0a84ff",
+						outline: "2px solid var(--accent)",
 						outlineOffset: -2,
 					}}
 				>
