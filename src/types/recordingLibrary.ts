@@ -10,6 +10,8 @@ export interface RecordingLibraryEntry {
 	bytes: number;
 	durationMs?: number;
 	url: string;
+	/** The project folder this file lives in; absent for loose files. */
+	folder?: string;
 }
 export interface RecordingImportResult {
 	path: string;

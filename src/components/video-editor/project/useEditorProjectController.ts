@@ -1,5 +1,5 @@
 import type { Dispatch, MutableRefObject, RefObject, SetStateAction } from "react";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import type { useI18n } from "@/contexts/I18nContext";
 import type { AspectRatio } from "@/utils/aspectRatioUtils";
 import { useAutoCaptionController } from "../captions/useAutoCaptionController";
@@ -177,6 +177,16 @@ export function useEditorProjectController(input: Input) {
 		setAutoCaptions: input.timeline.setAutoCaptions,
 		syncActiveVideoSource: lifecycle.syncActiveVideoSource,
 	});
+	// After a project's raw files move (new recording or rename), load the project's new paths.
+	const reloadProjectFromDisk = useCallback(
+		async (projectPath: string) => {
+			const result = await window.electronAPI.openProjectFileAtPath(projectPath);
+			if (!result.success || !result.project)
+				throw new Error(result.error || result.message || "Could not reload project");
+			await lifecycle.applyLoadedProject(result.project, result.path ?? projectPath);
+		},
+		[lifecycle.applyLoadedProject],
+	);
 	const saveActions = useProjectSaveActions({
 		project: input.project,
 		currentSourcePath: snapshot.currentSourcePath,
@@ -191,6 +201,7 @@ export function useEditorProjectController(input: Input) {
 		captureProjectThumbnail: input.captureProjectThumbnail,
 		refreshProjectLibrary: input.refreshProjectLibrary,
 		remountPreview: input.remountPreview,
+		reloadProjectFromDisk,
 	});
 	const openActions = useProjectOpenActions({
 		project: input.project,
@@ -209,6 +220,7 @@ export function useEditorProjectController(input: Input) {
 		applySessionPresentation: input.applySessionPresentation,
 		handleSaveProject: saveActions.handleSaveProject,
 		handleSaveProjectAs: saveActions.handleSaveProjectAs,
+		reloadProjectFromDisk,
 	});
 
 	return {

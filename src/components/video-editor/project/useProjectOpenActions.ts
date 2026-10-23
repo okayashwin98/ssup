@@ -33,6 +33,7 @@ type UseProjectOpenActionsInput = {
 	applySessionPresentation: (session: null) => void;
 	handleSaveProject: () => Promise<unknown>;
 	handleSaveProjectAs: () => Promise<unknown>;
+	reloadProjectFromDisk: (projectPath: string) => Promise<void>;
 };
 
 export function useProjectOpenActions({
@@ -51,6 +52,7 @@ export function useProjectOpenActions({
 	applySessionPresentation,
 	handleSaveProject,
 	handleSaveProjectAs,
+	reloadProjectFromDisk,
 }: UseProjectOpenActionsInput) {
 	const confirmReplaceSourceWithUnsavedChanges = useCallback(
 		async (_actionLabel: string) => {
@@ -228,25 +230,36 @@ export function useProjectOpenActions({
 		async (paths: string[]) => {
 			const result = await window.electronAPI.trashProjectFiles(paths);
 			if (project.currentProjectPath && result.deleted.includes(project.currentProjectPath)) {
+				// Its recordings went to Trash too, so close it rather than leave a dead preview.
 				project.setCurrentProjectPath(null);
 				project.setLastSavedSnapshot(null);
+				resetSourceScopedEditorState();
+				project.setVideoSourcePath(null);
+				project.setVideoPath(null);
+				await window.electronAPI.clearCurrentVideoPath();
 			}
 			await refreshProjectLibrary();
 			if (result.errors.length) toast.error(result.errors.join("\n"));
 			return result.deleted;
 		},
-		[project, refreshProjectLibrary],
+		[project, refreshProjectLibrary, resetSourceScopedEditorState],
 	);
 	const handleRenameLibraryProject = useCallback(
 		async (path: string, name: string) => {
+			const isOpen = project.currentProjectPath === path;
+			// Save first: the rename moves the project's recordings folder.
+			if (isOpen && hasUnsavedChanges) await saveProject(false, { silent: true });
 			const result = await window.electronAPI.renameLibraryProject(path, name);
 			if (!result.success || !result.path)
 				throw new Error(result.error || "Could not rename project");
-			if (project.currentProjectPath === path) project.setCurrentProjectPath(result.path);
+			if (isOpen) {
+				project.setCurrentProjectPath(result.path);
+				await reloadProjectFromDisk(result.path);
+			}
 			await refreshProjectLibrary();
 			return result.path;
 		},
-		[project, refreshProjectLibrary],
+		[project, refreshProjectLibrary, hasUnsavedChanges, saveProject, reloadProjectFromDisk],
 	);
 
 	return {

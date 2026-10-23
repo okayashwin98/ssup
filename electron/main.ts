@@ -62,6 +62,13 @@ import {
 	setHudOverlayRecordingActive,
 	showUpdateToastWindow,
 } from "./windows";
+import { writeProjectFileAtomically } from "./ipc/project/atomicSave";
+import { getProjectsDir, loadRecentProjectPaths } from "./ipc/project/manager";
+import {
+	migrateRecordingsIntoProjectFolders,
+	trashOrphanRecordings,
+} from "./ipc/project/migrateProjectFolders";
+import { getRecordingsDir } from "./ipc/utils";
 
 const electronMainDir = path.dirname(fileURLToPath(import.meta.url));
 const IS_SMOKE_EXPORT = process.env.RECORDLY_SMOKE_EXPORT === "1";
@@ -906,6 +913,34 @@ app.on("second-instance", (_event, commandLine) => {
 });
 
 // Register all IPC handlers when app is ready
+async function migrateProjectFolders() {
+	const recordingsDir = await getRecordingsDir();
+	const projectsDir = await getProjectsDir();
+	const trash = (filePath: string) => shell.trashItem(filePath);
+	const recent = await loadRecentProjectPaths().catch(() => [] as string[]);
+	const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+	const result = await migrateRecordingsIntoProjectFolders({
+		recordingsDir,
+		projectsDir,
+		backupDir: path.join(app.getPath("userData"), "backups", `recordings-before-folders-${stamp}`),
+		trash,
+		write: writeProjectFileAtomically,
+		extraProjectFiles: recent,
+	});
+	if (result) console.log("[project-folders] Migration:", JSON.stringify(result));
+	// Later on, loose recordings no project uses for a day go to Trash.
+	const projects = (await fs.readdir(projectsDir))
+		.filter((name) => name.endsWith(".recordly"))
+		.map((name) => path.join(projectsDir, name));
+	const swept = await trashOrphanRecordings({
+		recordingsDir,
+		projectFiles: [...projects, ...recent],
+		trash,
+		minAgeMs: 24 * 60 * 60 * 1000,
+	});
+	if (swept.length) console.log("[project-folders] Trashed unused recordings:", swept);
+}
+
 app.whenReady().then(async () => {
 	authCallbacks.startDevServer();
 	if (process.defaultApp && process.argv[1]) {
@@ -1023,6 +1058,10 @@ app.whenReady().then(async () => {
 			console.warn("[media-server] Failed to start media server:", error);
 		}),
 	]);
+	// Before any window opens: one-time move to one recordings folder per project.
+	await migrateProjectFolders().catch((error) =>
+		console.warn("[project-folders] Migration failed:", error),
+	);
 
 	registerIpcHandlers(
 		createEditorWindowWrapper,

@@ -22,8 +22,11 @@ function toFileSafeName(value: string) {
 		.replace(/\p{Cc}/gu, " ")
 		.replace(/\s+/g, " ")
 		.trim()
+		// A leading dot would hide the project's recordings folder.
+		.replace(/^\.+\s*/, "")
 		.slice(0, 80)
-		.trim();
+		// Same rule as typed names: no trailing dot or space.
+		.replace(/[. ]+$/, "");
 }
 
 /** Project name for a new recording, e.g. "Figma – Oct 23, 2026"; null for imported media. */

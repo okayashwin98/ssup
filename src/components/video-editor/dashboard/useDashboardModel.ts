@@ -74,7 +74,9 @@ export function useDashboardModel({
 					const folder = folders.find((f) => f.id === section);
 					return (
 						entry.updatedAt >= cutoff &&
-						entry.name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()) &&
+						`${entry.name} ${entry.rawSource?.folder ?? ""}`
+							.toLocaleLowerCase()
+							.includes(query.trim().toLocaleLowerCase()) &&
 						(!folder || folder.paths.includes(entry.path))
 					);
 				})

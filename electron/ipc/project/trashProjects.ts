@@ -1,13 +1,16 @@
 import path from "node:path";
 import fs from "node:fs/promises";
 import { getProjectBackupPath } from "./atomicSave";
+import { getProjectMediaToTrash } from "./projectMedia";
 
 type Dependencies = {
 	list: () => Promise<{ entries: Array<{ path: string }> }>;
 	trash: (path: string) => Promise<void>;
 	thumbnailPath: (path: string) => string;
+	/** When set, each project's raw recordings go to Trash with it unless another project uses them. */
+	recordingsDir?: string;
 };
-/** Only library project files may be trashed; referenced recordings are never touched. */
+/** Only library project files may be trashed, with the raw recordings only they use. */
 export async function trashLibraryProjects(paths: unknown, deps: Dependencies) {
 	if (
 		!Array.isArray(paths) ||
@@ -16,13 +19,22 @@ export async function trashLibraryProjects(paths: unknown, deps: Dependencies) {
 		paths.some((p) => typeof p !== "string")
 	)
 		throw new Error("Invalid project selection");
-	const allowed = new Set((await deps.list()).entries.map((e) => path.resolve(e.path)));
+	const libraryPaths = (await deps.list()).entries.map((e) => path.resolve(e.path));
+	const allowed = new Set(libraryPaths);
 	const selected = [...new Set((paths as string[]).map((p) => path.resolve(p)))];
 	if (selected.some((p) => !allowed.has(p))) throw new Error("Project is not in the library");
 	const deleted: string[] = [];
 	const errors: string[] = [];
+	const trashedMedia: string[] = [];
+	const remaining = libraryPaths.filter((p) => !selected.includes(p));
 	for (const projectPath of selected) {
 		try {
+			// Read what the project uses before its file goes to Trash.
+			const media = deps.recordingsDir
+				? await getProjectMediaToTrash(deps.recordingsDir, projectPath, remaining).catch(
+						() => [] as string[],
+					)
+				: [];
 			await deps.trash(projectPath);
 			deleted.push(projectPath);
 			for (const sidecar of [
@@ -37,9 +49,17 @@ export async function trashLibraryProjects(paths: unknown, deps: Dependencies) {
 						errors.push(`Could not trash project sidecar: ${sidecar}`);
 				}
 			}
+			for (const item of media) {
+				try {
+					await deps.trash(item);
+					trashedMedia.push(item);
+				} catch {
+					errors.push(`Could not trash recording: ${path.basename(item)}`);
+				}
+			}
 		} catch {
 			errors.push(`Could not trash ${path.basename(projectPath)}`);
 		}
 	}
-	return { deleted, errors };
+	return { deleted, errors, trashedMedia };
 }

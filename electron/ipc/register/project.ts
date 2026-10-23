@@ -3,6 +3,12 @@ import { renameLibraryProject } from "../project/renameLibraryProject";
 import { createUntitledProject } from "../project/createUntitledProject";
 import { buildRecordingProjectName } from "../project/recordingProjectName";
 import { trashLibraryProjects } from "../project/trashProjects";
+import {
+	assertProjectFolderRenameAllowed,
+	getProjectMediaFolder,
+	moveProjectMediaIntoFolder,
+	renameProjectMediaFolder,
+} from "../project/projectMedia";
 import { getRecordingThumbnail } from "../recording/thumbnail";
 import { listRecordings, setRecordingsRemoved } from "../recording/library";
 import { importRecording, discardRecordingImport } from "../recording/importRecording";
@@ -221,15 +227,58 @@ async function ensureNamedProjectSaveDoesNotOverwriteDifferentProject(
 	}
 }
 
+/** Keeps the main process's open recording in step with moved (or trashed: null) files. */
+function followMovedMedia(rename: (filePath: string) => string | null | undefined) {
+	const next = (value: string | null | undefined) => {
+		if (!value) return null;
+		const renamed = rename(path.resolve(value));
+		return renamed === undefined ? value : renamed;
+	};
+	if (currentVideoPath) setCurrentVideoPath(next(currentVideoPath));
+	if (currentRecordingSession) {
+		const videoPath = next(currentRecordingSession.videoPath);
+		setCurrentRecordingSession(
+			videoPath
+				? {
+						...currentRecordingSession,
+						videoPath,
+						webcamPath: next(currentRecordingSession.webcamPath),
+					}
+				: null,
+		);
+	}
+}
+
 export function registerProjectHandlers() {
 	ipcMain.handle("rename-library-project", async (_, source: string, name: string) => {
 		try {
 			const entries = await listProjectLibraryEntries();
+			const recordingsDir = await getRecordingsDir();
+			if (typeof name === "string" && typeof source === "string")
+				await assertProjectFolderRenameAllowed(
+					recordingsDir,
+					source,
+					path.join(path.dirname(source), `${name.trim()}${path.extname(source)}`),
+				);
 			const target = await renameLibraryProject(
 				source,
 				name,
 				entries.entries.map((entry) => entry.path),
 				(value) => [getProjectThumbnailPath(value), getProjectBackupPath(value)],
+			);
+			// The project's raw folder carries the project's name.
+			const oldFolder = getProjectMediaFolder(recordingsDir, source);
+			const newFolder = getProjectMediaFolder(recordingsDir, target);
+			await renameProjectMediaFolder(
+				recordingsDir,
+				source,
+				target,
+				writeProjectFileAtomically,
+			);
+			followMovedMedia((file) =>
+				file.startsWith(`${oldFolder}${path.sep}`)
+					? path.join(newFolder, path.relative(oldFolder, file))
+					: undefined,
 			);
 			if (currentProjectPath && normalizePath(currentProjectPath) === normalizePath(source))
 				setCurrentProjectPath(target);
@@ -720,13 +769,36 @@ export function registerProjectHandlers() {
 					) ?? undefined,
 				);
 				setCurrentProjectPath(target);
+				// A new recording's loose files move into the project's own folder.
+				const recordingsDir = await getRecordingsDir();
+				const folder = getProjectMediaFolder(recordingsDir, target);
+				const { moved } = await moveProjectMediaIntoFolder(
+					target,
+					recordingsDir,
+					writeProjectFileAtomically,
+				).catch((error) => {
+					console.warn("Could not move recording into its project folder", error);
+					return { moved: [] as string[] };
+				});
+				const movedSet = new Set(moved);
+				followMovedMedia((file) =>
+					movedSet.has(file) ? path.join(folder, path.basename(file)) : undefined,
+				);
+				for (const file of moved)
+					await rememberApprovedLocalReadPath(path.join(folder, path.basename(file)));
 				const warning = await persistRecentMetadata(() => rememberRecentProject(target));
 				try {
 					await saveProjectThumbnail(target, thumbnailDataUrl);
 				} catch (error) {
 					console.warn("Could not save project thumbnail", error);
 				}
-				return { success: true, path: target, projectId: prepared.projectId, warning };
+				return {
+					success: true,
+					path: target,
+					projectId: prepared.projectId,
+					warning,
+					relocated: moved.length > 0,
+				};
 			} catch (error) {
 				return { success: false, message: String(error) };
 			}
@@ -734,11 +806,21 @@ export function registerProjectHandlers() {
 	);
 	ipcMain.handle("trash-project-files", async (_, paths: unknown) => {
 		try {
+			const recordingsDir = await getRecordingsDir();
 			const result = await trashLibraryProjects(paths, {
 				list: listProjectLibraryEntries,
 				trash: (filePath) => shell.trashItem(filePath),
 				thumbnailPath: getProjectThumbnailPath,
+				recordingsDir,
 			});
+			const trashedMedia = new Set(result.trashedMedia);
+			followMovedMedia((file) =>
+				[...trashedMedia].some(
+					(item) => file === item || file.startsWith(`${item}${path.sep}`),
+				)
+					? null
+					: undefined,
+			);
 			if (currentProjectPath && result.deleted.includes(path.resolve(currentProjectPath)))
 				setCurrentProjectPath(null);
 			const warning = await persistRecentMetadata(async () =>

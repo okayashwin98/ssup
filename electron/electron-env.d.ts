@@ -878,6 +878,8 @@ interface Window {
 			success: boolean;
 			path?: string;
 			projectId?: string;
+			/** The recording's files moved into the project's folder; reload the project. */
+			relocated?: boolean;
 			message?: string;
 			canceled?: boolean;
 		}>;
@@ -887,7 +889,12 @@ interface Window {
 		) => Promise<{ success: boolean; path?: string; error?: string }>;
 		trashProjectFiles: (
 			paths: string[],
-		) => Promise<{ success: boolean; deleted: string[]; errors: string[] }>;
+		) => Promise<{
+			success: boolean;
+			deleted: string[];
+			errors: string[];
+			trashedMedia?: string[];
+		}>;
 		onProjectThumbnailReady: (
 			callback: (ready: { path: string; thumbnailPath: string; updatedAt: number }) => void,
 		) => () => void;

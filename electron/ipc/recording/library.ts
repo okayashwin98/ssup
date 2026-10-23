@@ -6,6 +6,7 @@ import { buildMediaUrl, getMediaServerBaseUrl } from "../../mediaServer";
 import { rememberApprovedLocalReadPath } from "../project/manager";
 import { getRecordingsDir } from "../utils";
 import { getCachedMediaDurationMs } from "./mediaDuration";
+import { belongsToRecording } from "./recordingFiles";
 import type { RecordingLibraryEntry } from "../../../src/types/recordingLibrary";
 
 let mutation = Promise.resolve();
@@ -31,20 +32,37 @@ export function listRecordings(includeSources = false): Promise<RecordingLibrary
 			}
 		}
 		const result: RecordingLibraryEntry[] = [];
+		const isListed = (name: string) =>
+			includeSources
+				? /\.(mp4|mov|webm|mkv|m4v|wav|m4a|mp3|ogg|flac)$/i.test(name)
+				: isRecording(name);
+		// Loose files plus one level of project folders (never the Projects folder or hidden ones).
+		const locations: Array<{ dir: string; folder?: string }> = [{ dir: root }];
 		for (const entry of entries) {
-			if (!entry.isFile() || !(includeSources ? /\.(mp4|mov|webm|mkv|m4v|wav|m4a|mp3|ogg|flac)$/i.test(entry.name) : isRecording(entry.name))) continue;
-			const filePath = path.join(root, entry.name);
-			const stat = await fs.stat(filePath);
-			if (!stat.size) continue;
-			await rememberApprovedLocalReadPath(filePath);
-			result.push({
-				path: filePath,
-				name: entry.name,
-				bytes: stat.size,
-				durationMs: await getCachedMediaDurationMs(filePath, stat),
-				createdAt: stat.mtimeMs,
-				url: buildMediaUrl(server, filePath),
-			});
+			if (entry.isDirectory() && !entry.name.startsWith(".") && entry.name !== "Projects")
+				locations.push({ dir: path.join(root, entry.name), folder: entry.name });
+		}
+		for (const location of locations) {
+			const files =
+				location.dir === root
+					? entries
+					: await fs.readdir(location.dir, { withFileTypes: true }).catch(() => []);
+			for (const entry of files) {
+				if (!entry.isFile() || !isListed(entry.name)) continue;
+				const filePath = path.join(location.dir, entry.name);
+				const stat = await fs.stat(filePath);
+				if (!stat.size) continue;
+				await rememberApprovedLocalReadPath(filePath);
+				result.push({
+					path: filePath,
+					name: entry.name,
+					bytes: stat.size,
+					durationMs: await getCachedMediaDurationMs(filePath, stat),
+					createdAt: stat.mtimeMs,
+					url: buildMediaUrl(server, filePath),
+					...(location.folder ? { folder: location.folder } : {}),
+				});
+			}
 		}
 		return result.sort((a, b) => b.createdAt - a.createdAt);
 	});
@@ -53,22 +71,6 @@ export function listRecordings(includeSources = false): Promise<RecordingLibrary
 		() => undefined,
 	);
 	return task;
-}
-
-// Only capture sidecars belonging to this exact recording, never adjacent recordings or projects.
-function belongsToRecording(name: string, video: string) {
-	const stem = video.slice(0, -path.extname(video).length);
-	return (
-		name === video ||
-		name === `${video}.cursor.json` ||
-		(name.startsWith(`${stem}.`) &&
-			/\.(?:system|mic|microphone|audio|webcam)\.(?:wav|webm|mp4|m4a)(?:\.json)?$/i.test(
-				name,
-			)) ||
-		name === `${stem}.recordly-session.json` ||
-		name === `${stem}.recording-session.json` ||
-		(name.startsWith(`${stem}-webcam.`) && /\.(?:mp4|webm|mov|mkv|avi)$/i.test(name))
-	);
 }
 
 /** Stage a bundle by rename for Undo; the next removal or app exit sends it to Trash. */

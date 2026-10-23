@@ -3,7 +3,9 @@ import { SharedRecordings } from "../cloud/SharedRecordings";
 import { CLOUD_SHARE_ENDPOINT } from "../cloud/endpoint";
 import { RecordNewButton } from "./RecordNewButton";
 import { RawPreview } from "./RawRecordings";
-import { Cloud, ImageSquare } from "@/components/ui/icons";
+import { useEffect, useState } from "react";
+import { ArrowLeft, Cloud, ImageSquare } from "@/components/ui/icons";
+import { RawFolderCard } from "./RawFolderCard";
 
 import { Button } from "@/components/ui/button";
 
@@ -74,9 +76,54 @@ export function DashboardGrid({
 	| "deleteEntries"
 	| "run"
 >) {
+	// Raw shows one card per project folder; opening a folder lists its files.
+	const [rawFolder, setRawFolder] = useState<string | null>(null);
+	useEffect(() => {
+		if (!isRaw) setRawFolder(null);
+	}, [isRaw]);
+	const folderOf = (entry: (typeof visible)[number]) => entry.rawSource?.folder ?? null;
+	const rawFolders = new Map<string, typeof visible>();
+	if (isRaw && !rawFolder)
+		for (const entry of visible) {
+			const folder = folderOf(entry);
+			if (folder) rawFolders.set(folder, [...(rawFolders.get(folder) ?? []), entry]);
+		}
+	const cards = isRaw ? visible.filter((entry) => folderOf(entry) === rawFolder) : visible;
+	const renderCard = (entry: (typeof visible)[number]) => (
+		<ProjectCard
+			key={entry.path}
+			onDelete={() => void deleteEntries([entry.path])}
+			{...{
+				entry,
+				busy,
+				selecting,
+				selected,
+				toggleSelected,
+				openEntry,
+				run,
+				onShareProject,
+				onRenameProject,
+				folders,
+				save,
+				assignFolder,
+			}}
+		/>
+	);
 	return (
 		<>
 			<main className="custom-scrollbar min-h-0 flex-1 overflow-y-auto px-7 pb-10 lg:px-10">
+				{isRaw && rawFolder && (
+					<Button
+						variant="ghost"
+						size="sm"
+						className="mb-6 -ml-3 gap-2 text-[13px]"
+						onClick={() => setRawFolder(null)}
+					>
+						<ArrowLeft className="size-4" />
+						<span className="text-muted-foreground">Raw /</span>
+						<span className="font-medium">{rawFolder}</span>
+					</Button>
+				)}
 				{error && (
 					<p role="alert" className="mb-4 text-sm text-danger">
 						{error}
@@ -111,31 +158,26 @@ export function DashboardGrid({
 					)
 				) : (isRaw ? rawLoading : loading) ? (
 					<LibrarySkeleton />
-				) : visible.length ? (
+				) : cards.length || rawFolders.size ? (
 					<ul
-						aria-label={isRaw ? "Raw files" : "Your projects"}
+						aria-label={
+							isRaw
+								? rawFolder
+									? `Files in ${rawFolder}`
+									: "Raw files"
+								: "Your projects"
+						}
 						className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,280px),1fr))] gap-x-7 gap-y-10 lg:gap-x-9"
 					>
-						{visible.map((entry) => (
-							<ProjectCard
-								key={entry.path}
-								onDelete={() => void deleteEntries([entry.path])}
-								{...{
-									entry,
-									busy,
-									selecting,
-									selected,
-									toggleSelected,
-									openEntry,
-									run,
-									onShareProject,
-									onRenameProject,
-									folders,
-									save,
-									assignFolder,
-								}}
+						{[...rawFolders].map(([name, entries]) => (
+							<RawFolderCard
+								key={name}
+								name={name}
+								entries={entries}
+								onOpen={() => setRawFolder(name)}
 							/>
 						))}
+						{cards.map(renderCard)}
 					</ul>
 				) : (
 					<div className="flex h-64 flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
