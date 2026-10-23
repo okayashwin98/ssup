@@ -16,7 +16,11 @@ if (read("CFBundleName") === productName && read("CFBundleDisplayName") === prod
 for (const key of ["CFBundleName", "CFBundleDisplayName"])
 	spawnSync("/usr/libexec/PlistBuddy", ["-c", `Set :${key} ${productName}`, plist], { stdio: "inherit" });
 // Editing Info.plist breaks the bundle's ad-hoc signature; sign it again so macOS will launch it.
-spawnSync("codesign", ["--force", "--deep", "--sign", "-", app], { stdio: "inherit" });
+const signed = spawnSync("codesign", ["--force", "--deep", "--sign", "-", app], { stdio: "inherit" });
+if (signed.status !== 0) {
+	console.error("[brand-dev-electron] Could not re-sign the development app after renaming it.");
+	process.exit(1);
+}
 spawnSync(
 	"/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister",
 	["-f", app],

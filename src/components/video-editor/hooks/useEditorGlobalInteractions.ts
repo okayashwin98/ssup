@@ -61,6 +61,8 @@ export function useEditorGlobalInteractions({
 			if (event.defaultPrevented || event.isComposing) return;
 			const target = event.target as HTMLElement | null;
 			if (target?.closest?.("[data-recording-library]")) return;
+			// Controls in a dialog or menu over the editor keep their own keys.
+			if (target?.closest?.('[role="dialog"], [role="alertdialog"], [role="menu"]')) return;
 			// Only typing keeps Space; sliders, switches and buttons must not swallow play/pause.
 			const editable =
 				(target instanceof HTMLInputElement && !NON_TEXT_INPUT_TYPES.has(target.type)) ||

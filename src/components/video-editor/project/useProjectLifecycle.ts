@@ -323,6 +323,8 @@ export function useProjectLifecycle(input: Input) {
 		const current = inputRef.current;
 		const { timeline, refs } = current;
 		timeline.setZoomRegions([]);
+		// Zooms on/off belongs to a project; a new recording starts with zooms on.
+		current.appearance.setZoomsEnabled(true);
 		timeline.setTrimRegions([]);
 		timeline.setClipRegions([]);
 		refs.clipInitializedRef.current = false;

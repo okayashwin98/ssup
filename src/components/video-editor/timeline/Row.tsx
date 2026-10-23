@@ -58,7 +58,7 @@ export default function Row({
 							pointerEvents: "none" as const,
 						}
 					: {}),
-				...(disabled ? { opacity: 0.35, pointerEvents: "none" as const } : {}),
+				...(disabled ? { opacity: 0.35 } : {}),
 				marginBottom: 2,
 				flexGrow: 0,
 				flexShrink: 0,
