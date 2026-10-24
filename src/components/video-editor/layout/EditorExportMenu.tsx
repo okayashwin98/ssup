@@ -24,6 +24,8 @@ type Props = {
 	exportDimensions: ReturnType<typeof useExportDimensions>;
 	exportStatus: ReturnType<typeof useExportStatusViewModel>;
 	hasCaptionsForSidecar: boolean;
+	/** The editor's captions, timed to the export, for the share page's CC. */
+	shareCaptionCues?: Array<{ startMs: number; endMs: number; text: string }>;
 	nvidiaCudaExportAvailable: boolean;
 	experimentalNvidiaCudaExport: boolean;
 	setExperimentalNvidiaCudaExport: (enabled: boolean) => void;
@@ -77,6 +79,7 @@ export function EditorExportMenu(props: Props) {
 		exportDimensions,
 		exportStatus,
 		hasCaptionsForSidecar,
+		shareCaptionCues,
 		nvidiaCudaExportAvailable,
 		experimentalNvidiaCudaExport,
 		setExperimentalNvidiaCudaExport,
@@ -250,7 +253,7 @@ export function EditorExportMenu(props: Props) {
 											authToken={props.authToken}
 											accountId={props.accountId}
 											onBusyChange={setShareBusy}
-											subtitles={!hasCaptionsForSidecar}
+											captionCues={shareCaptionCues}
 											onRequestSignIn={() => {
 												setShowExportDropdown(false);
 												props.onRequestShareSignIn();

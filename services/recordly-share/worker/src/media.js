@@ -295,6 +295,7 @@ export async function withOGHead(request, env, shareCode, page) {
   if (!video || !(page.headers.get('Content-Type') || '').includes('text/html')) return page;
 
   const head = ogHead(video, new URL(request.url).origin, shareCode);
+  // biome-ignore lint/correctness/noUndeclaredVariables: HTMLRewriter is a Workers runtime global.
   return new HTMLRewriter()
     .on('title', { element: (el) => el.setInnerContent(head.title, { html: true }) })
     .on('head', { element: (el) => el.append(head.tags, { html: true }) })

@@ -1,7 +1,13 @@
+import { execFile } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { promisify } from "node:util";
+import ffmpegStatic from "ffmpeg-static";
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("../ffmpeg/binary", () => ({ getFfmpegBinaryPath: () => ffmpegStatic }));
+
 import {
 	parseCaptionSidecarPayload,
 	serializeSrt,
@@ -52,6 +58,7 @@ describe("exportCaptionSidecars", () => {
 		).toEqual({
 			format: "both",
 			cues: [{ startMs: 0, endMs: 1000, text: "ok" }],
+			embed: false,
 		});
 	});
 
@@ -102,7 +109,7 @@ describe("exportCaptionSidecars", () => {
 				wroteAny: false,
 				error: "disk full",
 			}),
-		).toBe("Video exported successfully Captions could not be saved alongside the video.");
+		).toBe("Video exported successfully Captions could not be added to the video.");
 
 		expect(
 			withCaptionSidecarMessage("Video exported successfully", {
@@ -110,5 +117,54 @@ describe("exportCaptionSidecars", () => {
 				error: null,
 			}),
 		).toBe("Video exported successfully");
+	});
+
+	it("stores captions inside an MP4 as an on/off subtitle track, without side files", async () => {
+		const run = promisify(execFile);
+		const ffmpeg = ffmpegStatic as unknown as string;
+		const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "recordly-embed-captions-"));
+		const videoPath = path.join(tempDir, "export.mp4");
+		try {
+			await run(ffmpeg, [
+				"-v",
+				"error",
+				"-f",
+				"lavfi",
+				"-i",
+				"testsrc=size=320x180:rate=30",
+				"-f",
+				"lavfi",
+				"-i",
+				"sine=frequency=440:sample_rate=48000",
+				"-t",
+				"2",
+				"-c:v",
+				"libx264",
+				"-pix_fmt",
+				"yuv420p",
+				"-c:a",
+				"aac",
+				videoPath,
+			]);
+
+			await expect(
+				writeCaptionSidecarsBestEffort(videoPath, {
+					format: "none",
+					embed: true,
+					language: "en",
+					cues: [{ startMs: 100, endMs: 1500, text: "Hello there" }],
+				}),
+			).resolves.toEqual({ wroteAny: true, error: null });
+
+			const probe = await run(ffmpeg, ["-hide_banner", "-i", videoPath]).catch(
+				(error: { stderr: string }) => ({ stderr: error.stderr }),
+			);
+			expect(probe.stderr).toMatch(/\(eng\): Subtitle: mov_text/);
+			expect(probe.stderr).toMatch(/Video: h264/);
+			expect(probe.stderr).toMatch(/Audio: aac/);
+			expect(await fs.readdir(tempDir)).toEqual(["export.mp4"]);
+		} finally {
+			await fs.rm(tempDir, { recursive: true, force: true });
+		}
 	});
 });

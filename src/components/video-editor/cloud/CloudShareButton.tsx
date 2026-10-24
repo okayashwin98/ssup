@@ -41,8 +41,8 @@ type Props = {
 	inline?: boolean;
 	onBusyChange?: (busy: boolean) => void;
 	onRequestSignIn?: () => void;
-	/** Off when the editor already draws captions into the video. */
-	subtitles?: boolean;
+	/** The editor's captions for the CC subtitles; the video is transcribed without them. */
+	captionCues?: Array<{ startMs: number; endMs: number; text: string }>;
 };
 
 export function CloudShareButton({
@@ -60,7 +60,7 @@ export function CloudShareButton({
 	inline = false,
 	onBusyChange,
 	onRequestSignIn,
-	subtitles = true,
+	captionCues,
 }: Props) {
 	const { t } = useI18n();
 	const [internalOpen, setInternalOpen] = useState(false);
@@ -211,7 +211,8 @@ export function CloudShareButton({
 				title: projectTitle,
 				notes: notes.trim() || undefined,
 				uploadId: nextUploadId,
-				subtitles,
+				subtitles: true,
+				captionCues,
 				...loadLocalProfile(),
 			});
 			if (!isCurrentAccount()) return;
@@ -238,7 +239,7 @@ export function CloudShareButton({
 			setUploadId(undefined);
 			activeUploadId.current = undefined;
 		}
-	}, [projectPath, authToken, filePath, notes, prepareFile, projectTitle, subtitles, t]);
+	}, [projectPath, authToken, filePath, notes, prepareFile, projectTitle, captionCues, t]);
 
 	const handleCancel = useCallback(async () => {
 		cancelRequestedRef.current = true;

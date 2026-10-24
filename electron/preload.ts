@@ -495,7 +495,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		fileName: string;
 		outputPath?: string | null;
 		captionSidecar?: {
-			format: "srt" | "vtt" | "both";
+			format: "srt" | "vtt" | "both" | "none";
+			/** Also store the captions inside the MP4 as an on/off subtitle track. */
+			embed?: boolean;
+			language?: string;
 			cues: Array<{
 				startMs: number;
 				endMs: number;
@@ -708,7 +711,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		videoData: ArrayBuffer,
 		fileName: string,
 		captionSidecar?: {
-			format: "srt" | "vtt" | "both";
+			format: "srt" | "vtt" | "both" | "none";
+			/** Also store the captions inside the MP4 as an on/off subtitle track. */
+			embed?: boolean;
+			language?: string;
 			cues: Array<{
 				startMs: number;
 				endMs: number;
@@ -722,7 +728,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		videoData: ArrayBuffer,
 		outputPath: string,
 		captionSidecar?: {
-			format: "srt" | "vtt" | "both";
+			format: "srt" | "vtt" | "both" | "none";
+			/** Also store the captions inside the MP4 as an on/off subtitle track. */
+			embed?: boolean;
+			language?: string;
 			cues: Array<{
 				startMs: number;
 				endMs: number;
@@ -1045,6 +1054,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		notes?: string;
 		uploadId?: string;
 		subtitles?: boolean;
+		captionCues?: Array<{ startMs: number; endMs: number; text: string }>;
 		avatarDataUrl?: string | null;
 		name?: string;
 	}) => ipcRenderer.invoke("cloud-share-upload", input),

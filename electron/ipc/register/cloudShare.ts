@@ -8,13 +8,14 @@ import {
 	normalizeCloudEndpoint,
 	parseCloudRecordingList,
 	parseCloudShareTicket,
+	parseEditorCaptionSegments,
 } from "../cloudShareContract";
 import { isOwnedExportPath } from "../export/exportStream";
 import { getFfmpegBinaryPath } from "../ffmpeg/binary";
 import { probeNativeVideoMetadata } from "../ffmpeg/metadata";
 import { isAllowedLocalReadPath } from "../project/manager";
 import { renderShareCard } from "../recording/shareCard";
-import { createShareSubtitles } from "../recording/shareSubtitles";
+import { createShareSubtitles, type ShareSubtitleSegment } from "../recording/shareSubtitles";
 import { createShareThumbnail } from "../recording/shareThumbnail";
 
 const MAX_CONTROL_RESPONSE_BYTES = 1024 * 1024;
@@ -279,6 +280,21 @@ async function removeStaleSubtitleCopies() {
 	}
 }
 
+async function postShareSubtitles(
+	segments: ShareSubtitleSegment[],
+	metadataUrl: URL,
+	token: string,
+) {
+	const response = await fetch(metadataUrl, {
+		method: "POST",
+		headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+		body: JSON.stringify({ segments }),
+		redirect: "error",
+		signal: AbortSignal.timeout(60_000),
+	});
+	if (!response.ok) throw new Error(`Subtitle upload failed (${response.status})`);
+}
+
 async function publishShareSubtitles(videoPath: string, metadataUrl: URL, token: string) {
 	// Work on a private copy: the share dialog deletes its temporary export when closed.
 	const copyPath = path.join(
@@ -291,14 +307,7 @@ async function publishShareSubtitles(videoPath: string, metadataUrl: URL, token:
 		void removeStaleSubtitleCopies();
 		const segments = await createShareSubtitles(copyPath);
 		if (!segments) return;
-		const response = await fetch(metadataUrl, {
-			method: "POST",
-			headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
-			body: JSON.stringify({ segments }),
-			redirect: "error",
-			signal: AbortSignal.timeout(60_000),
-		});
-		if (!response.ok) throw new Error(`Subtitle upload failed (${response.status})`);
+		await postShareSubtitles(segments, metadataUrl, token);
 	} catch (error) {
 		console.warn("Shared video subtitles unavailable:", error);
 	} finally {
@@ -483,6 +492,8 @@ export function registerCloudShareHandlers() {
 				notes?: unknown;
 				uploadId?: unknown;
 				subtitles?: unknown;
+				/** The editor's captions; used for the subtitles instead of transcribing. */
+				captionCues?: unknown;
 				avatarDataUrl?: unknown;
 				name?: unknown;
 			},
@@ -690,12 +701,20 @@ export function registerCloudShareHandlers() {
 				}
 
 				if (ticket.shareCode && input.subtitles === true) {
-					// The link is ready now; subtitles follow once the speech model finishes.
-					void publishShareSubtitles(
-						resolvedPath,
-						new URL(`/api/metadata/${ticket.shareCode}`, endpointOrigin),
-						token,
+					const metadataUrl = new URL(
+						`/api/metadata/${ticket.shareCode}`,
+						endpointOrigin,
 					);
+					const editorSegments = parseEditorCaptionSegments(input.captionCues);
+					if (editorSegments) {
+						// Captions written or corrected in the editor become the subtitles as they are.
+						void postShareSubtitles(editorSegments, metadataUrl, token).catch((error) =>
+							console.warn("Shared video subtitles unavailable:", error),
+						);
+					} else {
+						// The link is ready now; subtitles follow once the speech model finishes.
+						void publishShareSubtitles(resolvedPath, metadataUrl, token);
+					}
 				}
 
 				return { success: true, uploadId, shareUrl: ticket.shareUrl };

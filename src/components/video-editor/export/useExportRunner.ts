@@ -358,10 +358,15 @@ export function useExportRunner(input: ExportRunnerInput) {
 							}
 							throw new Error("Could not prepare the video for sharing.");
 						}
-						const sidecarForThisExport =
-							settings.includeCaptionSidecar && captionSidecarPayload
-								? captionSidecarPayload
-								: undefined;
+						// The captions always go inside the MP4; .srt/.vtt files only when asked for.
+						const sidecarForThisExport = captionSidecarPayload
+							? {
+									...captionSidecarPayload,
+									format: settings.includeCaptionSidecar
+										? ("both" as const)
+										: ("none" as const),
+								}
+							: undefined;
 						markExportAsSaving();
 
 						let saveResult: {

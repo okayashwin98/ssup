@@ -594,7 +594,10 @@ interface Window {
 			fileName: string;
 			outputPath?: string | null;
 			captionSidecar?: {
-				format: "srt" | "vtt" | "both";
+				format: "srt" | "vtt" | "both" | "none";
+				/** Also store the captions inside the MP4 as an on/off subtitle track. */
+				embed?: boolean;
+				language?: string;
 				cues: Array<{
 					startMs: number;
 					endMs: number;
@@ -674,7 +677,10 @@ interface Window {
 			videoData: ArrayBuffer,
 			fileName: string,
 			captionSidecar?: {
-				format: "srt" | "vtt" | "both";
+				format: "srt" | "vtt" | "both" | "none";
+				/** Also store the captions inside the MP4 as an on/off subtitle track. */
+				embed?: boolean;
+				language?: string;
 				cues: Array<{
 					startMs: number;
 					endMs: number;
@@ -686,7 +692,10 @@ interface Window {
 			videoData: ArrayBuffer,
 			outputPath: string,
 			captionSidecar?: {
-				format: "srt" | "vtt" | "both";
+				format: "srt" | "vtt" | "both" | "none";
+				/** Also store the captions inside the MP4 as an on/off subtitle track. */
+				embed?: boolean;
+				language?: string;
 				cues: Array<{
 					startMs: number;
 					endMs: number;
@@ -981,8 +990,10 @@ interface Window {
 			title?: string;
 			notes?: string;
 			uploadId?: string;
-			/** Transcribe the shared video and add web subtitles afterwards. */
+			/** Add web subtitles (CC) the viewer can turn on or off. */
 			subtitles?: boolean;
+			/** The editor's captions, timed to the export; transcribed when absent. */
+			captionCues?: Array<{ startMs: number; endMs: number; text: string }>;
 			/** Owner's photo and name for the link-preview image. */
 			avatarDataUrl?: string | null;
 			name?: string;

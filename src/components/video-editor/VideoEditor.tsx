@@ -140,11 +140,20 @@ export default function VideoEditor() {
 		onEnabled: enableModernExportPipeline,
 	});
 	const hasCaptionsForSidecar = autoCaptionSettings.enabled && autoCaptions.length > 0;
+	// MP4s always carry the captions as an on/off subtitle track; the .srt/.vtt
+	// files next to the video stay optional.
 	const captionSidecarPayload =
-		hasCaptionsForSidecar && captionSidecarCues.length > 0 && includeCaptionSidecar
+		hasCaptionsForSidecar && captionSidecarCues.length > 0
 			? {
-					format: "both" as const,
+					format: includeCaptionSidecar ? ("both" as const) : ("none" as const),
 					cues: captionSidecarCues,
+					embed: true,
+					// A track of unknown language plays its captions automatically in
+					// QuickTime, so "auto" is labelled with the Mac's language.
+					language:
+						autoCaptionSettings.language === "auto"
+							? navigator.language
+							: autoCaptionSettings.language,
 				}
 			: undefined;
 	const { shortcuts, isMac } = useShortcuts();
@@ -396,6 +405,7 @@ export default function VideoEditor() {
 			settingsPanelProps={settingsPanelProps}
 			headerLeftControlsPaddingClass={headerLeftControlsPaddingClass}
 			hasCaptionsForSidecar={hasCaptionsForSidecar}
+			shareCaptionCues={captionSidecarPayload?.cues}
 			nvidiaCudaExportAvailable={nvidiaCudaExportAvailable}
 			experimentalNvidiaCudaExport={experimentalNvidiaCudaExport}
 			setExperimentalNvidiaCudaExport={setExperimentalNvidiaCudaExport}

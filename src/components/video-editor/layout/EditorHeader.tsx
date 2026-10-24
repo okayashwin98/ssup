@@ -43,6 +43,8 @@ type Props = {
 	exportDimensions: ReturnType<typeof useExportDimensions>;
 	exportStatus: ReturnType<typeof useExportStatusViewModel>;
 	hasCaptionsForSidecar: boolean;
+	/** The editor's captions, timed to the export, for the share page's CC. */
+	shareCaptionCues?: Array<{ startMs: number; endMs: number; text: string }>;
 	nvidiaCudaExportAvailable: boolean;
 	experimentalNvidiaCudaExport: boolean;
 	setExperimentalNvidiaCudaExport: (enabled: boolean) => void;
@@ -81,6 +83,7 @@ export function EditorHeader(props: Props) {
 		exportDimensions,
 		exportStatus,
 		hasCaptionsForSidecar,
+		shareCaptionCues,
 		nvidiaCudaExportAvailable,
 		experimentalNvidiaCudaExport,
 		setExperimentalNvidiaCudaExport,
@@ -222,6 +225,7 @@ export function EditorHeader(props: Props) {
 					exportDimensions={exportDimensions}
 					exportStatus={exportStatus}
 					hasCaptionsForSidecar={hasCaptionsForSidecar}
+					shareCaptionCues={shareCaptionCues}
 					nvidiaCudaExportAvailable={nvidiaCudaExportAvailable}
 					experimentalNvidiaCudaExport={experimentalNvidiaCudaExport}
 					setExperimentalNvidiaCudaExport={setExperimentalNvidiaCudaExport}

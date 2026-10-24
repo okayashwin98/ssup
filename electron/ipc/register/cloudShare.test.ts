@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
 	normalizeCloudEndpoint,
 	parseCloudShareTicket,
+	parseEditorCaptionSegments,
 	parseCloudRecordingList,
 } from "../cloudShareContract";
 
@@ -193,5 +194,26 @@ describe("configured personal share endpoint", () => {
 			insecure.normalizeCloudEndpoint("http://insecure.example.com/api/upload"),
 		).toThrow();
 		vi.unstubAllEnvs();
+	});
+});
+
+describe("share subtitles from editor captions", () => {
+	it("keeps the edited text and timing, in seconds, and drops unusable cues", () => {
+		expect(
+			parseEditorCaptionSegments([
+				{ startMs: 500, endMs: 4000, text: "Edited  caption\none" },
+				{ startMs: 5000, endMs: 4000, text: "backwards" },
+				{ startMs: 6000, endMs: 7000, text: "   " },
+				{ startMs: 8000, endMs: 9500, text: "Two" },
+			]),
+		).toEqual([
+			{ startTime: 0.5, endTime: 4, text: "Edited caption one" },
+			{ startTime: 8, endTime: 9.5, text: "Two" },
+		]);
+	});
+
+	it("falls back to transcription when there are no captions", () => {
+		expect(parseEditorCaptionSegments(undefined)).toBeNull();
+		expect(parseEditorCaptionSegments([])).toBeNull();
 	});
 });

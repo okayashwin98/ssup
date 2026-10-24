@@ -50,6 +50,8 @@ type Props = {
 	settingsPanelProps: ComponentProps<typeof SettingsPanel>;
 	headerLeftControlsPaddingClass: string;
 	hasCaptionsForSidecar: boolean;
+	/** The editor's captions, timed to the export, for the share page's CC. */
+	shareCaptionCues?: Array<{ startMs: number; endMs: number; text: string }>;
 	nvidiaCudaExportAvailable: boolean;
 	experimentalNvidiaCudaExport: boolean;
 	setExperimentalNvidiaCudaExport: (enabled: boolean) => void;
@@ -92,6 +94,7 @@ export function EditorShell(props: Props) {
 		settingsPanelProps,
 		headerLeftControlsPaddingClass,
 		hasCaptionsForSidecar,
+		shareCaptionCues,
 		nvidiaCudaExportAvailable,
 		experimentalNvidiaCudaExport,
 		setExperimentalNvidiaCudaExport,
@@ -281,6 +284,7 @@ export function EditorShell(props: Props) {
 				exportDimensions={exportDimensions}
 				exportStatus={exportStatus}
 				hasCaptionsForSidecar={hasCaptionsForSidecar}
+				shareCaptionCues={shareCaptionCues}
 				nvidiaCudaExportAvailable={nvidiaCudaExportAvailable}
 				experimentalNvidiaCudaExport={experimentalNvidiaCudaExport}
 				setExperimentalNvidiaCudaExport={setExperimentalNvidiaCudaExport}

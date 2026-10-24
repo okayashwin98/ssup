@@ -59,7 +59,9 @@ export function buildExportRenderOptions({
 			appearance.resolvedWebcamVideoUrl ??
 			(appearance.webcam.sourcePath ? toFileUrl(appearance.webcam.sourcePath) : null),
 		annotationRegions: timeline.annotationRegions,
-		autoCaptions: timeline.autoCaptions,
+		// Captions are never drawn into the picture: MP4s carry them as a
+		// subtitle track and share links as CC, so viewers can turn them off.
+		autoCaptions: [],
 		autoCaptionSettings: timeline.autoCaptionSettings,
 		zoomRegions: effectiveZoomRegions,
 		cursorTelemetry: effectiveCursorTelemetry,

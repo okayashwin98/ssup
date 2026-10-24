@@ -3,7 +3,10 @@ export interface PendingExportSave {
 	arrayBuffer?: ArrayBuffer;
 	tempFilePath?: string;
 	captionSidecar?: {
-		format: "srt" | "vtt" | "both";
+		format: "srt" | "vtt" | "both" | "none";
+		/** Also store the captions inside the MP4 as an on/off subtitle track. */
+		embed?: boolean;
+		language?: string;
 		cues: Array<{
 			startMs: number;
 			endMs: number;

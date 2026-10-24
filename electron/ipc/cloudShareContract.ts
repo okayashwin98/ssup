@@ -132,3 +132,27 @@ export function parseCloudRecordingList(data: unknown, endpoint: string) {
 		};
 	});
 }
+
+/** The editor's own captions, already timed to the exported video, as share subtitles. */
+export function parseEditorCaptionSegments(
+	cues: unknown,
+): Array<{ startTime: number; endTime: number; text: string }> | null {
+	if (!Array.isArray(cues)) return null;
+	const segments = cues
+		.filter(
+			(cue) =>
+				typeof cue?.startMs === "number" &&
+				typeof cue?.endMs === "number" &&
+				typeof cue?.text === "string" &&
+				Number.isFinite(cue.startMs) &&
+				Number.isFinite(cue.endMs) &&
+				cue.endMs > cue.startMs &&
+				cue.text.trim().length > 0,
+		)
+		.map((cue) => ({
+			startTime: Math.max(0, cue.startMs) / 1000,
+			endTime: cue.endMs / 1000,
+			text: cue.text.replace(/\s+/g, " ").trim(),
+		}));
+	return segments.length ? segments : null;
+}
