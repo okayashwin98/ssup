@@ -209,51 +209,37 @@ export async function handleShareData(request, env, shareCode) {
   });
 }
 
-// --- OG Page (bot-only, minimal HTML with meta tags) ---
+// --- OG Page (minimal HTML with meta tags) ---
 
-export async function handleOGPage(request, env, shareCode) {
+async function loadOGVideo(env, shareCode) {
   const video = await env.DB.prepare(
     "SELECT * FROM videos WHERE share_code = ? AND upload_completed = 1"
   ).bind(shareCode).first();
+  if (!video) return null;
+  if (new Date(video.expires_at + 'Z') < new Date()) return null;
+  return video;
+}
 
-  if (!video) return new Response('Not found', { status: 404 });
-
-  const isExpired = new Date(video.expires_at + 'Z') < new Date();
-  if (isExpired) return new Response('Not found', { status: 404 });
-
-  const baseUrl = new URL(request.url).origin;
-
-  // Don't leak title/summary/thumbnail of password-protected videos to
-  // crawlers — the OG path has no way to present the password gate.
+// The <title> and preview tags for a share link. Password-protected videos
+// never leak their title, summary or thumbnail.
+function ogHead(video, baseUrl, shareCode) {
   if (video.password_hash) {
-    const lockedHtml = `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<title>Protected video — SuperShare</title>
-<meta property="og:title" content="Protected video">
+    return {
+      title: 'Protected video — SuperShare',
+      tags: `<meta property="og:title" content="Protected video">
 <meta property="og:type" content="video.other">
 <meta property="og:url" content="${baseUrl}/s/${shareCode}">
 <meta property="og:site_name" content="SuperShare">
-<meta property="og:description" content="This recording is password protected.">
-</head>
-<body><p>This recording is password protected.</p></body>
-</html>`;
-    return new Response(lockedHtml, {
-      headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=3600' },
-    });
+<meta property="og:description" content="This recording is password protected.">`,
+    };
   }
 
   const desc = video.summary ? escapeHTML(video.summary) : `${formatTimestamp(video.duration)} screen recording`;
   // Changes with the title, so apps that cache previews fetch the renamed one.
   const ogVersion = titleVersion(video.title);
-
-  const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<title>${escapeHTML(video.title)} — SuperShare</title>
-<meta property="og:title" content="${escapeHTML(video.title)}">
+  return {
+    title: `${escapeHTML(video.title)} — SuperShare`,
+    tags: `<meta property="og:title" content="${escapeHTML(video.title)}">
 <meta property="og:type" content="video.other">
 <meta property="og:url" content="${baseUrl}/s/${shareCode}">
 <meta property="og:video" content="${baseUrl}/embed/${shareCode}">
@@ -267,22 +253,52 @@ export async function handleOGPage(request, env, shareCode) {
 <meta property="og:image:height" content="630">
 <meta property="og:site_name" content="SuperShare">
 <meta property="og:description" content="${desc}">
+<meta name="description" content="${desc}">
 <meta name="twitter:card" content="player">
 <meta name="twitter:title" content="${escapeHTML(video.title)}">
 <meta name="twitter:description" content="${desc}">
 <meta name="twitter:image" content="${baseUrl}/og/${shareCode}?v=${ogVersion}">
 <meta name="twitter:player" content="${baseUrl}/embed/${shareCode}">
 <meta name="twitter:player:width" content="${finiteNonnegative(video.width)}">
-<meta name="twitter:player:height" content="${finiteNonnegative(video.height)}">
+<meta name="twitter:player:height" content="${finiteNonnegative(video.height)}">`,
+  };
+}
+
+export async function handleOGPage(request, env, shareCode) {
+  const video = await loadOGVideo(env, shareCode);
+  if (!video) return new Response('Not found', { status: 404 });
+
+  const head = ogHead(video, new URL(request.url).origin, shareCode);
+  const body = video.password_hash ? 'This recording is password protected.' : escapeHTML(video.title);
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>${head.title}</title>
+${head.tags}
 </head>
 <body>
-<p>${escapeHTML(video.title)}</p>
+<p>${body}</p>
 </body>
 </html>`;
 
   return new Response(html, {
     headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=3600' },
   });
+}
+
+// Link previews in apps that don't announce themselves as bots (Notion,
+// Linear, Messages and others) read the page people open, so it carries the
+// same title and preview tags.
+export async function withOGHead(request, env, shareCode, page) {
+  const video = await loadOGVideo(env, shareCode);
+  if (!video || !(page.headers.get('Content-Type') || '').includes('text/html')) return page;
+
+  const head = ogHead(video, new URL(request.url).origin, shareCode);
+  return new HTMLRewriter()
+    .on('title', { element: (el) => el.setInnerContent(head.title, { html: true }) })
+    .on('head', { element: (el) => el.append(head.tags, { html: true }) })
+    .transform(page);
 }
 
 // --- OG Image ---

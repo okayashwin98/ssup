@@ -46,6 +46,7 @@ import {
 import {
 	handleOGImage,
 	handleOGPage,
+	withOGHead,
 	handleShareData,
 	handleVTT,
 	handleVideoStream,
@@ -357,7 +358,8 @@ export async function handleRequest(request, env) {
 		) {
 			return handleOGPage(request, env, shareCode);
 		}
-		return env.ASSETS.fetch(new Request(new URL("/share", url), request));
+		const page = await env.ASSETS.fetch(new Request(new URL("/share", url), request));
+		return withOGHead(request, env, shareCode, page);
 	}
 
 	// Video streaming
