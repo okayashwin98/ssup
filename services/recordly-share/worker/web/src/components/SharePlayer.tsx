@@ -28,6 +28,9 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProp
 import type { Comment, Reaction, ShareData } from '../scripts/api';
 import { formatDate, formatTimestamp } from '../scripts/api';
 
+// Shared recordings start at 1.5×; viewers can change it from the speed menu.
+const DEFAULT_SPEED = 1.5;
+
 function formatCoverDuration(seconds: number) {
   if (!Number.isFinite(seconds) || seconds <= 0) return null;
   const total = Math.max(1, Math.round(seconds));
@@ -96,7 +99,7 @@ export default function SharePlayer({
   const [ended, setEnded] = useState(false);
   const [volume, setVolume] = useState(1);
   const [muted, setMuted] = useState(false);
-  const [speed, setSpeed] = useState(1);
+  const [speed, setSpeed] = useState(DEFAULT_SPEED);
   // Subtitles start off; viewers turn them on with the CC button.
   const [captions, setCaptions] = useState(false);
   const [pip, setPip] = useState(false);
@@ -284,6 +287,9 @@ export default function SharePlayer({
             if (video.videoWidth > 0 && video.videoHeight > 0)
               setVideoRatio(video.videoWidth / video.videoHeight);
             onDuration(Number.isFinite(video.duration) ? video.duration : 0);
+            // Loading resets the rate to defaultPlaybackRate, so set both.
+            video.defaultPlaybackRate = DEFAULT_SPEED;
+            video.playbackRate = DEFAULT_SPEED;
             const start = Number(new URLSearchParams(location.search).get('t'));
             if (Number.isFinite(start) && start > 0 && start < video.duration)
               video.currentTime = start;

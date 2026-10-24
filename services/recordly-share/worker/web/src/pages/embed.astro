@@ -19,6 +19,10 @@
     const vid = document.getElementById('player') as HTMLVideoElement;
     vid.poster = `/og/${code}`;
     vid.src = `/v/${code}`;
+    vid.addEventListener('loadedmetadata', () => {
+      vid.defaultPlaybackRate = 1.5;
+      vid.playbackRate = 1.5;
+    }, { once: true });
   </script>
 </body>
 </html>
