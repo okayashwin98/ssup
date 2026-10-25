@@ -107,7 +107,7 @@ function StartButton({ onStart }: { onStart: () => void }) {
 			type="button"
 			onPointerDown={(event) => event.stopPropagation()}
 			onPointerUp={(event) => event.stopPropagation()}
-			className="pointer-events-auto mt-2 flex items-center gap-2 rounded-xl px-6 py-3 text-base font-medium text-white shadow-lg"
+			className="pointer-events-auto mt-2 flex items-center gap-2 rounded-[10px] px-6 py-3 text-base font-medium text-white shadow-lg"
 			style={{ background: "#5a43f5", textShadow: "none" }}
 			onClick={onStart}
 		>
@@ -674,16 +674,18 @@ export function CapturePicker() {
 				</div>
 			)}
 			{mode === "window" && !hasWindows && !target && (
-				<div className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-white">
-					<div
-						className="text-3xl font-semibold"
-						style={{ textShadow: "0 1px 12px rgba(0,0,0,0.55)" }}
-					>
-						No windows to select
-					</div>
+				// Screen Studio's look: system font, a medium title and a light, softly rounded button.
+				<div
+					className="absolute inset-0 flex flex-col items-center justify-center gap-5 text-white"
+					style={{
+						fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif',
+						textShadow: "0 1px 6px rgba(0,0,0,0.45)",
+					}}
+				>
+					<div className="text-4xl font-medium">No windows to select</div>
 					<button
 						type="button"
-						className="rounded-xl bg-white/15 px-5 py-2.5 text-base backdrop-blur hover:bg-white/25"
+						className="rounded-lg bg-white/15 px-6 py-3.5 text-lg backdrop-blur-md hover:bg-white/25"
 						onPointerDown={(event) => event.stopPropagation()}
 						onPointerUp={(event) => event.stopPropagation()}
 						onClick={() => finish({ kind: "screen", rect: screenRect() }, true)}

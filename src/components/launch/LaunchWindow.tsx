@@ -365,7 +365,8 @@ export function LaunchWindow() {
 					title={t("recording.closeApp")}
 					aria-label={t("recording.closeApp")}
 				>
-					<CloseIcon className={styles.largeIcon} />
+					{/* Drawn to be shown at its own 20 × 20 size. */}
+					<CloseIcon className={styles.icon} />
 				</button>
 				<span className={styles.divider} />
 				{SOURCE_MODES.map(({ mode, label, name, Icon }) => (

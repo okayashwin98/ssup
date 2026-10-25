@@ -181,6 +181,7 @@ test("Window mode shows the app's icon, name, size, Resize and Adjust recording 
 test("Window mode with no windows offers to record the entire display", async ({ page }) => {
 	await openPicker(page, "window", { windows: [] });
 	await expect(page.getByText("No windows to select", { exact: true })).toBeVisible();
+	await page.screenshot({ path: "test-results/picker-no-windows.png" });
 	await page.getByRole("button", { name: "Record entire display", exact: true }).click();
 	expect(await pick(page)).toEqual({ kind: "screen", displayId: 1, record: true });
 });
