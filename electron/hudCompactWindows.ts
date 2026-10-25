@@ -10,6 +10,7 @@ import {
 	type MenuItemConstructorOptions,
 	Notification,
 	type Rectangle,
+	screen,
 } from "electron";
 import { USER_DATA_PATH } from "./appPaths";
 
@@ -293,6 +294,14 @@ export function setWebcamBubble(visible: boolean, deviceId?: string) {
 	loadRendererWindow(win, "webcam-bubble");
 }
 
+// macOS menu rows are 24 pt, separators 11 pt, plus 10 pt of padding (measured on macOS 27).
+const MENU_FRAME_OFFSET = 5;
+
+function estimateMenuHeight(items: HudMenuItem[]) {
+	const separators = items.filter((item) => item.type === "separator").length;
+	return 10 + (items.length - separators) * 24 + separators * 11;
+}
+
 function buildMenuTemplate(
 	items: HudMenuItem[],
 	choose: (id: string) => void,
@@ -340,18 +349,30 @@ export function registerHudCompactWindowIpc(options: {
 	// Native menus, as Screen Studio uses for its device and size pickers.
 	ipcMain.handle(
 		"hud-show-menu",
-		(event, request: { items: HudMenuItem[]; x: number; y: number }) =>
+		(event, request: { items: HudMenuItem[]; x: number; y: number; above?: number }) =>
 			new Promise<string | null>((resolve) => {
 				const win = BrowserWindow.fromWebContents(event.sender);
 				if (!win || !Array.isArray(request?.items)) {
 					resolve(null);
 					return;
 				}
+				// Opens down from `y`; when it would not fit below, it ends at `above` instead.
+				let y = request.y;
+				if (typeof request.above === "number") {
+					const content = win.getContentBounds();
+					const workArea = screen.getDisplayMatching(content).workArea;
+					const height = estimateMenuHeight(request.items);
+					if (content.y + y + height > workArea.y + workArea.height) {
+						y = request.above - height;
+					}
+				}
+				// macOS draws the menu's frame 5 pt above the point it is given.
+				y += MENU_FRAME_OFFSET;
 				const menu = Menu.buildFromTemplate(buildMenuTemplate(request.items, resolve));
 				menu.popup({
 					window: win,
 					x: Math.round(request.x),
-					y: Math.round(request.y),
+					y: Math.round(y),
 					// A click resolves first; closing without one resolves null.
 					callback: () => setTimeout(() => resolve(null), 50),
 				});

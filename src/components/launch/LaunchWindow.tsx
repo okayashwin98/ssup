@@ -31,10 +31,18 @@ const WEBCAM_BUBBLE_STORAGE_KEY = "recordly.webcam-bubble-visible";
 
 type MenuItem = Parameters<typeof window.electronAPI.hudShowMenu>[0]["items"][number];
 
-/** Opens a native menu above or below the clicked bar item. */
+const MENU_GAP = 6;
+
+/** Opens a native menu below the bar, or above it near the bottom of the screen, never over it. */
 function showMenuAt(event: MouseEvent<HTMLElement>, items: MenuItem[]) {
-	const rect = event.currentTarget.getBoundingClientRect();
-	return window.electronAPI.hudShowMenu({ items, x: rect.left, y: rect.top });
+	const item = event.currentTarget.getBoundingClientRect();
+	const bar = (event.currentTarget.parentElement ?? event.currentTarget).getBoundingClientRect();
+	return window.electronAPI.hudShowMenu({
+		items,
+		x: item.left,
+		y: bar.bottom + MENU_GAP,
+		above: bar.top - MENU_GAP,
+	});
 }
 
 function readBubblePreference() {
@@ -369,7 +377,7 @@ export function LaunchWindow() {
 				<span className={styles.divider} />
 				<button
 					type="button"
-					className={styles.item}
+					className={`${styles.item} ${styles.device}`}
 					data-off={!webcamEnabled || undefined}
 					title={t("recording.webcam")}
 					onClick={(event) => void openCameraMenu(event)}
@@ -381,7 +389,7 @@ export function LaunchWindow() {
 				</button>
 				<button
 					type="button"
-					className={styles.item}
+					className={`${styles.item} ${styles.device}`}
 					data-off={!microphoneEnabled || undefined}
 					title={t("recording.microphone")}
 					onClick={(event) => void openMicrophoneMenu(event)}
@@ -400,7 +408,7 @@ export function LaunchWindow() {
 				</button>
 				<button
 					type="button"
-					className={styles.item}
+					className={`${styles.item} ${styles.device}`}
 					data-off={!systemAudioEnabled || undefined}
 					title={
 						systemAudioEnabled

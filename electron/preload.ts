@@ -226,7 +226,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	hudWindowSetContentSize: (size: { width: number; height: number }) => {
 		ipcRenderer.send("hud-window-set-content-size", size);
 	},
-	hudShowMenu: (request: { items: HudMenuItem[]; x: number; y: number }) =>
+	hudShowMenu: (request: { items: HudMenuItem[]; x: number; y: number; above?: number }) =>
 		ipcRenderer.invoke("hud-show-menu", request) as Promise<string | null>,
 	hudNotify: (payload: { title?: string; message: string }) => {
 		ipcRenderer.send("hud-notify", payload);

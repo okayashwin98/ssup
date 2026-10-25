@@ -1,20 +1,20 @@
-import { useCallback, useEffect, useReducer, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
 import type {
 	MouseEvent as ReactMouseEvent,
-	PointerEvent as ReactPointerEvent,
 	ReactNode,
+	PointerEvent as ReactPointerEvent,
 } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
-	frontmostAt,
-	MIN_AREA_SIZE,
-	normalizeAreaRect,
-	moveAreaRect,
-	resizeAreaRect,
-	rectContains,
 	AREA_HANDLES,
 	type AreaHandle,
 	type AreaRect,
+	frontmostAt,
+	MIN_AREA_SIZE,
+	moveAreaRect,
+	normalizeAreaRect,
+	rectContains,
+	resizeAreaRect,
 } from "./areaGeometry";
 
 type Target =
@@ -313,6 +313,7 @@ export function CapturePicker() {
 		const choice = await window.electronAPI.hudShowMenu({
 			x: rect.left,
 			y: rect.bottom + 4,
+			above: rect.top - 4,
 			items: [
 				...RESIZE_PRESETS.map(item),
 				{ type: "separator" },
@@ -583,6 +584,7 @@ export function CapturePicker() {
 													{
 														x: rect.left,
 														y: rect.bottom + 4,
+														above: rect.top - 4,
 														items: AREA_RATIOS.map((entry) => ({
 															id: entry.label,
 															label: entry.label,

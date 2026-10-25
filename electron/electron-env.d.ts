@@ -238,7 +238,10 @@ interface Window {
 		hudShowMenu: (request: {
 			items: HudMenuItem[];
 			x: number;
+			/** Where the menu's top goes, in window coordinates. */
 			y: number;
+			/** Where the menu's bottom goes instead when it would not fit below. */
+			above?: number;
 		}) => Promise<string | null>;
 		hudNotify: (payload: { title?: string; message: string }) => void;
 		hudSetWebcamBubble: (request: { visible: boolean; deviceId?: string }) => void;

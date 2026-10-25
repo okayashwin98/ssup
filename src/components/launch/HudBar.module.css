@@ -115,6 +115,17 @@
 	text-overflow: ellipsis;
 }
 
+/* Camera, microphone and system audio share one width: that of "No system audio". */
+.device {
+	flex: none;
+	width: 155px;
+}
+
+.device .label {
+	flex: 1;
+	min-width: 0;
+}
+
 .divider {
 	flex: none;
 	width: 1px;
