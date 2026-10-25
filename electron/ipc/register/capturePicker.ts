@@ -117,7 +117,8 @@ export function registerCapturePickerHandlers({
 		setSelectedSource(source);
 		broadcastSelectedSourceChange();
 		stopWindowBoundsCapture();
-		return { success: true, source };
+		// "Start recording" on the picked window, screen or area starts it straight away.
+		return { success: true, source, record: pick.record === true };
 	};
 	ipcMain.handle("pick-capture-target", () => {
 		if (isCursorCaptureActive) return { success: false, canceled: true };
@@ -157,13 +158,7 @@ export function registerCapturePickerHandlers({
 		const displays = getScreen()
 			.getAllDisplays()
 			.map((display) => ({ id: display.id, bounds: display.bounds }));
-		finishPick(
-			normalizeCapturePick(
-				input && typeof input === "object" ? { ...input, record: false } : input,
-				displays,
-				await pickableWindows,
-			),
-		);
+		finishPick(normalizeCapturePick(input, displays, await pickableWindows));
 	});
 
 	ipcMain.handle("get-capture-picker-context", async (event, displayId: unknown) => {

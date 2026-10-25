@@ -22,7 +22,10 @@ function screenRect() {
 	return { x: 0, y: 0, width: window.innerWidth, height: window.innerHeight };
 }
 
-/** Chooses a source only. Recording remains controlled by the existing HUD. */
+/**
+ * Chooses a source. Like Screen Studio, the window, screen or area under the
+ * pointer shows its name, size and a Start recording button.
+ */
 export function CapturePicker() {
 	const displayId = Number(new URLSearchParams(window.location.search).get("displayId"));
 	const [target, setTarget] = useState<Target | null>(null);
@@ -61,7 +64,7 @@ export function CapturePicker() {
 		setTarget(next);
 	};
 	const finish = useCallback(
-		(pick: Target | null) => {
+		(pick: Target | null, record = false) => {
 			if (completed.current) return;
 			if (
 				pick?.kind === "area" &&
@@ -69,7 +72,7 @@ export function CapturePicker() {
 			)
 				return;
 			completed.current = true;
-			const common = { displayId, record: false };
+			const common = { displayId, record };
 			void window.electronAPI.completeCapturePick(
 				!pick
 					? null
@@ -109,12 +112,14 @@ export function CapturePicker() {
 						),
 					}))
 					.filter((entry) => entry.rect.width > 0 && entry.rect.height > 0);
-				const next = context.cursor
-					? targetAt(
-							context.cursor.x - origin.current.x,
-							context.cursor.y - origin.current.y,
-						)
+				// Only the screen under the pointer shows its target and Start recording.
+				const local = context.cursor
+					? { x: context.cursor.x - origin.current.x, y: context.cursor.y - origin.current.y }
 					: null;
+				const next =
+					local && rectContains(screenRect(), local.x, local.y)
+						? targetAt(local.x, local.y)
+						: null;
 				current.current = next;
 				editingArea.current = false;
 				setTarget(next);
@@ -139,7 +144,7 @@ export function CapturePicker() {
 			}
 			if (event.key === "Enter") {
 				event.preventDefault();
-				if (current.current) finish(current.current);
+				if (current.current) finish(current.current, true);
 			}
 		};
 		window.addEventListener("keydown", onKey);
@@ -179,10 +184,19 @@ export function CapturePicker() {
 	};
 	const label =
 		target?.kind === "window"
-			? [target.window.appName, target.window.title].filter(Boolean).join(" — ")
+			? target.window.appName || target.window.title || "Window"
 			: target?.kind === "screen"
 				? "Entire screen"
 				: "Area";
+	const areaTooSmall =
+		target?.kind === "area" &&
+		(target.rect.width < MIN_AREA_SIZE || target.rect.height < MIN_AREA_SIZE);
+	const showStartCard =
+		target !== null && !press.current?.drawing && !(target.kind === "area" && areaTooSmall);
+	const stopPicking = {
+		onPointerDown: (event: ReactPointerEvent) => event.stopPropagation(),
+		onPointerUp: (event: ReactPointerEvent) => event.stopPropagation(),
+	};
 	return (
 		<div
 			className="fixed inset-0 select-none overflow-hidden"
@@ -222,6 +236,11 @@ export function CapturePicker() {
 			onPointerCancel={() => {
 				press.current = null;
 			}}
+			onPointerLeave={() => {
+				if (press.current || editingArea.current) return;
+				current.current = null;
+				setTarget(null);
+			}}
 			onContextMenu={(event) => {
 				event.preventDefault();
 				finish(null);
@@ -239,10 +258,11 @@ export function CapturePicker() {
 						top: target.rect.y,
 						width: target.rect.width,
 						height: target.rect.height,
-						background: "rgba(10,132,255,0.16)",
-						boxShadow: "0 0 0 100vmax rgba(0,0,0,0.38)",
-						outline: "2px solid var(--accent)",
-						outlineOffset: -2,
+						boxShadow: "0 0 0 100vmax rgba(0,0,0,0.45)",
+						background: target.kind === "screen" ? "rgba(0,0,0,0.3)" : "transparent",
+						outline: "1px solid rgba(255,255,255,0.55)",
+						outlineOffset: -1,
+						borderRadius: target.kind === "window" ? 10 : 0,
 					}}
 				>
 					{target.kind === "area" &&
@@ -271,12 +291,30 @@ export function CapturePicker() {
 								/>
 							);
 						})}
-					<div
-						className="pointer-events-none absolute whitespace-nowrap rounded-md bg-blue-600 px-2 py-1 text-xs text-white"
-						style={{ top: target.rect.y >= 30 ? -28 : 6, left: 6 }}
-					>
-						{label} · {Math.round(target.rect.width)} × {Math.round(target.rect.height)}
-					</div>
+					{showStartCard && (
+						<div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+							<div
+								className="pointer-events-auto flex flex-col items-center gap-2 text-white"
+								style={{ textShadow: "0 1px 12px rgba(0,0,0,0.55)" }}
+								{...stopPicking}
+							>
+								<div className="text-3xl font-semibold tracking-tight">{label}</div>
+								<div className="text-sm tabular-nums opacity-90">
+									{Math.round(target.rect.width)} ×{" "}
+									{Math.round(target.rect.height)}
+								</div>
+								<button
+									type="button"
+									className="mt-2 flex items-center gap-2 rounded-xl px-6 py-3 text-base font-medium text-white shadow-lg"
+									style={{ background: "#5a43f5", textShadow: "none" }}
+									onClick={() => finish(current.current, true)}
+								>
+									<span className="size-3 rounded-full border-2 border-white" />
+									Start recording
+								</button>
+							</div>
+						</div>
+					)}
 				</div>
 			)}
 			{target?.kind === "area" && (

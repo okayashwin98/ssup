@@ -183,6 +183,15 @@ function settleNativeVideoExportPendingRequests(
 	}
 }
 
+type RecordingControlsCommand = "stop" | "pause" | "resume" | "cancel" | "hide";
+type HudMenuItem = {
+	id?: string;
+	label?: string;
+	type?: "normal" | "checkbox" | "radio" | "separator" | "header";
+	checked?: boolean;
+	enabled?: boolean;
+};
+
 contextBridge.exposeInMainWorld("electronAPI", {
 	hudOverlaySetIgnoreMouse: (ignore: boolean) => {
 		ipcRenderer.send("hud-overlay-set-ignore-mouse", ignore);
@@ -212,6 +221,52 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	},
 	hudOverlaySetWebcamPreviewVisible: (visible: boolean) => {
 		ipcRenderer.send("hud-overlay-set-webcam-preview-visible", visible);
+	},
+	hudWindowSetContentSize: (size: { width: number; height: number }) => {
+		ipcRenderer.send("hud-window-set-content-size", size);
+	},
+	hudShowMenu: (request: { items: HudMenuItem[]; x: number; y: number }) =>
+		ipcRenderer.invoke("hud-show-menu", request) as Promise<string | null>,
+	hudNotify: (payload: { title?: string; message: string }) => {
+		ipcRenderer.send("hud-notify", payload);
+	},
+	hudSetWebcamBubble: (request: { visible: boolean; deviceId?: string }) => {
+		ipcRenderer.send("hud-set-webcam-bubble", request);
+	},
+	hudPublishRecordingStatus: (status: { paused: boolean; elapsed: number }) => {
+		ipcRenderer.send("hud-recording-status", status);
+	},
+	onRecordingControlsCommand: (callback: (command: RecordingControlsCommand) => void) => {
+		const listener = (_event: Electron.IpcRendererEvent, command: RecordingControlsCommand) =>
+			callback(command);
+		ipcRenderer.on("recording-controls-command", listener);
+		return () => ipcRenderer.removeListener("recording-controls-command", listener);
+	},
+	sendRecordingControlsCommand: (command: RecordingControlsCommand) => {
+		ipcRenderer.send("recording-controls-command", command);
+	},
+	getRecordingControlsStatus: () =>
+		ipcRenderer.invoke("recording-controls-get-status") as Promise<{
+			paused: boolean;
+			elapsed: number;
+		}>,
+	onRecordingControlsStatus: (
+		callback: (status: { paused: boolean; elapsed: number }) => void,
+	) => {
+		const listener = (
+			_event: Electron.IpcRendererEvent,
+			status: { paused: boolean; elapsed: number },
+		) => callback(status);
+		ipcRenderer.on("recording-controls-status", listener);
+		return () => ipcRenderer.removeListener("recording-controls-status", listener);
+	},
+	webcamBubbleGetDevice: () =>
+		ipcRenderer.invoke("webcam-bubble-get-device") as Promise<string | null>,
+	onWebcamBubbleDeviceChanged: (callback: (deviceId: string | null) => void) => {
+		const listener = (_event: Electron.IpcRendererEvent, deviceId: string | null) =>
+			callback(deviceId);
+		ipcRenderer.on("webcam-bubble-device-changed", listener);
+		return () => ipcRenderer.removeListener("webcam-bubble-device-changed", listener);
 	},
 	getHudOverlayCaptureProtection: () => {
 		return ipcRenderer.invoke("get-hud-overlay-capture-protection");

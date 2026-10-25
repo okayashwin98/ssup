@@ -11,6 +11,13 @@ type Options = {
 };
 type Variant = "default" | "accent" | "success" | "warning" | "danger";
 const ids = new Map<string | number, string>();
+type ToastSink = (message: string, variant: Variant) => void;
+let toastSink: ToastSink | null = null;
+
+/** Windows too small to show toasts (the recording bar) send them elsewhere. */
+export function setToastSink(sink: ToastSink | null) {
+	toastSink = sink;
+}
 
 function plainText(value: ReactNode): string {
 	if (typeof value === "string" || typeof value === "number") return String(value);
@@ -24,6 +31,10 @@ function notify(title: ReactNode, options: Options = {}, variant: Variant = "def
 	const errorText = [plainText(title), plainText(options.description)]
 		.filter(Boolean)
 		.join("\n\n");
+	if (toastSink) {
+		if (errorText) toastSink(errorText, variant);
+		return String(options.id ?? errorText);
+	}
 	const action = options.action;
 	const nativeOptions = {
 		variant,

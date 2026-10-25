@@ -71,7 +71,7 @@ beforeEach(() => {
 const call = (name: string, sender: object, input?: unknown) =>
 	mocks.handlers.get(name)!({ sender }, input);
 describe("selection-only picker IPC", () => {
-	it("ignores completion from other windows and forces selection-only completion", async () => {
+	it("ignores completion from other windows and passes Start recording through", async () => {
 		const pending = call("pick-capture-target", mocks.outsider);
 		await vi.waitFor(() => expect(mocks.create).toHaveBeenCalledOnce());
 		await call("complete-capture-pick", mocks.outsider, {
@@ -85,8 +85,11 @@ describe("selection-only picker IPC", () => {
 			displayId: 1,
 			record: true,
 		});
-		expect(await pending).toMatchObject({ success: true, source: { id: "screen:1:0" } });
-		expect(await pending).not.toHaveProperty("record");
+		expect(await pending).toMatchObject({
+			success: true,
+			source: { id: "screen:1:0" },
+			record: true,
+		});
 	});
 	it("coalesces simultaneous opens into one picker", async () => {
 		const first = call("pick-capture-target", mocks.outsider);

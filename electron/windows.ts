@@ -22,6 +22,15 @@ import {
 	resizeHudOverlayFallbackBounds,
 	shouldExpandHudOverlayFallback,
 } from "./hudOverlayBounds";
+import {
+	bottomCentreBounds,
+	closeRecordingControls,
+	createFloatingPanel,
+	getHudCompanionWindows,
+	hideRecordingControls,
+	registerHudCompactWindowIpc,
+	showRecordingControls,
+} from "./hudCompactWindows";
 import { getHudOverlayTaskbarOptions } from "./hudOverlayWindowOptions";
 import { getPackagedRendererBaseUrl } from "./rendererServer";
 
@@ -57,6 +66,8 @@ let hudWasVisibleBeforeUpdateToast = false;
 
 const HUD_OVERLAY_SETTINGS_FILE = path.join(USER_DATA_PATH, "hud-overlay-settings.json");
 const HUD_EDGE_MARGIN_DIP = 16;
+/** The start bar before it has measured itself. */
+const HUD_BAR_DEFAULT_SIZE = { width: 760, height: 64 };
 const UPDATE_TOAST_WIDTH = 420;
 const UPDATE_TOAST_HEIGHT = 172;
 /** Shows a capture picker that never reported ready. */
@@ -208,6 +219,9 @@ export function reassertHudOverlayCaptureProtection(): boolean {
 	}
 
 	applyHudOverlayCaptureProtectionToWindow(hud, enabled);
+	for (const companion of getHudCompanionWindows()) {
+		applyHudOverlayCaptureProtectionToWindow(companion, enabled);
+	}
 
 	return enabled;
 }
@@ -241,7 +255,31 @@ function getHudOverlayDisplay() {
 	return getScreen().getPrimaryDisplay();
 }
 
+function isPointInAnyWorkArea(point: { x: number; y: number }): boolean {
+	return getScreen()
+		.getAllDisplays()
+		.some(
+			({ workArea }) =>
+				point.x >= workArea.x &&
+				point.x < workArea.x + workArea.width &&
+				point.y >= workArea.y &&
+				point.y < workArea.y + workArea.height,
+		);
+}
+
 function getHudOverlayBounds() {
+	// The start bar is a window the size of the bar itself: where the user left it,
+	// or at the bottom centre of its display.
+	if (process.platform === "darwin") {
+		const current = getHudOverlayWindow()?.getBounds();
+		const size = current
+			? { width: current.width, height: current.height }
+			: HUD_BAR_DEFAULT_SIZE;
+		if (hudUserPosition && isPointInAnyWorkArea(hudUserPosition)) {
+			return { ...hudUserPosition, ...size };
+		}
+		return bottomCentreBounds(getHudOverlayDisplay().workArea, size);
+	}
 	const { workArea } = getHudOverlayDisplay();
 	const fallbackExpanded = shouldExpandHudOverlayFallback({
 		fallbackExpanded: hudOverlayFallbackExpanded,
@@ -347,6 +385,12 @@ function setHudOverlayMousePassthrough(ignore: boolean) {
 		return;
 	}
 
+	// The macOS bar is only as big as the bar, so all of it takes clicks.
+	if (process.platform === "darwin") {
+		hudOverlayWindow.setIgnoreMouseEvents(false);
+		return;
+	}
+
 	if (hudOverlayRecordingActive) {
 		hudOverlayFallbackExpanded = false;
 		applyHudOverlayBounds();
@@ -444,6 +488,8 @@ ipcMain.on("hud-overlay-drag", (_event, phase: string, screenX: number, screenY:
 // move the window to the display under the cursor so the bar can follow.
 ipcMain.handle("hud-overlay-follow-pointer", () => {
 	if (!hudOverlayWindow || hudOverlayWindow.isDestroyed()) return null;
+	// macOS drags the bar window itself, across displays included.
+	if (process.platform === "darwin") return null;
 	if (!isHudOverlayMousePassthroughSupported()) return null;
 	const screen = getScreen();
 	const cursor = screen.getCursorScreenPoint();
@@ -460,8 +506,15 @@ ipcMain.handle("hud-overlay-follow-pointer", () => {
 });
 
 ipcMain.on("hud-overlay-hide", () => {
+	if (hudOverlayRecordingActive && hideRecordingControls()) {
+		return;
+	}
 	if (hudOverlayWindow && !hudOverlayWindow.isDestroyed()) {
-		hudOverlayWindow.minimize();
+		if (process.platform === "darwin") {
+			hudOverlayWindow.hide();
+		} else {
+			hudOverlayWindow.minimize();
+		}
 	}
 });
 
@@ -534,38 +587,12 @@ export function createHudOverlayWindow(): BrowserWindow {
 	const initialBounds = getHudOverlayBounds();
 	let hasShownHudWindow = false;
 
-	const win = new BrowserWindow({
-		width: initialBounds.width,
-		height: initialBounds.height,
-		x: initialBounds.x,
-		y: initialBounds.y,
-		frame: false,
-		transparent: true,
-		backgroundColor: "#00000000",
-		resizable: false,
-		alwaysOnTop: true,
-		// The HUD is Recordly's persistent top-level window, so it owns the
-		// Windows taskbar entry while auxiliary overlays stay hidden there.
-		...getHudOverlayTaskbarOptions(process.platform),
-		hasShadow: false,
-		show: false,
-		webPreferences: {
-			preload: path.join(electronWindowsDir, "preload.mjs"),
-			nodeIntegration: false,
-			contextIsolation: true,
-			webSecurity: false,
-			backgroundThrottling: false,
-		},
-	});
-	// Keep the recording controls and webcam above normal and full-screen apps.
-	// Transparent regions remain click-through via setIgnoreMouseEvents().
-	win.setAlwaysOnTop(true, "screen-saver");
-	if (process.platform === "darwin") {
-		win.setVisibleOnAllWorkspaces(true, {
-			visibleOnFullScreen: true,
-			skipTransformProcessType: true,
-		});
-	}
+	// macOS: a small floating panel holding only the bar, which the user drags
+	// like any window. Other platforms keep the full-display click-through window.
+	const win =
+		process.platform === "darwin"
+			? createFloatingPanel(initialBounds, { vibrancy: true })
+			: createLegacyHudOverlayWindow(initialBounds);
 
 	const showHudWindow = () => {
 		if (hasShownHudWindow || win.isDestroyed()) {
@@ -609,7 +636,7 @@ export function createHudOverlayWindow(): BrowserWindow {
 		}
 	});
 
-	if (isHudOverlayMousePassthroughSupported()) {
+	if (isHudOverlayMousePassthroughSupported() && process.platform !== "darwin") {
 		if (hudOverlayRecordingActive) {
 			hudOverlayIgnoringMouse = false;
 			win.setIgnoreMouseEvents(false);
@@ -667,9 +694,8 @@ export function createHudOverlayWindow(): BrowserWindow {
 
 	hudOverlayWindow = win;
 
-	// On Linux the HUD is dragged by the OS via -webkit-app-region (Wayland
-	// forbids client-side positioning). Mirror moved bounds into drag state.
-	if (process.platform === "linux") {
+	// The OS drags the bar window (macOS bar, Linux Wayland). Remember where it was left.
+	if (process.platform === "linux" || process.platform === "darwin") {
 		win.on("moved", () => {
 			if (win.isDestroyed()) return;
 			const { x, y } = win.getBounds();
@@ -725,6 +751,38 @@ export function createHudOverlayWindow(): BrowserWindow {
 	return win;
 }
 
+function createLegacyHudOverlayWindow(bounds: {
+	x: number;
+	y: number;
+	width: number;
+	height: number;
+}): BrowserWindow {
+	const win = new BrowserWindow({
+		...bounds,
+		frame: false,
+		transparent: true,
+		backgroundColor: "#00000000",
+		resizable: false,
+		alwaysOnTop: true,
+		// The HUD is Recordly's persistent top-level window, so it owns the
+		// Windows taskbar entry while auxiliary overlays stay hidden there.
+		...getHudOverlayTaskbarOptions(process.platform),
+		hasShadow: false,
+		show: false,
+		webPreferences: {
+			preload: path.join(electronWindowsDir, "preload.mjs"),
+			nodeIntegration: false,
+			contextIsolation: true,
+			webSecurity: false,
+			backgroundThrottling: false,
+		},
+	});
+	// Keep the recording controls and webcam above normal and full-screen apps.
+	// Transparent regions remain click-through via setIgnoreMouseEvents().
+	win.setAlwaysOnTop(true, "screen-saver");
+	return win;
+}
+
 export function getHudOverlayWindow(): BrowserWindow | null {
 	return hudOverlayWindow && !hudOverlayWindow.isDestroyed() ? hudOverlayWindow : null;
 }
@@ -765,9 +823,22 @@ export function reassertHudOverlayMousePassthrough(): void {
 
 export function setHudOverlayRecordingActive(recording: boolean): void {
 	hudCaptureStarting = false;
+	const wasRecording = hudOverlayRecordingActive;
 	hudOverlayRecordingActive = Boolean(recording);
 	notifyEditorMode();
 	hudOverlayFallbackExpanded = false;
+	// macOS, like Screen Studio: the start bar gives way to a small recording bar.
+	if (process.platform === "darwin") {
+		const hud = getHudOverlayWindow();
+		if (hudOverlayRecordingActive && !wasRecording) {
+			showRecordingControls(hud?.isVisible() ? hud.getBounds() : null);
+			hud?.hide();
+		} else if (!hudOverlayRecordingActive) {
+			closeRecordingControls();
+		}
+		reassertHudOverlayCaptureProtection();
+		return;
+	}
 	applyHudOverlayBounds();
 	reassertHudOverlayCaptureProtection();
 	// Start in passthrough mode. Forwarded pointer movement lets the renderer
@@ -859,6 +930,10 @@ export function showUpdateToastWindow(): BrowserWindow {
 
 function restoreHudAfterUpdateToast(): void {
 	if (!hudWasVisibleBeforeUpdateToast) {
+		return;
+	}
+	if (process.platform === "darwin" && hudOverlayRecordingActive) {
+		hudWasVisibleBeforeUpdateToast = false;
 		return;
 	}
 
@@ -1253,7 +1328,8 @@ export function createCapturePickerWindows(onClosed: () => void): BrowserWindow[
 				},
 			});
 			// Above the menu bar and the HUD, on every Space and over full-screen apps.
-			win.setAlwaysOnTop(true, "screen-saver");
+			// One layer under the bar, as Screen Studio does, so the bar stays usable.
+			win.setAlwaysOnTop(true, "status");
 			win.setVisibleOnAllWorkspaces(true, {
 				visibleOnFullScreen: true,
 				skipTransformProcessType: true,
@@ -1373,3 +1449,9 @@ export function hideAreaRecordingBorder(): void {
 	areaRecordingBorderWindow = null;
 	if (win && !win.isDestroyed()) win.close();
 }
+
+registerHudCompactWindowIpc({
+	getHudWindow: getHudOverlayWindow,
+	applyCaptureProtection: (win) =>
+		applyHudOverlayCaptureProtectionToWindow(win, loadHudOverlayCaptureProtectionSetting()),
+});

@@ -63,6 +63,7 @@ import {
 	setHudOverlayRecordingActive,
 	showUpdateToastWindow,
 } from "./windows";
+import { getWebcamBubbleWindow, revealRecordingControls } from "./hudCompactWindows";
 import { writeProjectFileAtomically } from "./ipc/project/atomicSave";
 import { getProjectsDir, loadRecentProjectPaths } from "./ipc/project/manager";
 import { reconcileProjectFolder } from "./ipc/project/projectMedia";
@@ -182,6 +183,13 @@ function isHudWebContents(webContents: Electron.WebContents | null): boolean {
 	return Boolean(hudWindow && hudWindow.webContents === webContents);
 }
 
+/** The bar records the microphone and webcam; the webcam bubble shows the camera. */
+function isMediaCaptureWebContents(webContents: Electron.WebContents | null): boolean {
+	if (isHudWebContents(webContents)) return true;
+	const bubble = getWebcamBubbleWindow();
+	return Boolean(webContents && bubble && bubble.webContents === webContents);
+}
+
 // Window references
 let mainWindow: BrowserWindow | null = null;
 let sourceSelectorWindow: BrowserWindow | null = null;
@@ -294,6 +302,11 @@ function showHudOverlayFromTray() {
 		updateToast.show();
 		updateToast.moveTop();
 		updateToast.focus();
+		return true;
+	}
+
+	// While recording, "Show Controls" brings back the recording bar.
+	if (revealRecordingControls()) {
 		return true;
 	}
 
@@ -977,7 +990,7 @@ app.whenReady().then(async () => {
 			return shouldGrantMediaPermission(
 				{
 					permission,
-					isTrustedCaptureWindow: isHudWebContents(webContents),
+					isTrustedCaptureWindow: isMediaCaptureWebContents(webContents),
 					isMainFrame: details.isMainFrame,
 					currentDocumentUrl: webContents?.getURL() ?? "",
 					// Electron 39 may supply the last committed document URL, including its
@@ -999,7 +1012,7 @@ app.whenReady().then(async () => {
 				shouldGrantMediaPermission(
 					{
 						permission,
-						isTrustedCaptureWindow: isHudWebContents(webContents),
+						isTrustedCaptureWindow: isMediaCaptureWebContents(webContents),
 						isMainFrame: details.isMainFrame,
 						currentDocumentUrl: webContents.getURL(),
 						requestingUrl: details.requestingUrl,

@@ -234,6 +234,33 @@ interface Window {
 		onEditorModeChanged: (callback: (inEditor: boolean) => void) => () => void;
 		hudOverlayRendererReady: () => void;
 		hudOverlaySetWebcamPreviewVisible: (visible: boolean) => void;
+		hudWindowSetContentSize: (size: { width: number; height: number }) => void;
+		hudShowMenu: (request: {
+			items: Array<{
+				id?: string;
+				label?: string;
+				type?: "normal" | "checkbox" | "radio" | "separator" | "header";
+				checked?: boolean;
+				enabled?: boolean;
+			}>;
+			x: number;
+			y: number;
+		}) => Promise<string | null>;
+		hudNotify: (payload: { title?: string; message: string }) => void;
+		hudSetWebcamBubble: (request: { visible: boolean; deviceId?: string }) => void;
+		hudPublishRecordingStatus: (status: { paused: boolean; elapsed: number }) => void;
+		onRecordingControlsCommand: (
+			callback: (command: "stop" | "pause" | "resume" | "cancel" | "hide") => void,
+		) => () => void;
+		sendRecordingControlsCommand: (
+			command: "stop" | "pause" | "resume" | "cancel" | "hide",
+		) => void;
+		getRecordingControlsStatus: () => Promise<{ paused: boolean; elapsed: number }>;
+		onRecordingControlsStatus: (
+			callback: (status: { paused: boolean; elapsed: number }) => void,
+		) => () => void;
+		webcamBubbleGetDevice: () => Promise<string | null>;
+		onWebcamBubbleDeviceChanged: (callback: (deviceId: string | null) => void) => () => void;
 		getHudOverlayCaptureProtection: () => Promise<{ success: boolean; enabled: boolean }>;
 		getHudOverlayMousePassthroughSupported: () => Promise<{
 			success: boolean;

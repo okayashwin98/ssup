@@ -23,6 +23,8 @@ const UpdateToastWindow = lazy(() =>
 );
 const EditorWindow = lazy(() => import("./components/video-editor/EditorWindow"));
 const CapturePicker = lazy(() => import("./components/capture-picker/CapturePicker"));
+const RecordingBarWindow = lazy(() => import("./components/launch/RecordingBar"));
+const WebcamBubbleWindow = lazy(() => import("./components/launch/WebcamBubbleWindow"));
 
 export default function App() {
 	const [windowType] = useState(
@@ -39,17 +41,25 @@ export default function App() {
 			windowType === "source-selector" ||
 			windowType === "countdown" ||
 			windowType === "update-toast" ||
-			windowType === "capture-picker"
+			windowType === "capture-picker" ||
+			windowType === "recording-controls" ||
+			windowType === "webcam-bubble"
 		) {
 			document.body.style.background = "transparent";
 			document.documentElement.style.background = "transparent";
 			document.getElementById("root")?.style.setProperty("background", "transparent");
 		}
 
-		if (windowType === "hud-overlay") {
+		if (
+			windowType === "hud-overlay" ||
+			windowType === "recording-controls" ||
+			windowType === "webcam-bubble"
+		) {
 			document.documentElement.classList.add("hud-overlay-window");
 			document.body.classList.add("hud-overlay-window");
 			document.getElementById("root")?.classList.add("hud-overlay-window");
+		}
+		if (windowType === "hud-overlay") {
 			window.electronAPI?.hudOverlaySetIgnoreMouse?.(true);
 		} else if (windowType === "update-toast") {
 			document.documentElement.style.overflow = "visible";
@@ -84,6 +94,12 @@ export default function App() {
 			break;
 		case "capture-picker":
 			content = <CapturePicker />;
+			break;
+		case "recording-controls":
+			content = <RecordingBarWindow />;
+			break;
+		case "webcam-bubble":
+			content = <WebcamBubbleWindow />;
 			break;
 		default:
 			content = (

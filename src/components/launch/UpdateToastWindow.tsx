@@ -158,7 +158,11 @@ export function UpdateToastWindow({
 
 	return (
 		<div className={`${styles.window} launch-theme`}>
-			<Card className="w-full flex-row gap-3" aria-live="polite" aria-label="SuperShare update">
+			<Card
+				className="w-full flex-row gap-3"
+				aria-live="polite"
+				aria-label="SuperShare update"
+			>
 				<div
 					className={`${styles.icon} ${payload.phase === "error" ? styles.iconError : ""}`}
 				>
