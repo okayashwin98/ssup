@@ -74,24 +74,24 @@ describe("ScreenCaptureKitRecorder colour metadata", () => {
 });
 
 describe("ScreenCaptureKitRecorder window capture", () => {
-	it("records the display and crops it to the selected window bounds", () => {
-		expect(recorderSource).not.toContain("streamConfig.sourceRect");
+	it("asks macOS for only the selected part of the display", () => {
+		expect(recorderSource).toContain("streamConfig.sourceRect = crop.rect");
 		expect(recorderSource).not.toContain("desktopIndependentWindow");
+		expect(recorderSource).not.toContain("CIImage");
 		expect(recorderSource).toContain(
 			"requestedFrame = CGRect(x: x, y: y, width: width, height: height)",
 		);
 		expect(recorderSource).toContain(
 			"let captureRect = visibleFrame.intersection(display.frame)",
 		);
-		expect(recorderSource).toContain("appendCroppedVideoFrame(sampleBuffer");
 	});
 
-	it("crops whole, even pixel sizes and sizes the bitrate for the frame rate", () => {
+	it("records whole, even pixel sizes and sizes the bitrate for the frame rate", () => {
 		expect(recorderSource).toContain(
 			"let crop = Self.pixelCrop(for: captureRect, on: display, scale: scaleFactor)",
 		);
 		expect(recorderSource).toMatch(/let width = max\(2, Int\(.*\) & ~1\)/);
-		expect(recorderSource).toContain("x: (crop.minX * sourceWidth).rounded(),");
+		expect(recorderSource).toContain("x: left / pixelsPerPoint,");
 		expect(recorderSource).toContain("averageBitRate * requestedFPS / assistantFPS");
 		expect(recorderSource).toContain(
 			"compression[AVVideoMaxKeyFrameIntervalKey] = requestedFPS",
@@ -108,7 +108,10 @@ describe("ScreenCaptureKitRecorder window capture", () => {
 			"guard let display = Self.captureDisplay(for: window.frame",
 		);
 		expect(recorderSource).toContain("try await activeStream.updateContentFilter(filter)");
-		expect(recorderSource).toContain("self.windowCropRect = cropRect");
+		expect(recorderSource).toContain(
+			"try await activeStream.updateConfiguration(configuration)",
+		);
+		expect(recorderSource).toContain("self.windowSourceRect = sourceRect");
 	});
 });
 
