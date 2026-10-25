@@ -1,10 +1,16 @@
 import { type RefObject, useEffect } from "react";
 
-const FRAME_INTERVAL_MS = 1000 / 20;
+// Below this the bar stays empty, so room noise and keyboard taps don't flicker it.
+const FLOOR_DB = -46;
+// Loud speech fills the bar.
+const CEILING_DB = -10;
+// The bar jumps up quickly and sinks slowly, like a VU meter.
+const RISE_MS = 50;
+const FALL_MS = 320;
 
 /**
- * Draws the microphone's level into a bar's width, about 20 times a second,
- * without re-rendering React. Runs only while `active`.
+ * Draws the microphone's level into a bar on every screen frame, eased so it
+ * glides instead of jumping, without re-rendering React. Runs only while `active`.
  */
 export function useMicLevel(
 	fillRef: RefObject<HTMLElement | null>,
@@ -16,7 +22,11 @@ export function useMicLevel(
 		let cancelled = false;
 		let stream: MediaStream | null = null;
 		let context: AudioContext | null = null;
-		let timer: number | null = null;
+		let frame: number | null = null;
+
+		const draw = (level: number) => {
+			if (fillRef.current) fillRef.current.style.transform = `scaleX(${level.toFixed(3)})`;
+		};
 
 		const start = async () => {
 			try {
@@ -30,19 +40,34 @@ export function useMicLevel(
 				}
 				context = new AudioContext();
 				const analyser = context.createAnalyser();
-				analyser.fftSize = 512;
+				analyser.fftSize = 1024;
 				context.createMediaStreamSource(stream).connect(analyser);
 				const samples = new Float32Array(analyser.fftSize);
-				timer = window.setInterval(() => {
+				let shown = 0;
+				let drawn = -1;
+				let last = performance.now();
+				const tick = (now: number) => {
+					const elapsed = Math.min(100, now - last);
+					last = now;
 					analyser.getFloatTimeDomainData(samples);
 					let sum = 0;
 					for (const sample of samples) sum += sample * sample;
-					const rms = Math.sqrt(sum / samples.length);
-					// Speech sits around -40 to -10 dBFS; map that range onto the bar.
-					const level = Math.min(1, Math.max(0, (20 * Math.log10(rms + 1e-8) + 50) / 40));
-					if (fillRef.current)
-						fillRef.current.style.width = `${Math.round(level * 100)}%`;
-				}, FRAME_INTERVAL_MS);
+					const db = 20 * Math.log10(Math.sqrt(sum / samples.length) + 1e-8);
+					const target = Math.min(
+						1,
+						Math.max(0, (db - FLOOR_DB) / (CEILING_DB - FLOOR_DB)),
+					);
+					const ease = 1 - Math.exp(-elapsed / (target > shown ? RISE_MS : FALL_MS));
+					shown += (target - shown) * ease;
+					if (shown < 0.002) shown = 0;
+					// Skip repaints while the bar is still.
+					if (Math.abs(shown - drawn) > 0.002) {
+						draw(shown);
+						drawn = shown;
+					}
+					frame = requestAnimationFrame(tick);
+				};
+				frame = requestAnimationFrame(tick);
 			} catch (error) {
 				console.warn("Microphone level unavailable:", error);
 			}
@@ -51,10 +76,10 @@ export function useMicLevel(
 
 		return () => {
 			cancelled = true;
-			if (timer !== null) window.clearInterval(timer);
+			if (frame !== null) cancelAnimationFrame(frame);
 			stream?.getTracks().forEach((track) => track.stop());
 			void context?.close();
-			if (fillRef.current) fillRef.current.style.width = "0%";
+			draw(0);
 		};
 	}, [active, deviceId, fillRef]);
 }

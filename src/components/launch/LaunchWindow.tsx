@@ -1,3 +1,4 @@
+import { type MouseEvent, useCallback, useEffect, useRef, useState } from "react";
 import {
 	AppWindowIcon,
 	ArrowClockwiseIcon,
@@ -15,7 +16,6 @@ import {
 	XIcon,
 } from "@/components/ui/icons";
 import { toast } from "@/components/ui/toast";
-import { type MouseEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useScopedT } from "../../contexts/I18nContext";
 import { useMicrophoneDevices } from "../../hooks/useMicrophoneDevices";
 import { useScreenRecorder } from "../../hooks/useScreenRecorder";
@@ -356,7 +356,7 @@ export function LaunchWindow() {
 					title={t("recording.closeApp")}
 					aria-label={t("recording.closeApp")}
 				>
-					<XIcon weight="bold" className="size-4" />
+					<XIcon className={styles.icon} />
 				</button>
 				<span className={styles.divider} />
 				{SOURCE_MODES.map(({ mode, label, name, Icon }) => (
