@@ -157,6 +157,8 @@ export function CapturePicker() {
 	const [message, setMessage] = useState<string | null>(null);
 	// Display mode shows every screen; the one under the pointer is also highlighted.
 	const [pointerHere, setPointerHere] = useState(false);
+	// Where the pointer last was on this screen; null once it leaves.
+	const lastPointer = useRef<{ x: number; y: number } | null>(null);
 	const windows = useRef<{ window: CapturePickerWindow; rect: AreaRect }[]>([]);
 	const origin = useRef({ x: window.screenX, y: window.screenY });
 	const current = useRef<Target | null>(null);
@@ -274,7 +276,9 @@ export function CapturePicker() {
 				current.current = next;
 				editingArea.current = false;
 				setTarget(next);
-				setPointerHere(!!local && rectContains(screenRect(), local.x, local.y));
+				const here = !!local && rectContains(screenRect(), local.x, local.y);
+				setPointerHere(here);
+				lastPointer.current = here ? local : null;
 				requestAnimationFrame(() =>
 					requestAnimationFrame(() => {
 						if (!disposed) window.electronAPI.capturePickerReady();
@@ -303,6 +307,28 @@ export function CapturePicker() {
 		window.addEventListener("keydown", onKey);
 		return () => window.removeEventListener("keydown", onKey);
 	}, [finish]);
+
+	// The bar's Display, Window and Area buttons switch modes while the picker is open.
+	useEffect(
+		() =>
+			window.electronAPI.onCapturePickerModeChanged((next) => {
+				modeRef.current = next;
+				setMode(next);
+				press.current = null;
+				editingArea.current = false;
+				setAreaRatio(null);
+				const pointer = lastPointer.current;
+				const target =
+					next === "display"
+						? { kind: "screen" as const, rect: screenRect() }
+						: pointer
+							? targetAt(pointer.x, pointer.y)
+							: null;
+				current.current = target;
+				setTarget(target);
+			}),
+		[targetAt],
+	);
 
 	// Tells the bar while a window is hovered, so its Window icon sways along.
 	const onWindow = target?.kind === "window";
@@ -370,6 +396,7 @@ export function CapturePicker() {
 
 	const onMove = (event: ReactPointerEvent<HTMLDivElement>) => {
 		if (!pointerHere) setPointerHere(true);
+		lastPointer.current = { x: event.clientX, y: event.clientY };
 		const start = press.current;
 		if (start?.rect) {
 			const dx = event.clientX - start.x;
@@ -463,6 +490,7 @@ export function CapturePicker() {
 			}}
 			onPointerLeave={() => {
 				setPointerHere(false);
+				lastPointer.current = null;
 				if (press.current || editingArea.current || modeRef.current === "display") return;
 				update(null);
 			}}

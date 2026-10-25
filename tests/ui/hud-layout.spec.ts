@@ -151,3 +151,21 @@ test("the Window icon sways while the picker's pointer is over a window", async 
 	);
 	await expect.poll(swaying).toBe("none");
 });
+
+test("the bar switches an open picker to another mode", async ({ page }) => {
+	await installDesktopBridge(page);
+	await page.addInitScript(() => {
+		// The picker stays open until a mode is chosen there.
+		window.electronAPI.pickCaptureTarget = () => new Promise(() => {});
+	});
+	await page.goto("/?windowType=hud-overlay");
+	const display = page.getByRole("button", { name: "Record a display", exact: true });
+	const windowButton = page.getByRole("button", { name: "Record a window", exact: true });
+	await display.click();
+	await expect(display).toHaveAttribute("data-active", "true");
+	await expect(windowButton).toBeEnabled();
+	await windowButton.click();
+	await expect(page.locator("html")).toHaveAttribute("data-picker-mode", "window");
+	await expect(windowButton).toHaveAttribute("data-active", "true");
+	await expect(display).not.toHaveAttribute("data-active", "true");
+});

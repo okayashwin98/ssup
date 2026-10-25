@@ -177,6 +177,10 @@ export async function installDesktopBridge(
 					document.documentElement.dataset.windowHover = String(hovering);
 				},
 				onCapturePickerWindowHover: subscribe,
+				setCapturePickerMode: (mode: string) => {
+					document.documentElement.dataset.pickerMode = mode;
+				},
+				onCapturePickerModeChanged: subscribe,
 				getActiveCountdown: async () => ({ success: true, seconds: 3 }),
 				onCountdownTick: subscribe,
 				cancelCountdown: async () => {

@@ -72,9 +72,10 @@
 	flex-direction: column;
 	justify-content: center;
 	gap: 3px;
-	min-width: 64px;
+	/* Square, like the close button. */
+	width: 52px;
 	height: 52px;
-	padding: 0 8px;
+	padding: 0 4px;
 	font-size: 10px;
 	color: #fff;
 }
@@ -154,7 +155,8 @@
 	/* Square, as tall as the Display, Window and Area buttons, with the icon centred. */
 	width: 52px;
 	height: 52px;
-	margin: 0;
+	/* 6 px from the bar's left edge, the same as above and below it in the 64 px bar. */
+	margin: 0 0 0 -4px;
 	padding: 0;
 	border: 0;
 	border-radius: 10px;

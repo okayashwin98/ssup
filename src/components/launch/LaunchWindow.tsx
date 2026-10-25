@@ -186,7 +186,13 @@ export function LaunchWindow() {
 	// Screen Studio's Display, Window and Area: each opens the picker for that kind of target.
 	const handlePickOnScreen = useCallback(
 		async (mode: CapturePickerMode) => {
-			if (pickerPending.current || recording || finalizing) return;
+			if (recording || finalizing) return;
+			// The picker is open: switch it to this mode in place.
+			if (pickerPending.current) {
+				setPickerMode(mode);
+				window.electronAPI.setCapturePickerMode(mode);
+				return;
+			}
 			pickerPending.current = true;
 			setPickerMode(mode);
 			try {
@@ -376,7 +382,7 @@ export function LaunchWindow() {
 						className={`${styles.item} ${styles.mode}`}
 						data-active={pickerMode === mode || undefined}
 						aria-label={name}
-						disabled={(pickerMode !== null && pickerMode !== mode) || !sourceReady}
+						disabled={!sourceReady}
 						onClick={() => void handlePickOnScreen(mode)}
 					>
 						<Icon

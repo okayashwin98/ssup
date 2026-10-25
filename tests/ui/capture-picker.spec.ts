@@ -270,7 +270,7 @@ test("HUD reports a failed pick and keeps cancellation silent", async ({ page })
 	await expect(page.locator("html")).not.toHaveAttribute("data-hud-notify");
 });
 
-test("while one picker is open the other modes wait and the open one is highlighted", async ({
+test("while the picker is open the other modes switch it and the open one is highlighted", async ({
 	page,
 }) => {
 	await installDesktopBridge(page);
@@ -291,10 +291,12 @@ test("while one picker is open the other modes wait and the open one is highligh
 	await windowButton.click();
 	await expect(page.locator("html")).toHaveAttribute("data-picker-pending", "true");
 	await expect(windowButton).toHaveAttribute("data-active", "true");
-	await expect(displayButton).toBeDisabled();
-	await page.evaluate(() => (window as unknown as { finishPicker: () => void }).finishPicker());
 	await expect(displayButton).toBeEnabled();
+	await displayButton.click();
+	await expect(displayButton).toHaveAttribute("data-active", "true");
 	await expect(windowButton).not.toHaveAttribute("data-active");
+	await page.evaluate(() => (window as unknown as { finishPicker: () => void }).finishPicker());
+	await expect(displayButton).not.toHaveAttribute("data-active");
 });
 
 test("changing source cancels countdown and discards native warm-up before opening the picker", async ({

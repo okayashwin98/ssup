@@ -97,7 +97,9 @@ export function createFloatingPanel(
 			? { vibrancy: "hud" as const, visualEffectState: "active" as const }
 			: {}),
 		roundedCorners: options.vibrancy,
-		hasShadow: options.vibrancy,
+		// macOS's window shadow cannot be softened, only turned off; the bar's thin light
+		// edge outlines it instead.
+		hasShadow: false,
 		resizable: options.resizable ?? false,
 		minimizable: false,
 		maximizable: false,

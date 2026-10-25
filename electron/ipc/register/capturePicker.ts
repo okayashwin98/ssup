@@ -198,6 +198,14 @@ export function registerCapturePickerHandlers({
 		// "Start recording" on the picked window, screen or area starts it straight away.
 		return { success: true, source, record: pick.record === true };
 	};
+	// The bar's Display, Window and Area buttons switch an open picker's mode in place.
+	ipcMain.on("capture-picker-set-mode", (_event, mode: unknown) => {
+		if (!activePick || (mode !== "display" && mode !== "window" && mode !== "area")) return;
+		pickMode = mode;
+		for (const window of BrowserWindow.getAllWindows()) {
+			if (!window.isDestroyed()) window.webContents.send("capture-picker-mode-changed", mode);
+		}
+	});
 	ipcMain.handle("pick-capture-target", (_event, mode: unknown) => {
 		if (isCursorCaptureActive) return { success: false, canceled: true };
 		if (!activePick) {

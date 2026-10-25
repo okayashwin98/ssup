@@ -275,3 +275,27 @@ test("A locked aspect ratio holds while the area's handles are dragged", async (
 	await expect(page.getByRole("spinbutton", { name: "Width" })).toHaveValue("560");
 	await expect(page.getByRole("spinbutton", { name: "Height" })).toHaveValue("315");
 });
+
+test("Switching from Display to Window in the bar changes the open picker", async ({ page }) => {
+	await installDesktopBridgeOverrides(page, () => {
+		window.electronAPI.onCapturePickerModeChanged = (callback) => {
+			const listener = (event: Event) =>
+				callback((event as CustomEvent<"display" | "window" | "area">).detail);
+			window.addEventListener("test-picker-mode", listener);
+			return () => window.removeEventListener("test-picker-mode", listener);
+		};
+	});
+	await openPicker(page, "display");
+	const start = page.getByRole("button", { name: "Start recording" });
+	await expect(start).toHaveCount(1);
+	await page.mouse.move(-10, -10); // over the bar, off this screen
+	await page.dispatchEvent("div.fixed", "pointerleave");
+	await page.evaluate(() =>
+		window.dispatchEvent(new CustomEvent("test-picker-mode", { detail: "window" })),
+	);
+	await expect(start).toHaveCount(0); // Window mode waits for a hovered window
+	await page.mouse.move(600, 300);
+	await expect(page.getByText("Notes", { exact: true })).toBeVisible();
+	await page.getByRole("button", { name: "Start recording", exact: true }).click();
+	expect(await pick(page)).toMatchObject({ kind: "window", windowId: "window:101:0" });
+});

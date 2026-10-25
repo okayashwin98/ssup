@@ -301,6 +301,9 @@ interface Window {
 		) => Promise<{ success: boolean; frame?: CaptureArea; message?: string }>;
 		/** Reveals the picker window once it has painted its first state. */
 		capturePickerReady: () => void;
+		/** Switches an open picker to another mode, from the bar. */
+		setCapturePickerMode: (mode: CapturePickerMode) => void;
+		onCapturePickerModeChanged: (callback: (mode: CapturePickerMode) => void) => () => void;
 		/** The picker tells the bar while its pointer is over a window. */
 		capturePickerSetWindowHover: (hovering: boolean) => void;
 		onCapturePickerWindowHover: (callback: (hovering: boolean) => void) => () => void;
