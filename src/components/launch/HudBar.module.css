@@ -73,7 +73,7 @@
 	min-width: 64px;
 	height: 52px;
 	padding: 0 8px;
-	font-size: 11px;
+	font-size: 10px;
 	color: #fff;
 }
 
@@ -99,6 +99,13 @@
 .icon {
 	width: 20px;
 	height: 20px;
+	flex: none;
+}
+
+/* The drawn icons sit a size up from the rest. */
+.largeIcon {
+	width: 24px;
+	height: 24px;
 	flex: none;
 }
 

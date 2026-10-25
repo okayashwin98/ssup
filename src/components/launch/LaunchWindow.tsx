@@ -1,22 +1,18 @@
 import { type MouseEvent, useCallback, useEffect, useRef, useState } from "react";
-import {
-	ArrowClockwiseIcon,
-	House,
-	MicrophoneIcon,
-	MicrophoneSlashIcon,
-	MinusIcon,
-	SpeakerHighIcon,
-	SpeakerXIcon,
-	TimerIcon,
-	VideoCameraIcon,
-	VideoCameraSlashIcon,
-	XIcon,
-} from "@/components/ui/icons";
+import { ArrowClockwiseIcon, House, MinusIcon, TimerIcon, XIcon } from "@/components/ui/icons";
 import { toast } from "@/components/ui/toast";
 import { useScopedT } from "../../contexts/I18nContext";
 import { useMicrophoneDevices } from "../../hooks/useMicrophoneDevices";
 import { useScreenRecorder } from "../../hooks/useScreenRecorder";
 import { useVideoDevices } from "../../hooks/useVideoDevices";
+import {
+	AreaModeIcon,
+	CameraIcon,
+	DisplayModeIcon,
+	MicrophoneIcon,
+	SystemAudioIcon,
+	WindowModeIcon,
+} from "./BarIcons";
 import styles from "./HudBar.module.css";
 import { useBarWindowSize } from "./hooks/useBarWindowSize";
 import { useLaunchWindowActions } from "./hooks/useLaunchWindowActions";
@@ -24,7 +20,6 @@ import { useLaunchWindowSystemState } from "./hooks/useLaunchWindowSystemState";
 import { useMicLevel } from "./hooks/useMicLevel";
 import { useRecordingTimer } from "./hooks/useRecordingTimer";
 import { RecordingBarControls } from "./RecordingBar";
-import { AreaModeIcon, DisplayModeIcon, WindowModeIcon } from "./SourceModeIcons";
 
 const COUNTDOWN_OPTIONS = [0, 3, 5, 10];
 const SOURCE_MODES = [
@@ -367,7 +362,7 @@ export function LaunchWindow() {
 						disabled={(pickerMode !== null && pickerMode !== mode) || !sourceReady}
 						onClick={() => void handlePickOnScreen(mode)}
 					>
-						<Icon className={styles.icon} />
+						<Icon className={styles.largeIcon} />
 						<span>{label}</span>
 					</button>
 				))}
@@ -379,11 +374,7 @@ export function LaunchWindow() {
 					title={t("recording.webcam")}
 					onClick={(event) => void openCameraMenu(event)}
 				>
-					{webcamEnabled ? (
-						<VideoCameraIcon weight="fill" className={styles.icon} />
-					) : (
-						<VideoCameraSlashIcon className={styles.icon} />
-					)}
+					<CameraIcon className={styles.largeIcon} />
 					<span className={styles.label}>
 						{webcamEnabled ? cameraLabel : t("recording.noCamera", "No camera")}
 					</span>
@@ -395,11 +386,7 @@ export function LaunchWindow() {
 					title={t("recording.microphone")}
 					onClick={(event) => void openMicrophoneMenu(event)}
 				>
-					{microphoneEnabled ? (
-						<MicrophoneIcon weight="fill" className={styles.icon} />
-					) : (
-						<MicrophoneSlashIcon className={styles.icon} />
-					)}
+					<MicrophoneIcon className={styles.largeIcon} />
 					<span className={styles.label}>
 						{microphoneEnabled
 							? microphoneLabel
@@ -422,11 +409,7 @@ export function LaunchWindow() {
 					}
 					onClick={() => setSystemAudioEnabled(!systemAudioEnabled)}
 				>
-					{systemAudioEnabled ? (
-						<SpeakerHighIcon weight="fill" className={styles.icon} />
-					) : (
-						<SpeakerXIcon className={styles.icon} />
-					)}
+					<SystemAudioIcon className={styles.largeIcon} />
 					<span className={styles.label}>
 						{systemAudioEnabled
 							? t("recording.systemAudio", "System audio")
