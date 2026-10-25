@@ -7,6 +7,8 @@ const CEILING_DB = -10;
 // The bar jumps up quickly and sinks slowly, like a VU meter.
 const RISE_MS = 50;
 const FALL_MS = 320;
+// While the microphone is on, the bar never fully empties, as in Screen Studio.
+const RESTING = 0.12;
 
 /**
  * Draws the microphone's level into a bar on every screen frame, eased so it
@@ -43,6 +45,7 @@ export function useMicLevel(
 				analyser.fftSize = 1024;
 				context.createMediaStreamSource(stream).connect(analyser);
 				const samples = new Float32Array(analyser.fftSize);
+				const showLevel = (level: number) => draw(RESTING + (1 - RESTING) * level);
 				let shown = 0;
 				let drawn = -1;
 				let last = performance.now();
@@ -62,7 +65,7 @@ export function useMicLevel(
 					if (shown < 0.002) shown = 0;
 					// Skip repaints while the bar is still.
 					if (Math.abs(shown - drawn) > 0.002) {
-						draw(shown);
+						showLevel(shown);
 						drawn = shown;
 					}
 					frame = requestAnimationFrame(tick);
