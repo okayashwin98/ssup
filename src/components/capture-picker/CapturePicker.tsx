@@ -131,8 +131,9 @@ function SmallButton({
 			aria-label={label}
 			onPointerDown={(event) => event.stopPropagation()}
 			onPointerUp={(event) => event.stopPropagation()}
-			// A dark frosted fill keeps the label readable over any window content.
-			className="pointer-events-auto rounded-lg border border-white/15 bg-neutral-900/70 px-2.5 py-1 text-sm text-white backdrop-blur-xl hover:bg-neutral-800/80"
+			// A dark fill keeps the label readable over any window content (a blur cannot see
+			// through these see-through windows, so there is none). One height for all of them.
+			className="pointer-events-auto inline-flex h-8 items-center rounded-lg border border-white/15 bg-neutral-900/80 px-2.5 text-sm leading-none text-white hover:bg-neutral-800/80"
 			style={{ textShadow: "none" }}
 			onClick={onClick}
 		>
@@ -685,7 +686,7 @@ export function CapturePicker() {
 					<div className="text-4xl font-medium">No windows to select</div>
 					<button
 						type="button"
-						className="rounded-lg bg-white/15 px-6 py-3.5 text-lg backdrop-blur-md hover:bg-white/25"
+						className="rounded-lg bg-white/15 px-5 py-2.5 text-base hover:bg-white/25"
 						onPointerDown={(event) => event.stopPropagation()}
 						onPointerUp={(event) => event.stopPropagation()}
 						onClick={() => finish({ kind: "screen", rect: screenRect() }, true)}

@@ -164,6 +164,13 @@ test("Window mode shows the app's icon, name, size, Resize and Adjust recording 
 	await expect(page.getByRole("button", { name: "Resize", exact: true })).toBeVisible();
 	const adjust = page.getByRole("button", { name: "Adjust recording area", exact: true });
 	await expect(adjust).toBeVisible();
+	const resize = page.getByRole("button", { name: "Resize", exact: true });
+	await expect
+		.poll(async () => [
+			(await resize.boundingBox())?.height,
+			(await adjust.boundingBox())?.height,
+		])
+		.toEqual([32, 32]);
 	// It sits at the bottom of the window (Notes ends at y = 600), not under Start recording.
 	const box = await adjust.boundingBox();
 	expect(600 - (box!.y + box!.height)).toBeGreaterThanOrEqual(12);
