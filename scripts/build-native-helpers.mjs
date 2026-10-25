@@ -46,6 +46,10 @@ const helpers = [
 		source: "WindowResize.swift",
 		output: "recordly-window-resize",
 	},
+	{
+		source: "AppIcons.swift",
+		output: "recordly-app-icons",
+	},
 ];
 
 const swiftcCheck = spawnSync("swiftc", ["--version"], { encoding: "utf8" });

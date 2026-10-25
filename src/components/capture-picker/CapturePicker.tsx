@@ -130,7 +130,8 @@ function SmallButton({
 			aria-label={label}
 			onPointerDown={(event) => event.stopPropagation()}
 			onPointerUp={(event) => event.stopPropagation()}
-			className="pointer-events-auto rounded-md bg-white/20 px-2 py-0.5 text-sm text-white backdrop-blur hover:bg-white/30"
+			// A dark frosted fill keeps the label readable over any window content.
+			className="pointer-events-auto rounded-lg border border-white/15 bg-neutral-900/70 px-2.5 py-1 text-sm text-white backdrop-blur-xl hover:bg-neutral-800/80"
 			style={{ textShadow: "none" }}
 			onClick={onClick}
 		>
@@ -367,7 +368,7 @@ export function CapturePicker() {
 			update({
 				kind: "area",
 				rect: start.handle
-					? resizeAreaRect(start.rect, start.handle, dx, dy, screenRect())
+					? resizeAreaRect(start.rect, start.handle, dx, dy, screenRect(), areaRatio)
 					: moveAreaRect(start.rect, dx, dy, screenRect()),
 			});
 		} else if (
@@ -542,8 +543,28 @@ export function CapturePicker() {
 						>
 							<div
 								key={target.kind === "window" ? target.window.id : target.kind}
-								className="picker-card-in flex flex-col items-center gap-2 text-white"
-								style={{ textShadow: "0 1px 12px rgba(0,0,0,0.55)" }}
+								className={
+									// An area's controls sit on a panel of their own, outside the area.
+									target.kind === "area"
+										? "picker-card-in pointer-events-auto flex flex-col items-center gap-3 rounded-2xl bg-neutral-900/85 p-4 text-white shadow-2xl backdrop-blur-xl"
+										: "picker-card-in flex flex-col items-center gap-2 text-white"
+								}
+								style={{
+									textShadow:
+										target.kind === "area"
+											? "none"
+											: "0 1px 12px rgba(0,0,0,0.55)",
+								}}
+								onPointerDown={
+									target.kind === "area"
+										? (event) => event.stopPropagation()
+										: undefined
+								}
+								onPointerUp={
+									target.kind === "area"
+										? (event) => event.stopPropagation()
+										: undefined
+								}
 							>
 								{target.kind === "window" && target.window.appIcon && (
 									<img
@@ -553,7 +574,11 @@ export function CapturePicker() {
 										draggable={false}
 									/>
 								)}
-								<div className="text-3xl font-semibold tracking-tight">{label}</div>
+								{target.kind !== "area" && (
+									<div className="text-3xl font-semibold tracking-tight">
+										{label}
+									</div>
+								)}
 								<div className="flex items-center gap-2 text-sm tabular-nums opacity-95">
 									{target.kind === "area" && editingArea.current ? (
 										<AreaSizeFields
@@ -626,12 +651,15 @@ export function CapturePicker() {
 									<div className="text-sm text-red-200">{message}</div>
 								)}
 								<StartButton onStart={() => finish(current.current, true)} />
-								{target.kind === "window" && (
-									<SmallButton onClick={() => editArea(target.rect)}>
-										Adjust recording area
-									</SmallButton>
-								)}
 							</div>
+						</div>
+					)}
+					{showStartCard && target.kind === "window" && (
+						// Sits at the bottom edge of the hovered window, apart from Start recording.
+						<div className="pointer-events-none absolute inset-x-0 bottom-4 flex justify-center">
+							<SmallButton onClick={() => editArea(target.rect)}>
+								Adjust recording area
+							</SmallButton>
 						</div>
 					)}
 				</div>

@@ -53,6 +53,53 @@ describe("area geometry", () => {
 	});
 });
 
+describe("ratio-locked resizing", () => {
+	const bounds = { width: 1440, height: 1000 };
+	const rect = { x: 100, y: 100, width: 320, height: 180 };
+	const ratio = 16 / 9;
+
+	it("keeps the shape from a corner, following the side pulled further", () => {
+		expect(resizeAreaRect(rect, "se", 160, 10, bounds, ratio)).toEqual({
+			x: 100,
+			y: 100,
+			width: 480,
+			height: 270,
+		});
+		expect(
+			resizeAreaRect(
+				{ x: 600, y: 400, width: 320, height: 180 },
+				"nw",
+				-10,
+				-90,
+				bounds,
+				ratio,
+			),
+		).toEqual({ x: 440, y: 310, width: 480, height: 270 });
+	});
+
+	it("grows evenly about the centre line from an edge", () => {
+		expect(resizeAreaRect(rect, "e", 160, 0, bounds, ratio)).toEqual({
+			x: 100,
+			y: 55,
+			width: 480,
+			height: 270,
+		});
+		expect(resizeAreaRect(rect, "n", 0, -90, bounds, ratio)).toEqual({
+			x: 20,
+			y: 10,
+			width: 480,
+			height: 270,
+		});
+	});
+
+	it("stops at the screen's edge without losing the shape", () => {
+		const grown = resizeAreaRect(rect, "se", 5000, 5000, bounds, ratio);
+		expect(grown.x + grown.width).toBeLessThanOrEqual(bounds.width);
+		expect(grown.y + grown.height).toBeLessThanOrEqual(bounds.height);
+		expect(Math.abs(grown.width / grown.height - ratio)).toBeLessThan(0.01);
+	});
+});
+
 describe("frontmostAt", () => {
 	const back = { id: "back", rect: { x: 0, y: 0, width: 800, height: 600 } };
 	const front = { id: "front", rect: { x: 100, y: 100, width: 200, height: 200 } };

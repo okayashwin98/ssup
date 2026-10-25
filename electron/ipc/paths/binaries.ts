@@ -125,6 +125,14 @@ export function getWindowResizeBinaryPath(): string {
 	return path.join(app.getPath("userData"), "native-tools", "recordly-window-resize");
 }
 
+export function getAppIconsSourcePath(): string {
+	return resolveUnpackedAppPath("electron", "native", "AppIcons.swift");
+}
+
+export function getAppIconsBinaryPath(): string {
+	return path.join(app.getPath("userData"), "native-tools", "recordly-app-icons");
+}
+
 export function getWindowsCaptureExePath(): string {
 	return resolvePreferredWindowsNativeHelperPath("wgc-capture", "wgc-capture.exe");
 }
@@ -277,6 +285,16 @@ export async function ensureWindowResizeBinary(): Promise<string> {
 		getWindowResizeBinaryPath(),
 		"window resize helper",
 		"recordly-window-resize",
+	);
+}
+
+export async function ensureAppIconsBinary(): Promise<string> {
+	await ensureNativeHelperMigration();
+	return ensureSwiftHelperBinary(
+		getAppIconsSourcePath(),
+		getAppIconsBinaryPath(),
+		"app icons helper",
+		"recordly-app-icons",
 	);
 }
 

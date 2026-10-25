@@ -148,9 +148,13 @@ test("Window mode shows the app's icon, name, size, Resize and Adjust recording 
 	await expect(page.getByText("620 × 460", { exact: true })).toBeVisible();
 	await expect(page.locator(`img[src="${ICON}"]`)).toBeVisible();
 	await expect(page.getByRole("button", { name: "Resize", exact: true })).toBeVisible();
-	await expect(
-		page.getByRole("button", { name: "Adjust recording area", exact: true }),
-	).toBeVisible();
+	const adjust = page.getByRole("button", { name: "Adjust recording area", exact: true });
+	await expect(adjust).toBeVisible();
+	// It sits at the bottom of the window (Notes ends at y = 600), not under Start recording.
+	const box = await adjust.boundingBox();
+	expect(600 - (box!.y + box!.height)).toBeGreaterThanOrEqual(12);
+	expect(600 - (box!.y + box!.height)).toBeLessThanOrEqual(20);
+	await page.screenshot({ path: "test-results/picker-window-card.png" });
 	await page.getByRole("button", { name: "Start recording", exact: true }).click();
 	expect(await pick(page)).toEqual({
 		kind: "window",
@@ -214,6 +218,9 @@ test("Area mode takes typed sizes and aspect ratios around the area's centre", a
 	await expect(page.getByRole("spinbutton", { name: "Width" })).toHaveValue("800");
 	await page.getByRole("button", { name: "Aspect ratio", exact: true }).click();
 	await expect(page.getByRole("spinbutton", { name: "Height" })).toHaveValue("450");
+	// The controls sit on their own panel, without an "Area" title.
+	await expect(page.getByText("Area", { exact: true })).toHaveCount(0);
+	await page.screenshot({ path: "test-results/picker-area-panel.png" });
 	await page.getByRole("button", { name: "Start recording", exact: true }).click();
 	// 400 × 300 at (600, 300) grows around its centre (800, 450) to 800 × 450.
 	expect(await pick(page)).toEqual({
@@ -225,4 +232,24 @@ test("Area mode takes typed sizes and aspect ratios around the area's centre", a
 		displayId: 1,
 		record: true,
 	});
+});
+
+test("A locked aspect ratio holds while the area's handles are dragged", async ({ page }) => {
+	await openPicker(page, "area", { menuChoice: "16:9" });
+	await page.mouse.move(600, 300);
+	await page.mouse.down();
+	await page.mouse.move(1000, 600, { steps: 6 });
+	await page.mouse.up();
+	await page.getByRole("button", { name: "Aspect ratio", exact: true }).click();
+	// 400 × 225 at (600, 337.5); drag the bottom-right corner 160 px right.
+	await expect(page.getByRole("spinbutton", { name: "Width" })).toHaveValue("400");
+	await expect(page.getByRole("spinbutton", { name: "Height" })).toHaveValue("225");
+	const corner = page.locator('[data-area-handle="se"]');
+	const box = (await corner.boundingBox())!;
+	await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+	await page.mouse.down();
+	await page.mouse.move(box.x + box.width / 2 + 160, box.y + box.height / 2, { steps: 6 });
+	await page.mouse.up();
+	await expect(page.getByRole("spinbutton", { name: "Width" })).toHaveValue("560");
+	await expect(page.getByRole("spinbutton", { name: "Height" })).toHaveValue("315");
 });

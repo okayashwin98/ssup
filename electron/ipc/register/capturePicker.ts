@@ -1,18 +1,18 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { validateCaptureSource } from "../captureSelection";
-import { listCapturePickerWindows } from "../capturePickerSources";
 import { desktopCapturer, ipcMain } from "electron";
-import { ensureWindowResizeBinary } from "../paths/binaries";
 import type { SourceListPickResult } from "../../sourceListPicker";
 import {
 	closeCapturePickerWindows,
 	createCapturePickerWindows,
 	isCapturePickerWebContents,
 } from "../../windows";
+import { listCapturePickerWindows } from "../capturePickerSources";
+import { validateCaptureSource } from "../captureSelection";
 import { stopWindowBoundsCapture } from "../cursor/bounds";
-import { isCursorCaptureActive, setSelectedSource } from "../state";
+import { ensureAppIconsBinary, ensureWindowResizeBinary } from "../paths/binaries";
 import { createAreaSource, createWindowSource, normalizeCapturePick } from "../sourceArea";
+import { isCursorCaptureActive, setSelectedSource } from "../state";
 import type { CapturePick, CapturePickerMode, CapturePickerWindow, SelectedSource } from "../types";
 import { getScreen } from "../utils";
 import { getScreenSourceIdForDisplay, isLikelyLinuxWaylandSession } from "./sourceMapping";
@@ -20,23 +20,50 @@ import { broadcastSelectedSourceChange, getDesktopSources } from "./sources";
 
 const run = promisify(execFile);
 
+// The window card shows icons at 80 pt, so 160 px keeps them sharp on Retina screens.
+const APP_ICON_PIXELS = 160;
+
+/** Sharp icons from macOS for each window's app, keyed by process id. */
+async function sharpAppIcons(windows: CapturePickerWindow[]): Promise<Record<string, string>> {
+	const pids = [...new Set(windows.map((window) => window.pid).filter(Boolean))];
+	if (process.platform !== "darwin" || pids.length === 0) return {};
+	try {
+		const { stdout } = await run(
+			await ensureAppIconsBinary(),
+			[String(APP_ICON_PIXELS), ...pids.map(String)],
+			{ timeout: 3000, maxBuffer: 16 * 1024 * 1024 },
+		);
+		return JSON.parse(stdout);
+	} catch {
+		return {};
+	}
+}
+
 /** Each window's app icon, as the picker's window card shows it (Screen Studio-style). */
 async function withAppIcons(windows: CapturePickerWindow[]): Promise<CapturePickerWindow[]> {
-	try {
-		const sources = await desktopCapturer.getSources({
-			types: ["window"],
-			thumbnailSize: { width: 0, height: 0 },
-			fetchWindowIcons: true,
-		});
-		const icons = new Map(
-			sources
-				.filter((source) => source.appIcon && !source.appIcon.isEmpty())
-				.map((source) => [source.id, source.appIcon!.toDataURL()]),
-		);
-		return windows.map((window) => ({ ...window, appIcon: icons.get(window.id) }));
-	} catch {
-		return windows;
+	const sharp = await sharpAppIcons(windows);
+	// Electron's 32 px window icons cover anything macOS has no app icon for.
+	let small = new Map<string, string>();
+	if (windows.some((window) => !window.pid || !sharp[window.pid])) {
+		try {
+			const sources = await desktopCapturer.getSources({
+				types: ["window"],
+				thumbnailSize: { width: 0, height: 0 },
+				fetchWindowIcons: true,
+			});
+			small = new Map(
+				sources
+					.filter((source) => source.appIcon && !source.appIcon.isEmpty())
+					.map((source) => [source.id, source.appIcon!.toDataURL()]),
+			);
+		} catch {
+			// The cards show no icon.
+		}
 	}
+	return windows.map((window) => ({
+		...window,
+		appIcon: (window.pid && sharp[window.pid]) || small.get(window.id),
+	}));
 }
 
 /** The same source the screen list offers for this display. */
