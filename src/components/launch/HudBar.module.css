@@ -115,15 +115,24 @@
 	text-overflow: ellipsis;
 }
 
-/* Camera, microphone and system audio share one width: that of "No system audio". */
+/* Microphone and system audio share one width: that of "No system audio". */
 .device {
 	flex: none;
 	width: 155px;
 }
 
-.device .label {
+/* The camera hugs "No camera" and grows with a camera's name, up to that same width. */
+.camera {
+	flex: none;
+	max-width: 155px;
+}
+
+.device .label,
+.camera .label {
 	flex: 1;
 	min-width: 0;
+	/* Buttons centre text by default; the label starts right after its icon. */
+	text-align: left;
 }
 
 .divider {

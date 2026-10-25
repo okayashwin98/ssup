@@ -54,7 +54,7 @@ async function openPicker(
 					allowArea: true,
 					mode,
 					displayName: "Built-in Retina Display",
-					refreshRate: 120,
+					refreshRate: 119.88,
 					windows: pickerWindows,
 					cursor: null,
 				}),
@@ -102,12 +102,36 @@ test("Display mode highlights the whole screen with its name, size and frame rat
 test("Display mode offers every screen, even the one the pointer is not on", async ({ page }) => {
 	await openPicker(page, "display");
 	const start = page.getByRole("button", { name: "Start recording", exact: true });
+	const tinted = () =>
+		page
+			.locator("div.fixed > div")
+			.first()
+			.evaluate((element) =>
+				getComputedStyle(element).backgroundImage.includes("90, 67, 245"),
+			);
 	await expect(start).toBeVisible();
 	await page.mouse.move(600, 300);
+	await expect.poll(tinted).toBe(true);
 	await page.mouse.move(-10, -10); // the pointer goes to another screen
 	await page.dispatchEvent("div.fixed", "pointerleave");
 	await expect(start).toBeVisible();
+	await expect.poll(tinted).toBe(false);
 	await expect(page.getByText(/Esc to cancel/)).toHaveCount(0);
+});
+
+test("Window mode shows the icon and Start recording only on the hovered window", async ({
+	page,
+}) => {
+	await openPicker(page, "window");
+	await page.mouse.move(1380, 60); // empty desktop: everything stays dimmed
+	await expect(page.getByRole("button", { name: "Start recording" })).toHaveCount(0);
+	await expect(page.locator("img")).toHaveCount(0);
+	await page.mouse.move(600, 300);
+	await expect(page.getByRole("button", { name: "Start recording" })).toHaveCount(1);
+	await expect(page.locator("img")).toHaveCount(1);
+	await expect(page.getByRole("button", { name: "Start recording" })).toHaveText(
+		"Start recording",
+	);
 });
 
 test("Window mode shows the app's icon, name, size, Resize and Adjust recording area", async ({

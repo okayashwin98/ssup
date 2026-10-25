@@ -76,6 +76,11 @@ const AREA_RATIOS: Array<{ label: string; ratio: number | null }> = [
 	{ label: "9:16", ratio: 9 / 16 },
 ];
 
+// Everything that is not the hovered target sits under this dim.
+const DIM = "rgba(0,0,0,0.6)";
+// The hovered screen or window is tinted in the Start recording button's colour.
+const HIGHLIGHT = "rgba(90,67,245,0.28)";
+
 function screenRect() {
 	return { x: 0, y: 0, width: window.innerWidth, height: window.innerHeight };
 }
@@ -105,7 +110,6 @@ function StartButton({ onStart }: { onStart: () => void }) {
 			style={{ background: "#5a43f5", textShadow: "none" }}
 			onClick={onStart}
 		>
-			<span className="size-3 rounded-full border-2 border-white" />
 			Start recording
 		</button>
 	);
@@ -148,6 +152,8 @@ export function CapturePicker() {
 	const [hasWindows, setHasWindows] = useState(true);
 	const [areaRatio, setAreaRatio] = useState<number | null>(null);
 	const [message, setMessage] = useState<string | null>(null);
+	// Display mode shows every screen; the one under the pointer is also highlighted.
+	const [pointerHere, setPointerHere] = useState(false);
 	const windows = useRef<{ window: CapturePickerWindow; rect: AreaRect }[]>([]);
 	const origin = useRef({ x: window.screenX, y: window.screenY });
 	const current = useRef<Target | null>(null);
@@ -265,6 +271,7 @@ export function CapturePicker() {
 				current.current = next;
 				editingArea.current = false;
 				setTarget(next);
+				setPointerHere(!!local && rectContains(screenRect(), local.x, local.y));
 				requestAnimationFrame(() =>
 					requestAnimationFrame(() => {
 						if (!disposed) window.electronAPI.capturePickerReady();
@@ -352,6 +359,7 @@ export function CapturePicker() {
 	};
 
 	const onMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+		if (!pointerHere) setPointerHere(true);
 		const start = press.current;
 		if (start?.rect) {
 			const dx = event.clientX - start.x;
@@ -403,7 +411,7 @@ export function CapturePicker() {
 	return (
 		<div
 			className="picker-fade-in fixed inset-0 select-none overflow-hidden"
-			style={{ cursor: "crosshair", background: target ? "transparent" : "rgba(0,0,0,0.38)" }}
+			style={{ cursor: "crosshair", background: target ? "transparent" : DIM }}
 			onPointerMove={onMove}
 			onPointerDown={(event) => {
 				if (event.button !== 0) return;
@@ -444,6 +452,7 @@ export function CapturePicker() {
 				press.current = null;
 			}}
 			onPointerLeave={() => {
+				setPointerHere(false);
 				if (press.current || editingArea.current || modeRef.current === "display") return;
 				update(null);
 			}}
@@ -464,8 +473,17 @@ export function CapturePicker() {
 						top: target.rect.y,
 						width: target.rect.width,
 						height: target.rect.height,
-						boxShadow: "0 0 0 100vmax rgba(0,0,0,0.45)",
-						background: target.kind === "screen" ? "rgba(0,0,0,0.3)" : "transparent",
+						boxShadow: `0 0 0 100vmax ${DIM}`,
+						// A screen stays dimmed (Display mode shows them all); the hovered
+						// screen or window gets the highlight tint.
+						background:
+							target.kind === "screen"
+								? mode === "display" && !pointerHere
+									? DIM
+									: `linear-gradient(${HIGHLIGHT}, ${HIGHLIGHT}), ${DIM}`
+								: target.kind === "window"
+									? HIGHLIGHT
+									: "transparent",
 						outline: "1px solid rgba(255,255,255,0.55)",
 						outlineOffset: -1,
 						borderRadius: target.kind === "window" ? 10 : 0,
@@ -473,7 +491,7 @@ export function CapturePicker() {
 						transition:
 							target.kind === "area"
 								? undefined
-								: "left 120ms ease, top 120ms ease, width 120ms ease, height 120ms ease",
+								: "left 120ms ease, top 120ms ease, width 120ms ease, height 120ms ease, background 120ms ease",
 					}}
 				>
 					{target.kind === "area" &&
@@ -549,7 +567,7 @@ export function CapturePicker() {
 											{target.kind === "screen" &&
 											mode === "display" &&
 											display.refreshRate
-												? ` · ${display.refreshRate}FPS`
+												? ` · ${Math.round(display.refreshRate)}FPS`
 												: ""}
 										</span>
 									)}

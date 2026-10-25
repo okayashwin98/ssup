@@ -381,7 +381,7 @@ export function LaunchWindow() {
 				<span className={styles.divider} />
 				<button
 					type="button"
-					className={`${styles.item} ${styles.device}`}
+					className={`${styles.item} ${styles.camera}`}
 					data-off={!webcamEnabled || undefined}
 					title={t("recording.webcam")}
 					onClick={(event) => void openCameraMenu(event)}
