@@ -97,10 +97,10 @@ export function CloseIcon(props: SVGProps<SVGSVGElement>) {
 		<Frame {...props}>
 			<rect x="1.15771" y="1" width="18" height="18" rx="9" fill="currentColor" />
 			<path
-				d="M6.15771 6L14.1577 14M6.15771 14L14.1577 6"
+				d="M7.15771 7L13.1577 13M7.15771 13L13.1577 7"
 				{...stroke}
 				stroke="#24262D"
-				strokeWidth={1.5}
+				strokeWidth={2}
 			/>
 		</Frame>
 	);
