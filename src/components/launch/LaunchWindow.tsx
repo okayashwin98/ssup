@@ -1,5 +1,5 @@
 import { type MouseEvent, useCallback, useEffect, useRef, useState } from "react";
-import { ArrowClockwiseIcon, House, MinusIcon, TimerIcon } from "@/components/ui/icons";
+import { ArrowClockwiseIcon, MinusIcon, TimerIcon } from "@/components/ui/icons";
 import { toast } from "@/components/ui/toast";
 import { useScopedT } from "../../contexts/I18nContext";
 import { useMicrophoneDevices } from "../../hooks/useMicrophoneDevices";
@@ -9,6 +9,7 @@ import {
 	AreaModeIcon,
 	CameraIcon,
 	CloseIcon,
+	DashboardIcon,
 	DisplayModeIcon,
 	MicrophoneIcon,
 	SystemAudioIcon,
@@ -447,7 +448,7 @@ export function LaunchWindow() {
 					title={t("recording.home")}
 					aria-label={t("recording.home")}
 				>
-					<House className={styles.icon} />
+					<DashboardIcon className={styles.largeIcon} />
 				</button>
 				<button
 					type="button"

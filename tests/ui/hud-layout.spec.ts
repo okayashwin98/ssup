@@ -40,7 +40,7 @@ test("HUD dividers are vertically centered and Home opens the dashboard", async 
 				height: Math.round(element.getBoundingClientRect().height),
 			})),
 		)
-		.toEqual({ width: 20, height: 20 });
+		.toEqual({ width: 24, height: 24 });
 	// Recording starts from the picked window or screen, not from the bar.
 	await expect(page.getByRole("button", { name: "Record", exact: true })).toHaveCount(0);
 	await page.screenshot({ path: "test-results/hud-idle.png", animations: "disabled" });
