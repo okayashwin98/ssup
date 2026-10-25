@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 const mocks = vi.hoisted(() => ({
 	handlers: new Map<string, (...args: unknown[]) => unknown>(),
 	list: vi.fn(),
@@ -13,11 +14,23 @@ const mocks = vi.hoisted(() => ({
 	overlay: {},
 	outsider: {},
 	windows: [] as object[],
+	listeners: new Map<string, (...args: unknown[]) => unknown>(),
+	sent: [] as unknown[][],
 }));
 vi.mock("electron", () => ({
 	ipcMain: {
 		handle: (name: string, handler: (...args: unknown[]) => unknown) =>
 			mocks.handlers.set(name, handler),
+		on: (name: string, listener: (...args: unknown[]) => unknown) =>
+			mocks.listeners.set(name, listener),
+	},
+	BrowserWindow: {
+		getAllWindows: () => [
+			{
+				isDestroyed: () => false,
+				webContents: { send: (...args: unknown[]) => mocks.sent.push(args) },
+			},
+		],
 	},
 }));
 vi.mock("../../windows", () => ({
@@ -51,7 +64,9 @@ vi.mock("./sources", () => ({
 	broadcastSelectedSourceChange: vi.fn(),
 	getDesktopSources: vi.fn().mockResolvedValue([{ id: "screen:1:0", display_id: "1" }]),
 }));
+
 import { registerCapturePickerHandlers } from "./capturePicker";
+
 const platform = process.platform;
 afterEach(() => {
 	Object.defineProperty(process, "platform", { value: platform });
@@ -60,6 +75,8 @@ afterEach(() => {
 beforeEach(() => {
 	vi.clearAllMocks();
 	mocks.handlers.clear();
+	mocks.listeners.clear();
+	mocks.sent = [];
 	mocks.currentSource = null;
 	mocks.recording = false;
 	mocks.windows = [mocks.overlay];
@@ -70,6 +87,29 @@ beforeEach(() => {
 });
 const call = (name: string, sender: object, input?: unknown) =>
 	mocks.handlers.get(name)!({ sender }, input);
+describe("window hover for the bar's Window icon", () => {
+	it("is on while any screen's picker hovers a window, and off when the picker closes", async () => {
+		const second = { id: 2 };
+		Object.assign(mocks.overlay, { id: 1 });
+		mocks.windows = [mocks.overlay, second];
+		const hover = (sender: object, hovering: boolean) =>
+			mocks.listeners.get("capture-picker-window-hover")!({ sender }, hovering);
+		const pending = call("pick-capture-target", mocks.outsider);
+		await vi.waitFor(() => expect(mocks.create).toHaveBeenCalledOnce());
+		hover(mocks.overlay, true);
+		hover(second, true);
+		hover(mocks.overlay, false);
+		hover(mocks.outsider, false); // not a picker: ignored
+		expect(mocks.sent).toEqual([["capture-picker-window-hover", true]]);
+		await call("complete-capture-pick", mocks.overlay, null);
+		await pending;
+		expect(mocks.sent).toEqual([
+			["capture-picker-window-hover", true],
+			["capture-picker-window-hover", false],
+		]);
+	});
+});
+
 describe("selection-only picker IPC", () => {
 	it("ignores completion from other windows and passes Start recording through", async () => {
 		const pending = call("pick-capture-target", mocks.outsider);

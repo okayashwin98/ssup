@@ -238,9 +238,27 @@
 .picker-card-in {
 	animation: picker-card-in 160ms cubic-bezier(0.22, 1, 0.36, 1);
 }
+/* A gentle sway on the hovered window's icon, and on the bar's Window icon meanwhile.
+   Both start at a delay from the wall clock (swayPhase) so they move in step. */
+@keyframes hover-sway {
+	0%,
+	100% {
+		transform: translateX(0);
+	}
+	25% {
+		transform: translateX(-2px);
+	}
+	75% {
+		transform: translateX(2px);
+	}
+}
+.hover-sway {
+	animation: hover-sway 1.6s ease-in-out infinite;
+}
 @media (prefers-reduced-motion: reduce) {
 	.picker-fade-in,
-	.picker-card-in {
+	.picker-card-in,
+	.hover-sway {
 		animation: none;
 	}
 }

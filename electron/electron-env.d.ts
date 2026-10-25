@@ -301,6 +301,9 @@ interface Window {
 		) => Promise<{ success: boolean; frame?: CaptureArea; message?: string }>;
 		/** Reveals the picker window once it has painted its first state. */
 		capturePickerReady: () => void;
+		/** The picker tells the bar while its pointer is over a window. */
+		capturePickerSetWindowHover: (hovering: boolean) => void;
+		onCapturePickerWindowHover: (callback: (hovering: boolean) => void) => () => void;
 		getSelectedSource: () => Promise<ProcessedDesktopSource | null>;
 		onSelectedSourceChanged: (
 			callback: (source: ProcessedDesktopSource | null) => void,

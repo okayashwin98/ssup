@@ -125,3 +125,29 @@ test("the webcam bubble window plays the camera", async ({ page }) => {
 		)
 		.toBe(true);
 });
+
+test("the Window icon sways while the picker's pointer is over a window", async ({ page }) => {
+	await installDesktopBridge(page);
+	await page.addInitScript(() => {
+		window.electronAPI.onCapturePickerWindowHover = (callback) => {
+			const listener = (event: Event) => callback((event as CustomEvent<boolean>).detail);
+			window.addEventListener("test-window-hover", listener);
+			return () => window.removeEventListener("test-window-hover", listener);
+		};
+	});
+	await page.goto("/?windowType=hud-overlay");
+	const icon = page.getByRole("button", { name: "Record a window", exact: true }).locator("svg");
+	const swaying = () => icon.evaluate((element) => getComputedStyle(element).animationName);
+	await expect.poll(swaying).toBe("none");
+	await page.evaluate(() =>
+		window.dispatchEvent(new CustomEvent("test-window-hover", { detail: true })),
+	);
+	await expect.poll(swaying).toBe("hover-sway");
+	await expect(
+		page.getByRole("button", { name: "Record a display", exact: true }).locator("svg"),
+	).not.toHaveClass(/hover-sway/);
+	await page.evaluate(() =>
+		window.dispatchEvent(new CustomEvent("test-window-hover", { detail: false })),
+	);
+	await expect.poll(swaying).toBe("none");
+});

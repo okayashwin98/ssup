@@ -613,6 +613,15 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	capturePickerReady: () => {
 		ipcRenderer.send("capture-picker-ready");
 	},
+	capturePickerSetWindowHover: (hovering: boolean) => {
+		ipcRenderer.send("capture-picker-window-hover", hovering);
+	},
+	onCapturePickerWindowHover: (callback: (hovering: boolean) => void) => {
+		const listener = (_event: Electron.IpcRendererEvent, hovering: boolean) =>
+			callback(hovering);
+		ipcRenderer.on("capture-picker-window-hover", listener);
+		return () => ipcRenderer.removeListener("capture-picker-window-hover", listener);
+	},
 	getSelectedSource: () => {
 		return ipcRenderer.invoke("get-selected-source");
 	},

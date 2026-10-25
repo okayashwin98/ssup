@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { desktopCapturer, ipcMain } from "electron";
+import { BrowserWindow, desktopCapturer, ipcMain } from "electron";
 import type { SourceListPickResult } from "../../sourceListPicker";
 import {
 	closeCapturePickerWindows,
@@ -113,6 +113,26 @@ export function registerCapturePickerHandlers({
 		resolve?.(pick);
 	};
 
+	// Picker windows (one per screen) whose pointer is over a window; the bar's Window
+	// icon moves while any of them is.
+	const hoveringWindow = new Set<number>();
+	let barHover = false;
+	const broadcastWindowHover = () => {
+		const hovering = hoveringWindow.size > 0;
+		if (hovering === barHover) return;
+		barHover = hovering;
+		for (const window of BrowserWindow.getAllWindows()) {
+			if (!window.isDestroyed())
+				window.webContents.send("capture-picker-window-hover", hovering);
+		}
+	};
+	ipcMain.on("capture-picker-window-hover", (event, hovering: unknown) => {
+		if (!isCapturePickerWebContents(event.sender)) return;
+		if (hovering === true) hoveringWindow.add(event.sender.id);
+		else hoveringWindow.delete(event.sender.id);
+		broadcastWindowHover();
+	});
+
 	let activePick: Promise<unknown> | null = null;
 	let pickMode: CapturePickerMode | undefined;
 	const pickTarget = async () => {
@@ -150,6 +170,8 @@ export function registerCapturePickerHandlers({
 			createCapturePickerWindows(() => finishPick(null));
 		});
 		closeCapturePickerWindows();
+		hoveringWindow.clear();
+		broadcastWindowHover();
 		if (!pick || isCursorCaptureActive) {
 			return { success: false, canceled: true };
 		}
@@ -185,6 +207,8 @@ export function registerCapturePickerHandlers({
 				.catch((error) => {
 					finishPick(null);
 					closeCapturePickerWindows();
+					hoveringWindow.clear();
+					broadcastWindowHover();
 					return {
 						success: false,
 						message:

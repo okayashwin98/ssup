@@ -1,4 +1,5 @@
 import { type MouseEvent, useCallback, useEffect, useRef, useState } from "react";
+import { swayPhase } from "@/components/capture-picker/hoverSway";
 import { ArrowClockwiseIcon, MinusIcon, TimerIcon } from "@/components/ui/icons";
 import { toast } from "@/components/ui/toast";
 import { useScopedT } from "../../contexts/I18nContext";
@@ -159,6 +160,9 @@ export function LaunchWindow() {
 		cancelRecording,
 	});
 	commandHandlers.current = { toggleRecording, pauseRecording, resumeRecording, cancelRecording };
+	// The Window icon sways while the picker's pointer is over a window.
+	const [pickerOnWindow, setPickerOnWindow] = useState(false);
+	useEffect(() => window.electronAPI.onCapturePickerWindowHover(setPickerOnWindow), []);
 	const recordingRef = useRef(recording);
 	recordingRef.current = recording;
 	useEffect(
@@ -374,7 +378,10 @@ export function LaunchWindow() {
 						disabled={(pickerMode !== null && pickerMode !== mode) || !sourceReady}
 						onClick={() => void handlePickOnScreen(mode)}
 					>
-						<Icon className={styles.largeIcon} />
+						<Icon
+							className={`${styles.largeIcon}${mode === "window" && pickerOnWindow ? " hover-sway" : ""}`}
+							style={mode === "window" && pickerOnWindow ? swayPhase() : undefined}
+						/>
 						<span>{label}</span>
 					</button>
 				))}

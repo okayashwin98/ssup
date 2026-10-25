@@ -119,6 +119,20 @@ test("Display mode offers every screen, even the one the pointer is not on", asy
 	await expect(page.getByText(/Esc to cancel/)).toHaveCount(0);
 });
 
+test("A hovered window's icon sways, and the picker tells the bar", async ({ page }) => {
+	await openPicker(page, "window");
+	const html = page.locator("html");
+	await page.mouse.move(600, 300);
+	await expect(page.locator("img.hover-sway")).toHaveCount(1);
+	await expect(html).toHaveAttribute("data-window-hover", "true");
+	const moved = await page
+		.locator("img.hover-sway")
+		.evaluate((element) => getComputedStyle(element).animationName);
+	expect(moved).toBe("hover-sway");
+	await page.mouse.move(1380, 60); // the desktop
+	await expect(html).toHaveAttribute("data-window-hover", "false");
+});
+
 test("Window mode shows the icon and Start recording only on the hovered window", async ({
 	page,
 }) => {

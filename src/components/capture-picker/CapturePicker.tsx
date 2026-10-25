@@ -16,6 +16,7 @@ import {
 	rectContains,
 	resizeAreaRect,
 } from "./areaGeometry";
+import { swayPhase } from "./hoverSway";
 
 type Target =
 	| { kind: "window"; window: CapturePickerWindow; rect: AreaRect }
@@ -302,6 +303,13 @@ export function CapturePicker() {
 		return () => window.removeEventListener("keydown", onKey);
 	}, [finish]);
 
+	// Tells the bar while a window is hovered, so its Window icon sways along.
+	const onWindow = target?.kind === "window";
+	useEffect(() => {
+		window.electronAPI.capturePickerSetWindowHover(onWindow);
+	}, [onWindow]);
+	useEffect(() => () => window.electronAPI.capturePickerSetWindowHover(false), []);
+
 	const editArea = (rect: AreaRect) => {
 		press.current = null;
 		editingArea.current = true;
@@ -570,7 +578,8 @@ export function CapturePicker() {
 									<img
 										src={target.window.appIcon}
 										alt=""
-										className="size-20 drop-shadow-xl"
+										className="hover-sway size-20 drop-shadow-xl"
+										style={swayPhase()}
 										draggable={false}
 									/>
 								)}

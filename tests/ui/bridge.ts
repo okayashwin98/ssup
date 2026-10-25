@@ -173,6 +173,10 @@ export async function installDesktopBridge(
 				onWebcamBubbleDeviceChanged: subscribe,
 				getEditorMode: async () => false,
 				onEditorModeChanged: subscribe,
+				capturePickerSetWindowHover: (hovering: boolean) => {
+					document.documentElement.dataset.windowHover = String(hovering);
+				},
+				onCapturePickerWindowHover: subscribe,
 				getActiveCountdown: async () => ({ success: true, seconds: 3 }),
 				onCountdownTick: subscribe,
 				cancelCountdown: async () => {
