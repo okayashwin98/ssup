@@ -55,7 +55,6 @@ export function LaunchWindow() {
 		recording,
 		paused,
 		finalizing,
-		countdownActive,
 		toggleRecording,
 		pauseRecording,
 		resumeRecording,
@@ -100,7 +99,13 @@ export function LaunchWindow() {
 		}
 	}, [selectedVideoDeviceId, setWebcamDeviceId]);
 
-	useMicLevel(meterRef, microphoneEnabled && !recording && !finalizing, microphoneDeviceId);
+	// The level line lets go of the microphone before a recording takes it.
+	const [startRequested, setStartRequested] = useState(false);
+	useMicLevel(
+		meterRef,
+		microphoneEnabled && !recording && !finalizing && !startRequested,
+		microphoneDeviceId,
+	);
 
 	// The webcam bubble is its own window, shown while the webcam is on outside the editor.
 	const [showBubble, setShowBubble] = useState(readBubblePreference);
@@ -174,7 +179,12 @@ export function LaunchWindow() {
 			const result = await window.electronAPI.pickCaptureTarget();
 			if (result.success && result.source) syncSelectedSource(result.source);
 			// "Start recording" on the picked window, screen or area.
-			if (result.success && result.record) void startRecordingRef.current();
+			if (result.success && result.record) {
+				setStartRequested(true);
+				void Promise.resolve(startRecordingRef.current()).finally(() =>
+					setStartRequested(false),
+				);
+			}
 			if (result.message && !result.canceled) {
 				if (result.success) toast.info(result.message);
 				else toast.error(result.message);
@@ -343,7 +353,7 @@ export function LaunchWindow() {
 					className={styles.item}
 					title={selectedSource}
 					aria-label="Choose recording source"
-					disabled={isPickerPending || !sourceReady || countdownActive}
+					disabled={isPickerPending || !sourceReady}
 					onClick={() => void handlePickOnScreen()}
 				>
 					<MonitorIcon className={styles.icon} />

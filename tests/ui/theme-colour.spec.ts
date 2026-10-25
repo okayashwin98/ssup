@@ -2,7 +2,9 @@ import { expect, test } from "@playwright/test";
 import { installDesktopBridge } from "./bridge";
 
 const accent = (page: import("@playwright/test").Page) =>
-	page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--accent").trim());
+	page.evaluate(() =>
+		getComputedStyle(document.documentElement).getPropertyValue("--accent").trim(),
+	);
 
 test("the theme colour defaults to SuperShare purple and can be changed in General", async ({
 	page,
@@ -21,7 +23,10 @@ test("the theme colour defaults to SuperShare purple and can be changed in Gener
 	);
 	await colours.getByRole("radio", { name: "Green" }).click();
 	await expect.poll(() => accent(page)).toBe("#17A34A");
-	await expect(colours.getByRole("radio", { name: "Green" })).toHaveAttribute("aria-checked", "true");
+	await expect(colours.getByRole("radio", { name: "Green" })).toHaveAttribute(
+		"aria-checked",
+		"true",
+	);
 	const capture = home.getByRole("button", { name: "Capture", exact: true });
 	await expect(capture).toHaveCSS("background-color", "rgb(23, 163, 74)");
 	await colours.getByLabel("Custom theme colour").fill("#123456");

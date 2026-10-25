@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import {
@@ -41,6 +41,8 @@ export function CapturePicker() {
 		handle?: AreaHandle;
 	} | null>(null);
 	const editingArea = useRef(false);
+	// The Start recording card hides while an area is drawn; this shows it once the drag ends.
+	const [, redraw] = useReducer((count: number) => count + 1, 0);
 	const completed = useRef(false);
 	const targetAt = useCallback((x: number, y: number): Target => {
 		const hit = frontmostAt(windows.current, x, y);
@@ -114,7 +116,10 @@ export function CapturePicker() {
 					.filter((entry) => entry.rect.width > 0 && entry.rect.height > 0);
 				// Only the screen under the pointer shows its target and Start recording.
 				const local = context.cursor
-					? { x: context.cursor.x - origin.current.x, y: context.cursor.y - origin.current.y }
+					? {
+							x: context.cursor.x - origin.current.x,
+							y: context.cursor.y - origin.current.y,
+						}
 					: null;
 				const next =
 					local && rectContains(screenRect(), local.x, local.y)
@@ -227,7 +232,10 @@ export function CapturePicker() {
 				press.current = null;
 				if (event.currentTarget.hasPointerCapture(event.pointerId))
 					event.currentTarget.releasePointerCapture(event.pointerId);
-				if (start.drawing || start.rect) return;
+				if (start.drawing || start.rect) {
+					redraw();
+					return;
+				}
 				if (editingArea.current) {
 					editingArea.current = false;
 				}
@@ -294,18 +302,19 @@ export function CapturePicker() {
 					{showStartCard && (
 						<div className="pointer-events-none absolute inset-0 flex items-center justify-center">
 							<div
-								className="pointer-events-auto flex flex-col items-center gap-2 text-white"
+								className="flex flex-col items-center gap-2 text-white"
 								style={{ textShadow: "0 1px 12px rgba(0,0,0,0.55)" }}
-								{...stopPicking}
 							>
 								<div className="text-3xl font-semibold tracking-tight">{label}</div>
 								<div className="text-sm tabular-nums opacity-90">
 									{Math.round(target.rect.width)} ×{" "}
 									{Math.round(target.rect.height)}
 								</div>
+								{/* Only the button takes clicks; a click anywhere else still picks. */}
 								<button
 									type="button"
-									className="mt-2 flex items-center gap-2 rounded-xl px-6 py-3 text-base font-medium text-white shadow-lg"
+									{...stopPicking}
+									className="pointer-events-auto mt-2 flex items-center gap-2 rounded-xl px-6 py-3 text-base font-medium text-white shadow-lg"
 									style={{ background: "#5a43f5", textShadow: "none" }}
 									onClick={() => finish(current.current, true)}
 								>

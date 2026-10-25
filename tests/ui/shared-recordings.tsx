@@ -40,7 +40,9 @@ window.electronAPI = {
 			return { success: false, error: "Not found" };
 		if (input.action === "rename")
 			recordings = recordings.map((video) =>
-				video.code === input.shareCode ? { ...video, title: input.title ?? video.title } : video,
+				video.code === input.shareCode
+					? { ...video, title: input.title ?? video.title }
+					: video,
 			);
 		return { success: true, videos: recordings };
 	},

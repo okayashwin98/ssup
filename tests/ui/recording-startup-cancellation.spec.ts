@@ -80,6 +80,15 @@ for (const resource of ["microphone", "cursor"] as const) {
 				},
 				pickCaptureTarget: async () => {
 					const html = document.documentElement;
+					// The first pick is "Start recording" on the window.
+					if (!html.dataset.startRequested) {
+						html.dataset.startRequested = "true";
+						return {
+							success: true,
+							source: { id: "window:101:0", name: "Notes" },
+							record: true,
+						};
+					}
 					html.dataset.resourceReleasedBeforePick = String(
 						resource === "microphone"
 							? html.dataset.trackStopped === "true"
@@ -92,7 +101,7 @@ for (const resource of ["microphone", "cursor"] as const) {
 		await page.goto("/?windowType=hud-overlay");
 		const source = page.getByRole("button", { name: "Choose recording source" });
 		await expect(source).toBeEnabled({ timeout: 15000 });
-		await page.getByRole("button", { name: "Record", exact: true }).click();
+		await source.click();
 		await expect(page.locator("html")).toHaveAttribute("data-acquiring-capture", "true");
 		await source.click();
 		await expect(page.locator("html")).toHaveAttribute(
@@ -101,6 +110,6 @@ for (const resource of ["microphone", "cursor"] as const) {
 		);
 		await expect(page.locator("html")).toHaveAttribute("data-track-stopped", "true");
 		await expect(page.locator("html")).not.toHaveAttribute("data-recorder-started");
-		await expect(page.getByRole("button", { name: "Record", exact: true })).toBeEnabled();
+		await expect(source).toBeEnabled();
 	});
 }

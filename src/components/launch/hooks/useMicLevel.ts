@@ -24,7 +24,10 @@ export function useMicLevel(
 					audio: deviceId ? { deviceId: { exact: deviceId } } : true,
 					video: false,
 				});
-				if (cancelled) return;
+				if (cancelled) {
+					stream.getTracks().forEach((track) => track.stop());
+					return;
+				}
 				context = new AudioContext();
 				const analyser = context.createAnalyser();
 				analyser.fftSize = 512;

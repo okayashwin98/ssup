@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { installDesktopBridge, installDesktopBridgeOverrides } from "./bridge";
 
-test("editor mode never opens the camera and releases an active recorder preview", async ({
+test("the bar never opens the camera; the webcam bubble shows only outside the editor", async ({
 	page,
 }) => {
 	await installDesktopBridge(page);
@@ -40,12 +40,14 @@ test("editor mode never opens the camera and releases an active recorder preview
 		});
 	});
 	await page.goto("/?windowType=hud-overlay");
-	await expect(page.getByRole("button", { name: "Disable webcam" })).toBeVisible();
-	expect(await page.locator("html").getAttribute("data-camera-requests")).toBeNull();
+	const html = page.locator("html");
+	await expect(page.getByRole("button", { name: "Webcam" })).toBeVisible();
+	await expect(html).toHaveAttribute("data-webcam-bubble", "false");
 	await page.evaluate(() => window.dispatchEvent(new Event("test-leave-editor")));
-	await expect(page.locator("html")).toHaveAttribute("data-camera-requests", "1");
+	await expect(html).toHaveAttribute("data-webcam-bubble", "true");
 	await page.evaluate(() => window.dispatchEvent(new Event("test-enter-editor")));
-	await expect(page.locator("html")).toHaveAttribute("data-camera-stopped", "true");
+	await expect(html).toHaveAttribute("data-webcam-bubble", "false");
 	await page.evaluate(() => navigator.mediaDevices.dispatchEvent(new Event("devicechange")));
-	await expect(page.locator("html")).toHaveAttribute("data-camera-requests", "1");
+	// The camera preview lives in the bubble window; the bar itself never opens the camera.
+	expect(await html.getAttribute("data-camera-requests")).toBeNull();
 });

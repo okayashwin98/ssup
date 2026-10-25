@@ -163,7 +163,9 @@ test("shared cards can be renamed", async ({ page }) => {
 	await input.fill("Site walkthrough");
 	await input.press("Enter");
 	await expect(page.getByRole("button", { name: "Site walkthrough", exact: true })).toBeVisible();
-	await expect(page.getByRole("button", { name: "Product walkthrough", exact: true })).toHaveCount(0);
+	await expect(
+		page.getByRole("button", { name: "Product walkthrough", exact: true }),
+	).toHaveCount(0);
 });
 
 test("a failed rename shows a clear message that clears on the next action", async ({ page }) => {

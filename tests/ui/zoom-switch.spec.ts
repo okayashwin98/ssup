@@ -12,7 +12,9 @@ test("the Zooms switch removes zooms from the preview and locks the zoom track",
 	await expect(addZoom).toBeVisible({ timeout: 20000 });
 	await addZoom.click();
 	const zoomRow = page.locator('[data-timeline-row="row-zoom"]');
-	await expect(zoomRow.locator('[data-variant="zoom"], [data-timeline-item]').first()).toBeAttached();
+	await expect(
+		zoomRow.locator('[data-variant="zoom"], [data-timeline-item]').first(),
+	).toBeAttached();
 	const canvas = page.locator("canvas").first();
 	await page.waitForTimeout(1500);
 	const zoomed = await canvas.screenshot();

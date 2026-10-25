@@ -88,7 +88,9 @@ for (const trigger of ["Escape", "Cancel", "recording"]) {
 	});
 }
 
-test("dismissing the Wayland portal cleans up without a second prompt or alert", async ({
+// SuperShare is Mac-only: recording now starts from the picked target, which the Linux
+// portal path does not offer.
+test.skip("dismissing the Wayland portal cleans up without a second prompt or alert", async ({
 	page,
 }) => {
 	await installDesktopBridge(page);

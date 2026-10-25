@@ -362,7 +362,9 @@ for (const platform of ["win32", "linux"]) {
 		await page.getByRole("row", { name: "Permissions", exact: true }).click();
 		await page.getByRole("button", { name: "Review permissions" }).click();
 		const tour = page.getByRole("dialog", { name: "Welcome to SuperShare" });
-		await expect(tour.getByRole("heading", { name: "Allow SuperShare to record" })).toBeVisible();
+		await expect(
+			tour.getByRole("heading", { name: "Allow SuperShare to record" }),
+		).toBeVisible();
 		await expect(
 			tour.getByRole("button", { name: "Start recording", exact: true }),
 		).toBeEnabled();

@@ -156,6 +156,21 @@ export async function installDesktopBridge(
 				hudOverlayRendererReady: success,
 				hudOverlaySetIgnoreMouse: success,
 				hudOverlaySetWebcamPreviewVisible: success,
+				hudWindowSetContentSize: success,
+				hudShowMenu: async () => null,
+				hudNotify: (payload: { message: string }) => {
+					document.documentElement.dataset.hudNotify = payload.message;
+				},
+				hudSetWebcamBubble: (request: { visible: boolean; deviceId?: string }) => {
+					document.documentElement.dataset.webcamBubble = String(request.visible);
+				},
+				hudPublishRecordingStatus: success,
+				onRecordingControlsCommand: subscribe,
+				sendRecordingControlsCommand: success,
+				getRecordingControlsStatus: async () => ({ paused: false, elapsed: 0 }),
+				onRecordingControlsStatus: subscribe,
+				webcamBubbleGetDevice: async () => null,
+				onWebcamBubbleDeviceChanged: subscribe,
 				getEditorMode: async () => false,
 				onEditorModeChanged: subscribe,
 				getActiveCountdown: async () => ({ success: true, seconds: 3 }),

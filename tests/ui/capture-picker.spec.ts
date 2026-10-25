@@ -61,7 +61,7 @@ async function pick(page: Page) {
 test("hovering highlights the frontmost window and a click picks it", async ({ page }) => {
 	await openPicker(page);
 	await page.mouse.move(600, 300);
-	await expect(page.getByText("Notes — Launch checklist · 620 × 460")).toBeVisible();
+	await expect(page.getByText("620 × 460", { exact: true })).toBeVisible();
 	await page.screenshot({ path: "test-results/capture-picker.png", animations: "disabled" });
 
 	await page.mouse.click(600, 300);
@@ -76,7 +76,7 @@ test("hovering highlights the frontmost window and a click picks it", async ({ p
 test("a click on the desktop picks the whole screen", async ({ page }) => {
 	await openPicker(page);
 	await page.mouse.move(1380, 60);
-	await expect(page.getByText("Entire screen · 1440 × 1000")).toBeVisible();
+	await expect(page.getByText("1440 × 1000", { exact: true })).toBeVisible();
 
 	await page.mouse.click(1380, 60);
 	expect(await pick(page)).toEqual({ kind: "screen", displayId: 1, record: false });
@@ -88,16 +88,29 @@ test("a drag draws an area", async ({ page }) => {
 	await page.mouse.down();
 	await page.mouse.move(700, 450, { steps: 8 });
 	await page.mouse.up();
-	await expect(page.getByText("Area · 400 × 250")).toBeVisible();
+	await expect(page.getByText("400 × 250", { exact: true })).toBeVisible();
 	expect(await pick(page)).toBeUndefined();
 	await page.keyboard.press("Enter");
 
+	// Enter is Start recording.
 	expect(await pick(page)).toMatchObject({
 		kind: "area",
 		width: 400,
 		height: 250,
 		displayId: 1,
-		record: false,
+		record: true,
+	});
+});
+
+test("Start recording on the hovered window picks it and starts recording", async ({ page }) => {
+	await openPicker(page);
+	await page.mouse.move(600, 300);
+	await page.getByRole("button", { name: "Start recording", exact: true }).click();
+	expect(await pick(page)).toEqual({
+		kind: "window",
+		windowId: "window:101:0",
+		displayId: 1,
+		record: true,
 	});
 });
 
@@ -125,12 +138,8 @@ test("platforms without area capture keep drag selection on an existing screen",
 	expect(await pick(page)).toMatchObject({ kind: "screen", record: false });
 });
 
-for (const { selected, trigger } of [
-	{ selected: false, trigger: "source" },
-	{ selected: false, trigger: "record" },
-	{ selected: true, trigger: "source" },
-]) {
-	test(`HUD ${selected ? "keeps the selected source" : "starts without a selected source"} and opens the picker only on ${trigger} click`, async ({
+for (const selected of [false, true]) {
+	test(`HUD ${selected ? "keeps the selected source" : "starts without a selected source"} and opens the picker only on source click`, async ({
 		page,
 	}) => {
 		await installDesktopBridge(page);
@@ -160,16 +169,12 @@ for (const { selected, trigger } of [
 		if (selected) {
 			await expect(control).toContainText("Existing screen");
 		} else {
-			await expect(control).toHaveText("Pick screen");
+			await expect(control).toHaveText("Choose screen");
 		}
 		await expect(page.locator("html")).not.toHaveAttribute("data-picker-calls");
-		await (trigger === "source"
-			? control
-			: page.getByRole("button", { name: "Record", exact: true })
-		).click();
+		await control.click();
 		await expect(page.locator("html")).toHaveAttribute("data-picker-calls", "1");
 		await expect(control).toContainText("Selected window");
-		await expect(page.getByRole("button", { name: "Record", exact: true })).toBeVisible();
 	});
 }
 
@@ -200,13 +205,13 @@ test("a newer selected-source event wins over the startup response", async ({ pa
 	await expect(page.locator("html")).not.toHaveAttribute("data-picker-calls");
 });
 
-test("areas can be moved and resized before Enter confirms them", async ({ page }) => {
+test("areas can be moved and resized before Enter starts recording them", async ({ page }) => {
 	await openPicker(page);
 	await page.mouse.move(300, 200);
 	await page.mouse.down();
 	await page.mouse.move(700, 450, { steps: 8 });
 	await page.mouse.up();
-	await expect(page.getByText("Area · 400 × 250")).toBeVisible();
+	await expect(page.getByText("400 × 250", { exact: true })).toBeVisible();
 	await page.mouse.move(400, 300);
 	await page.mouse.down();
 	await page.mouse.move(450, 350, { steps: 5 });
@@ -219,7 +224,7 @@ test("areas can be moved and resized before Enter confirms them", async ({ page 
 	await page.mouse.down();
 	await page.mouse.move(850, 600, { steps: 5 });
 	await page.mouse.up();
-	await expect(page.getByText("Area · 500 × 350")).toBeVisible();
+	await expect(page.getByText("500 × 350", { exact: true })).toBeVisible();
 	await page.keyboard.press("Enter");
 	expect(await pick(page)).toMatchObject({
 		kind: "area",
@@ -227,7 +232,7 @@ test("areas can be moved and resized before Enter confirms them", async ({ page 
 		y: 250,
 		width: 500,
 		height: 350,
-		record: false,
+		record: true,
 	});
 });
 
@@ -240,7 +245,7 @@ for (const resize of [false, true]) {
 		await page.mouse.down();
 		await page.mouse.move(700, 450);
 		await page.mouse.up();
-		await expect(page.getByText("Area · 400 × 250")).toBeVisible();
+		await expect(page.getByText("400 × 250", { exact: true })).toBeVisible();
 		const start = resize ? { x: 700, y: 450 } : { x: 400, y: 300 };
 		await page.mouse.move(start.x, start.y);
 		await page.mouse.down();
@@ -266,7 +271,7 @@ for (const resize of [false, true]) {
 			y: resize ? 200 : 201,
 			width: resize ? 401 : 400,
 			height: resize ? 251 : 250,
-			record: false,
+			record: true,
 		});
 	});
 }
@@ -291,21 +296,18 @@ test("HUD reports a failed pick and keeps cancellation silent", async ({ page })
 	await page.goto("/?windowType=hud-overlay");
 	const source = page.getByRole("button", { name: "Choose recording source" });
 	await source.click();
-	await expect(
-		page.getByText("That window or screen is no longer available.", { exact: true }),
-	).toBeVisible();
-	await page.getByText("That window or screen is no longer available.", { exact: true }).hover();
-	await page.locator('[data-slot="toast-close"]').click();
+	// The bar is too small for toasts; its errors become macOS notifications.
+	await expect(page.locator("html")).toHaveAttribute(
+		"data-hud-notify",
+		"That window or screen is no longer available.",
+	);
+	await page.evaluate(() => delete document.documentElement.dataset.hudNotify);
 	await source.click();
 	await expect(source).toBeEnabled();
-	await expect(
-		page.getByText("That window or screen is no longer available.", { exact: true }),
-	).toHaveCount(0);
+	await expect(page.locator("html")).not.toHaveAttribute("data-hud-notify");
 });
 
-test("unselected source reads Pick screen once and Record stays disabled while picking", async ({
-	page,
-}) => {
+test("unselected source reads Choose screen and stays disabled while picking", async ({ page }) => {
 	await installDesktopBridge(page);
 	await installDesktopBridgeOverrides(page, () => {
 		Object.assign(window.electronAPI, {
@@ -321,14 +323,14 @@ test("unselected source reads Pick screen once and Record stays disabled while p
 	await page.goto("/?windowType=hud-overlay");
 	const source = page.getByRole("button", { name: "Choose recording source" });
 	await expect(source).toBeEnabled();
-	await expect(source).toHaveText("Pick screen");
+	await expect(source).toHaveText("Choose screen");
 	await expect(page.locator("html")).not.toHaveAttribute("data-picker-pending");
 	await source.click();
 	await expect(page.locator("html")).toHaveAttribute("data-picker-pending", "true");
-	await expect(page.getByRole("button", { name: "Record", exact: true })).toBeDisabled();
+	await expect(source).toBeDisabled();
 	await page.evaluate(() => (window as unknown as { finishPicker: () => void }).finishPicker());
-	await expect(page.getByRole("button", { name: "Record", exact: true })).toBeEnabled();
-	await expect(source).toHaveText("Pick screen");
+	await expect(source).toBeEnabled();
+	await expect(source).toHaveText("Choose screen");
 });
 
 test("changing source cancels countdown and discards native warm-up before opening the picker", async ({
@@ -368,6 +370,13 @@ test("changing source cancels countdown and discards native warm-up before openi
 				if (active) events.push("recording");
 			},
 			pickCaptureTarget: async () => {
+				// The first pick is "Start recording" on a window.
+				if (!document.documentElement.dataset.countdownStarted)
+					return {
+						success: true,
+						source: { id: "window:101:0", name: "Notes" },
+						record: true,
+					};
 				events.push("pick");
 				document.documentElement.dataset.events = JSON.stringify(events);
 				return { success: false, canceled: true };
@@ -375,16 +384,16 @@ test("changing source cancels countdown and discards native warm-up before openi
 		});
 	});
 	await page.goto("/?windowType=hud-overlay");
-	await page.getByRole("button", { name: "Record", exact: true }).click();
-	await expect(page.locator("html")).toHaveAttribute("data-countdown-started", "true");
 	const source = page.getByRole("button", { name: "Choose recording source" });
+	await source.click();
+	await expect(page.locator("html")).toHaveAttribute("data-countdown-started", "true");
 	await expect(source).toBeEnabled();
 	await source.click();
 	await expect(page.locator("html")).toHaveAttribute(
 		"data-events",
 		JSON.stringify(["cancel-countdown", "stop-native", "delete-file", "pick"]),
 	);
-	await expect(page.getByRole("button", { name: "Record", exact: true })).toBeEnabled();
+	await expect(source).toBeEnabled();
 });
 
 test("recording and pause expose no interactive source picker", async ({ page }) => {
@@ -435,6 +444,12 @@ test("changing source also cancels countdown on the browser capture path", async
 				return { success: true };
 			},
 			pickCaptureTarget: async () => {
+				if (!document.documentElement.dataset.countdownStarted)
+					return {
+						success: true,
+						source: { id: "screen:1:0", name: "Screen" },
+						record: true,
+					};
 				document.documentElement.dataset.pickedAfterCancel =
 					document.documentElement.dataset.countdownCancelled;
 				return { success: false, canceled: true };
@@ -442,11 +457,12 @@ test("changing source also cancels countdown on the browser capture path", async
 		});
 	});
 	await page.goto("/?windowType=hud-overlay");
-	await page.getByRole("button", { name: "Record", exact: true }).click();
+	const source = page.getByRole("button", { name: "Choose recording source" });
+	await source.click();
 	await expect(page.locator("html")).toHaveAttribute("data-countdown-started", "true");
-	await page.getByRole("button", { name: "Choose recording source" }).click();
+	await source.click();
 	await expect(page.locator("html")).toHaveAttribute("data-picked-after-cancel", "true");
-	await expect(page.getByRole("button", { name: "Record", exact: true })).toBeEnabled();
+	await expect(source).toBeEnabled();
 });
 
 test("reopening an area starts with window picking instead of the old area editor", async ({
@@ -455,7 +471,7 @@ test("reopening an area starts with window picking instead of the old area edito
 	await openPicker(page, true, true);
 	await expect(page.locator("[data-area-handle]")).toHaveCount(0);
 	await page.mouse.move(600, 300);
-	await expect(page.getByText("Notes — Launch checklist · 620 × 460")).toBeVisible();
+	await expect(page.getByText("620 × 460", { exact: true })).toBeVisible();
 	await page.mouse.click(600, 300);
 	expect(await pick(page)).toMatchObject({ kind: "window", windowId: "window:101:0" });
 });
@@ -469,7 +485,7 @@ for (const destination of ["window", "screen"] as const) {
 		await page.mouse.down();
 		await page.mouse.move(700, 450, { steps: 5 });
 		await page.mouse.up();
-		await expect(page.getByText("Area · 400 × 250")).toBeVisible();
+		await expect(page.getByText("400 × 250", { exact: true })).toBeVisible();
 		const change = page.getByRole("button", { name: "Choose another source", exact: true });
 		if (destination === "window") {
 			await change.focus();
@@ -482,11 +498,9 @@ for (const destination of ["window", "screen"] as const) {
 		const point = destination === "window" ? { x: 600, y: 300 } : { x: 1380, y: 60 };
 		await page.mouse.move(point.x, point.y);
 		await expect(
-			page.getByText(
-				destination === "window"
-					? "Notes — Launch checklist · 620 × 460"
-					: "Entire screen · 1440 × 1000",
-			),
+			page.getByText(destination === "window" ? "620 × 460" : "1440 × 1000", {
+				exact: true,
+			}),
 		).toBeVisible();
 		await page.mouse.click(point.x, point.y);
 		expect(await pick(page)).toMatchObject({ kind: destination, displayId: 1, record: false });
