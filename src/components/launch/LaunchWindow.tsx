@@ -1,13 +1,10 @@
 import { type MouseEvent, useCallback, useEffect, useRef, useState } from "react";
 import {
-	AppWindowIcon,
 	ArrowClockwiseIcon,
-	BoundingBox,
 	House,
 	MicrophoneIcon,
 	MicrophoneSlashIcon,
 	MinusIcon,
-	MonitorIcon,
 	SpeakerHighIcon,
 	SpeakerXIcon,
 	TimerIcon,
@@ -27,12 +24,13 @@ import { useLaunchWindowSystemState } from "./hooks/useLaunchWindowSystemState";
 import { useMicLevel } from "./hooks/useMicLevel";
 import { useRecordingTimer } from "./hooks/useRecordingTimer";
 import { RecordingBarControls } from "./RecordingBar";
+import { AreaModeIcon, DisplayModeIcon, WindowModeIcon } from "./SourceModeIcons";
 
 const COUNTDOWN_OPTIONS = [0, 3, 5, 10];
 const SOURCE_MODES = [
-	{ mode: "display" as const, label: "Display", name: "Record a display", Icon: MonitorIcon },
-	{ mode: "window" as const, label: "Window", name: "Record a window", Icon: AppWindowIcon },
-	{ mode: "area" as const, label: "Area", name: "Record an area", Icon: BoundingBox },
+	{ mode: "display" as const, label: "Display", name: "Record a display", Icon: DisplayModeIcon },
+	{ mode: "window" as const, label: "Window", name: "Record a window", Icon: WindowModeIcon },
+	{ mode: "area" as const, label: "Area", name: "Record an area", Icon: AreaModeIcon },
 ];
 const WEBCAM_BUBBLE_STORAGE_KEY = "recordly.webcam-bubble-visible";
 
