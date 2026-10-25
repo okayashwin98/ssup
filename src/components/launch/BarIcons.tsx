@@ -91,3 +91,12 @@ export function SystemAudioIcon(props: SVGProps<SVGSVGElement>) {
 		</Frame>
 	);
 }
+
+export function CloseIcon(props: SVGProps<SVGSVGElement>) {
+	return (
+		<Frame {...props}>
+			<rect x="4" y="4" width="12" height="12" rx="6" fill="currentColor" />
+			<path d="M8 8L12 12M8 12L12 8" {...stroke} stroke="#24262D" />
+		</Frame>
+	);
+}

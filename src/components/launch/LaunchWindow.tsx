@@ -1,5 +1,5 @@
 import { type MouseEvent, useCallback, useEffect, useRef, useState } from "react";
-import { ArrowClockwiseIcon, House, MinusIcon, TimerIcon, XIcon } from "@/components/ui/icons";
+import { ArrowClockwiseIcon, House, MinusIcon, TimerIcon } from "@/components/ui/icons";
 import { toast } from "@/components/ui/toast";
 import { useScopedT } from "../../contexts/I18nContext";
 import { useMicrophoneDevices } from "../../hooks/useMicrophoneDevices";
@@ -8,6 +8,7 @@ import { useVideoDevices } from "../../hooks/useVideoDevices";
 import {
 	AreaModeIcon,
 	CameraIcon,
+	CloseIcon,
 	DisplayModeIcon,
 	MicrophoneIcon,
 	SystemAudioIcon,
@@ -239,9 +240,11 @@ export function LaunchWindow() {
 		void window.electronAPI.showProjectDashboard();
 	};
 
+	// The bar drops the system's "Default - " prefix so the device's own name shows; the menu keeps it.
 	const microphoneLabel =
-		devices.find((device) => device.deviceId === selectedDeviceId)?.label ||
-		t("recording.microphone");
+		devices
+			.find((device) => device.deviceId === selectedDeviceId)
+			?.label.replace(/^Default - /, "") || t("recording.microphone");
 	const cameraLabel =
 		videoDevices.find((device) => device.deviceId === selectedVideoDeviceId)?.label ||
 		t("recording.webcam");
@@ -357,7 +360,7 @@ export function LaunchWindow() {
 					title={t("recording.closeApp")}
 					aria-label={t("recording.closeApp")}
 				>
-					<XIcon className={styles.icon} />
+					<CloseIcon className={styles.largeIcon} />
 				</button>
 				<span className={styles.divider} />
 				{SOURCE_MODES.map(({ mode, label, name, Icon }) => (
