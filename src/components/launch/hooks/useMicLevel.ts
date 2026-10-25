@@ -1,9 +1,20 @@
 import { type RefObject, useEffect } from "react";
 
-// Below this the bar stays empty, so room noise and keyboard taps don't flicker it.
-const FLOOR_DB = -46;
-// Loud speech fills the bar.
+// Quiet room sound (a typical Mac mic idles near -55 dB) only ripples the bar a little;
+// from QUIET_DB up, speech moves it properly, and loud speech fills it.
+const SILENT_DB = -64;
+const QUIET_DB = -46;
+const QUIET_SHARE = 0.15;
 const CEILING_DB = -10;
+
+function levelFor(db: number) {
+	if (db <= SILENT_DB) return 0;
+	if (db < QUIET_DB) return (QUIET_SHARE * (db - SILENT_DB)) / (QUIET_DB - SILENT_DB);
+	return Math.min(
+		1,
+		QUIET_SHARE + ((1 - QUIET_SHARE) * (db - QUIET_DB)) / (CEILING_DB - QUIET_DB),
+	);
+}
 // The bar jumps up quickly and sinks slowly, like a VU meter.
 const RISE_MS = 50;
 const FALL_MS = 320;
@@ -56,10 +67,7 @@ export function useMicLevel(
 					let sum = 0;
 					for (const sample of samples) sum += sample * sample;
 					const db = 20 * Math.log10(Math.sqrt(sum / samples.length) + 1e-8);
-					const target = Math.min(
-						1,
-						Math.max(0, (db - FLOOR_DB) / (CEILING_DB - FLOOR_DB)),
-					);
+					const target = levelFor(db);
 					const ease = 1 - Math.exp(-elapsed / (target > shown ? RISE_MS : FALL_MS));
 					shown += (target - shown) * ease;
 					if (shown < 0.002) shown = 0;
