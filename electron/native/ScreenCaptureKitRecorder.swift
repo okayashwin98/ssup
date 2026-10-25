@@ -243,12 +243,11 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 	private let queue = DispatchQueue(label: "recordly.screencapturekit.video")
 	private var assetWriter: AVAssetWriter?
 	private var videoInput: AVAssetWriterInput?
-	private var videoPixelBufferAdaptor: AVAssetWriterInputPixelBufferAdaptor?
-	private var windowCropRect: CGRect?
+	/// The recorded part of the display, in display points; nil when the whole display records.
+	private var windowSourceRect: CGRect?
 	private var windowCropDisplayId: CGDirectDisplayID?
+	private var streamConfiguration: SCStreamConfiguration?
 	private var excludedProcessIds = Set<Int32>()
-	private var lastCroppedPixelBuffer: CVPixelBuffer?
-	private let imageContext = CIContext(options: [.cacheIntermediates: false])
 	private var systemAudioWriter: AVAssetWriter?
 	private var systemAudioInput: AVAssetWriterInput?
 	private var microphoneOnlyWriter: AVAssetWriter?
@@ -386,17 +385,24 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 				excludingApplications: excludedApplications,
 				exceptingWindows: []
 			)
+			// macOS delivers only this part of the display, so a window costs what its
+			// own pixels cost instead of a full-display capture cropped on every frame.
 			let crop = Self.pixelCrop(for: captureRect, on: display, scale: scaleFactor)
-			windowCropRect = crop.rect
+			windowSourceRect = crop.rect
 			windowCropDisplayId = display.displayID
 			outputWidth = crop.width
 			outputHeight = crop.height
-			streamConfig.width = max(2, Int(display.frame.width) * scaleFactor)
-			streamConfig.height = max(2, Int(display.frame.height) * scaleFactor)
-			streamConfig.pixelFormat = kCVPixelFormatType_32BGRA
+			streamConfig.sourceRect = crop.rect
+			streamConfig.width = outputWidth
+			streamConfig.height = outputHeight
+			// A window resized mid-recording fills the same output frame, as before.
+			streamConfig.scalesToFit = true
+			if #available(macOS 14.0, *) {
+				streamConfig.preservesAspectRatio = false
+			}
 		} else {
 			trackedWindowId = nil
-			windowCropRect = nil
+			windowSourceRect = nil
 			windowCropDisplayId = nil
 			let displayId = config.displayId ?? CGMainDisplayID()
 			guard let display = availableContent.displays.first(where: { $0.displayID == displayId }) else {
@@ -439,9 +445,7 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 
 		let sourceVideoFormat = try CMVideoFormatDescription(
 			videoCodecType: CMFormatDescription.MediaSubType(
-				rawValue: windowCropRect == nil
-					? kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange
-					: kCVPixelFormatType_32BGRA
+				rawValue: kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange
 			),
 			width: outputWidth,
 			height: outputHeight
@@ -484,16 +488,6 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 
 		assetWriter.add(videoInput)
 		self.videoInput = videoInput
-		videoPixelBufferAdaptor = windowCropRect.map { _ in
-			AVAssetWriterInputPixelBufferAdaptor(
-				assetWriterInput: videoInput,
-				sourcePixelBufferAttributes: [
-					kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
-					kCVPixelBufferWidthKey as String: outputWidth,
-					kCVPixelBufferHeightKey as String: outputHeight,
-				]
-			)
-		}
 
 		// Add inline audio track directly to the video so the .mp4 always contains audio.
 		// This eliminates the dependency on the post-recording ffmpeg mux step.
@@ -559,6 +553,7 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 
 		let stream = SCStream(filter: filter, configuration: streamConfig, delegate: self)
 		self.stream = stream
+		streamConfiguration = streamConfig
 		try stream.addStreamOutput(self, type: .screen, sampleHandlerQueue: queue)
 		if capturesSystemAudio {
 			try stream.addStreamOutput(self, type: .audio, sampleHandlerQueue: queue)
@@ -662,15 +657,11 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 
 			lastSampleBuffer = sampleBuffer
 			let appended: Bool
-			if videoPixelBufferAdaptor != nil {
-				appended = appendCroppedVideoFrame(sampleBuffer, at: presentationTime)
+			let timing = CMSampleTimingInfo(duration: sampleBuffer.duration, presentationTimeStamp: presentationTime, decodeTimeStamp: sampleBuffer.decodeTimeStamp)
+			if let retimed = try? CMSampleBuffer(copying: sampleBuffer, withNewTiming: [timing]) {
+				appended = videoInput.append(retimed)
 			} else {
-				let timing = CMSampleTimingInfo(duration: sampleBuffer.duration, presentationTimeStamp: presentationTime, decodeTimeStamp: sampleBuffer.decodeTimeStamp)
-				if let retimed = try? CMSampleBuffer(copying: sampleBuffer, withNewTiming: [timing]) {
-					appended = videoInput.append(retimed)
-				} else {
-					appended = false
-				}
+				appended = false
 			}
 			if appended {
 					lastVideoPresentationTime = presentationTime
@@ -714,49 +705,6 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 		}
 
 		return
-	}
-
-	private func appendCroppedVideoFrame(_ sampleBuffer: CMSampleBuffer, at presentationTime: CMTime) -> Bool {
-		guard let crop = windowCropRect,
-			  let adaptor = videoPixelBufferAdaptor,
-			  let pool = adaptor.pixelBufferPool,
-			  let source = CMSampleBufferGetImageBuffer(sampleBuffer) else { return false }
-
-		var destination: CVPixelBuffer?
-		guard CVPixelBufferPoolCreatePixelBuffer(nil, pool, &destination) == kCVReturnSuccess,
-			  let destination else { return false }
-
-		let sourceWidth = CGFloat(CVPixelBufferGetWidth(source))
-		let sourceHeight = CGFloat(CVPixelBufferGetHeight(source))
-		// Whole pixels, so an unmoved window is copied one to one rather than resampled.
-		let sourceRect = CGRect(
-			x: (crop.minX * sourceWidth).rounded(),
-			y: ((1 - crop.maxY) * sourceHeight).rounded(),
-			width: (crop.width * sourceWidth).rounded(),
-			height: (crop.height * sourceHeight).rounded()
-		)
-		let destinationSize = CGSize(
-			width: CVPixelBufferGetWidth(destination),
-			height: CVPixelBufferGetHeight(destination)
-		)
-		let image = CIImage(cvPixelBuffer: source)
-			.cropped(to: sourceRect)
-			.transformed(by: CGAffineTransform(translationX: -sourceRect.minX, y: -sourceRect.minY))
-			.transformed(by: CGAffineTransform(
-				scaleX: destinationSize.width / sourceRect.width,
-				y: destinationSize.height / sourceRect.height
-			))
-		let bounds = CGRect(origin: .zero, size: destinationSize)
-		imageContext.render(
-			image,
-			to: destination,
-			bounds: bounds,
-			colorSpace: CGColorSpace(name: CGColorSpace.sRGB)
-		)
-
-		let appended = adaptor.append(destination, withPresentationTime: presentationTime)
-		if appended { lastCroppedPixelBuffer = destination }
-		return appended
 	}
 
 	func stream(_ stream: SCStream, didStopWithError error: Error) {
@@ -843,13 +791,9 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 		   let videoInput = videoInput,
 		   await waitUntilReady(videoInput, of: assetWriter) {
 			let additionalTime = lastVideoPresentationTime + frameDuration(for: originalBuffer)
-			if let adaptor = videoPixelBufferAdaptor, let pixelBuffer = lastCroppedPixelBuffer {
-				adaptor.append(pixelBuffer, withPresentationTime: additionalTime)
-			} else {
-				let timing = CMSampleTimingInfo(duration: originalBuffer.duration, presentationTimeStamp: additionalTime, decodeTimeStamp: originalBuffer.decodeTimeStamp)
-				if let additionalSampleBuffer = try? CMSampleBuffer(copying: originalBuffer, withNewTiming: [timing]) {
+			let timing = CMSampleTimingInfo(duration: originalBuffer.duration, presentationTimeStamp: additionalTime, decodeTimeStamp: originalBuffer.decodeTimeStamp)
+			if let additionalSampleBuffer = try? CMSampleBuffer(copying: originalBuffer, withNewTiming: [timing]) {
 				videoInput.append(additionalSampleBuffer)
-				}
 			}
 		}
 
@@ -895,11 +839,10 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 		let path = outputURL?.path ?? ""
 		assetWriter = nil
 		videoInput = nil
-		videoPixelBufferAdaptor = nil
-		windowCropRect = nil
+		windowSourceRect = nil
 		windowCropDisplayId = nil
+		streamConfiguration = nil
 		excludedProcessIds.removeAll()
-		lastCroppedPixelBuffer = nil
 		systemAudioWriter = nil
 		systemAudioInput = nil
 		microphoneOnlyWriter = nil
@@ -1193,13 +1136,17 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 				}
 				let captureRect = window.frame.intersection(display.frame)
 				guard captureRect.width > 0, captureRect.height > 0 else { continue }
-				let cropRect = Self.pixelCrop(
+				let sourceRect = Self.pixelCrop(
 					for: captureRect,
 					on: display,
 					scale: Self.scaleFactor(for: display.displayID)
 				).rect
+				let movedDisplay = self.windowCropDisplayId != display.displayID
+				guard movedDisplay || self.windowSourceRect != sourceRect,
+					  let activeStream = self.stream,
+					  let configuration = self.streamConfiguration else { continue }
 
-				if self.windowCropDisplayId != display.displayID, let activeStream = self.stream {
+				if movedDisplay {
 					let excludedApplications = availableContent.applications.filter {
 						self.excludedProcessIds.contains($0.processID)
 					}
@@ -1215,10 +1162,18 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 					}
 				}
 
+				// Follow the window: macOS keeps delivering the same output size.
+				configuration.sourceRect = sourceRect
+				do {
+					try await activeStream.updateConfiguration(configuration)
+				} catch {
+					continue
+				}
+
 				await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
 					self.queue.async {
 						if self.isRecording {
-							self.windowCropRect = cropRect
+							self.windowSourceRect = sourceRect
 							self.windowCropDisplayId = display.displayID
 						}
 						continuation.resume()
@@ -1228,7 +1183,7 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 		}
 	}
 
-	/// The part of a display to record, as a fraction of it, with edges on whole screen pixels
+	/// The part of a display to record, in display points, with edges on whole screen pixels
 	/// and an even pixel size, so the recording copies the screen's own pixels.
 	private static func pixelCrop(
 		for captureRect: CGRect,
@@ -1241,14 +1196,12 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 		let top = (local.minY * pixelsPerPoint).rounded()
 		let width = max(2, Int((local.maxX * pixelsPerPoint).rounded() - left) & ~1)
 		let height = max(2, Int((local.maxY * pixelsPerPoint).rounded() - top) & ~1)
-		let displayWidth = display.frame.width * pixelsPerPoint
-		let displayHeight = display.frame.height * pixelsPerPoint
 		return (
 			CGRect(
-				x: left / displayWidth,
-				y: top / displayHeight,
-				width: CGFloat(width) / displayWidth,
-				height: CGFloat(height) / displayHeight
+				x: left / pixelsPerPoint,
+				y: top / pixelsPerPoint,
+				width: CGFloat(width) / pixelsPerPoint,
+				height: CGFloat(height) / pixelsPerPoint
 			),
 			width,
 			height
