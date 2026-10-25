@@ -169,3 +169,35 @@ test("the bar switches an open picker to another mode", async ({ page }) => {
 	await expect(windowButton).toHaveAttribute("data-active", "true");
 	await expect(display).not.toHaveAttribute("data-active", "true");
 });
+
+test("one hover fill fades in, then glides between the bar's buttons", async ({ page }) => {
+	await installDesktopBridge(page);
+	await page.goto("/?windowType=hud-overlay");
+	const highlight = page.locator('[class*="highlight"]');
+	const display = page.getByRole("button", { name: "Record a display", exact: true });
+	const area = page.getByRole("button", { name: "Record an area", exact: true });
+	const placed = async () => {
+		const [fill, bar] = await Promise.all([
+			highlight.boundingBox(),
+			highlight.locator("..").boundingBox(),
+		]);
+		return fill && bar ? Math.round(fill.x - bar.x) : null;
+	};
+	await expect(highlight).not.toHaveAttribute("data-shown");
+	await display.hover();
+	// Arriving from outside: it appears where the pointer is, without sliding.
+	await expect(highlight).toHaveAttribute("data-shown", "");
+	await expect(highlight).not.toHaveAttribute("data-gliding");
+	const displayLeft = Math.round(
+		(await display.boundingBox())!.x - (await highlight.locator("..").boundingBox())!.x,
+	);
+	await expect.poll(placed).toBe(displayLeft);
+	await area.hover();
+	await expect(highlight).toHaveAttribute("data-gliding", "");
+	const areaLeft = Math.round(
+		(await area.boundingBox())!.x - (await highlight.locator("..").boundingBox())!.x,
+	);
+	await expect.poll(placed).toBe(areaLeft);
+	await page.mouse.move(5, 400); // off the bar
+	await expect(highlight).not.toHaveAttribute("data-shown");
+});

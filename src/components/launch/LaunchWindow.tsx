@@ -23,6 +23,7 @@ import { useLaunchWindowSystemState } from "./hooks/useLaunchWindowSystemState";
 import { useMicLevel } from "./hooks/useMicLevel";
 import { useRecordingTimer } from "./hooks/useRecordingTimer";
 import { RecordingBarControls } from "./RecordingBar";
+import { SlidingHighlight } from "./SlidingHighlight";
 
 const COUNTDOWN_OPTIONS = [0, 3, 5, 10];
 const SOURCE_MODES = [
@@ -479,7 +480,10 @@ export function LaunchWindow() {
 
 	return (
 		<div ref={rootRef} className={styles.root}>
-			<div className={styles.bar}>{content}</div>
+			<div className={styles.bar}>
+				<SlidingHighlight />
+				{content}
+			</div>
 		</div>
 	);
 }
