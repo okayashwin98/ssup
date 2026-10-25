@@ -236,13 +236,7 @@ interface Window {
 		hudOverlaySetWebcamPreviewVisible: (visible: boolean) => void;
 		hudWindowSetContentSize: (size: { width: number; height: number }) => void;
 		hudShowMenu: (request: {
-			items: Array<{
-				id?: string;
-				label?: string;
-				type?: "normal" | "checkbox" | "radio" | "separator" | "header";
-				checked?: boolean;
-				enabled?: boolean;
-			}>;
+			items: HudMenuItem[];
 			x: number;
 			y: number;
 		}) => Promise<string | null>;
@@ -277,7 +271,7 @@ interface Window {
 		selectSource: (source: ProcessedDesktopSource) => Promise<ProcessedDesktopSource>;
 		showSourceHighlight: (source: ProcessedDesktopSource) => Promise<{ success: boolean }>;
 		/** Opens the capture picker on every display and resolves when it closes. */
-		pickCaptureTarget: () => Promise<{
+		pickCaptureTarget: (mode?: CapturePickerMode) => Promise<{
 			success: boolean;
 			canceled?: boolean;
 			record?: boolean;
@@ -289,10 +283,19 @@ interface Window {
 			displayBounds: CaptureArea | null;
 			lastArea: CaptureArea | null;
 			allowArea: boolean;
+			/** Unset: the combined picker (click a window or the desktop, drag an area). */
+			mode?: CapturePickerMode;
+			displayName?: string;
+			refreshRate?: number;
 			/** On-screen windows on this display, front to back. */
 			windows: CapturePickerWindow[];
 			cursor: { x: number; y: number } | null;
 		}>;
+		/** Resizes a picked window to an exact size; resolves with its new frame. */
+		capturePickerResizeWindow: (
+			windowId: string,
+			size: { width: number; height: number },
+		) => Promise<{ success: boolean; frame?: CaptureArea; message?: string }>;
 		/** Reveals the picker window once it has painted its first state. */
 		capturePickerReady: () => void;
 		getSelectedSource: () => Promise<ProcessedDesktopSource | null>;
@@ -1154,7 +1157,24 @@ interface CapturePickerWindow extends CaptureArea {
 	appName: string;
 	title: string;
 	display_id?: string;
+	/** The owning app's process, for resizing the window. */
+	pid?: number;
+	/** The owning app's icon as a data URL. */
+	appIcon?: string;
 }
+
+/** An item in a native menu shown by the recording bars or the picker. */
+interface HudMenuItem {
+	id?: string;
+	label?: string;
+	type?: "normal" | "checkbox" | "radio" | "separator" | "header";
+	checked?: boolean;
+	enabled?: boolean;
+	submenu?: HudMenuItem[];
+}
+
+/** Which kind of target the picker offers: Screen Studio's Display, Window and Area. */
+type CapturePickerMode = "display" | "window" | "area";
 
 /**
  * What the capture picker reports when the user confirms: an area they drew, a

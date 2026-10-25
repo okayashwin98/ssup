@@ -56,6 +56,7 @@ export async function listCapturePickerWindows(): Promise<CapturePickerWindow[]>
 				appName: entry.appName ?? "",
 				title: entry.windowTitle ?? entry.name,
 				display_id: entry.display_id,
+				pid: entry.ownerPid,
 				x: entry.x!,
 				y: entry.y!,
 				width: entry.width!,

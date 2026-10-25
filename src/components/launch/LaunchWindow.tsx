@@ -1,5 +1,7 @@
 import {
+	AppWindowIcon,
 	ArrowClockwiseIcon,
+	BoundingBox,
 	House,
 	MicrophoneIcon,
 	MicrophoneSlashIcon,
@@ -27,6 +29,11 @@ import { useRecordingTimer } from "./hooks/useRecordingTimer";
 import { RecordingBarControls } from "./RecordingBar";
 
 const COUNTDOWN_OPTIONS = [0, 3, 5, 10];
+const SOURCE_MODES = [
+	{ mode: "display" as const, label: "Display", name: "Record a display", Icon: MonitorIcon },
+	{ mode: "window" as const, label: "Window", name: "Record a window", Icon: AppWindowIcon },
+	{ mode: "area" as const, label: "Area", name: "Record an area", Icon: BoundingBox },
+];
 const WEBCAM_BUBBLE_STORAGE_KEY = "recordly.webcam-bubble-visible";
 
 type MenuItem = Parameters<typeof window.electronAPI.hudShowMenu>[0]["items"][number];
@@ -76,7 +83,7 @@ export function LaunchWindow() {
 	} = useScreenRecorder();
 
 	const { elapsed } = useRecordingTimer(recording, paused);
-	const { selectedSource, hasSelectedSource, syncSelectedSource } = useLaunchWindowActions();
+	const { syncSelectedSource } = useLaunchWindowActions();
 	const { devices, selectedDeviceId, setSelectedDeviceId } = useMicrophoneDevices(
 		true,
 		microphoneDeviceId,
@@ -167,35 +174,39 @@ export function LaunchWindow() {
 	const startRecordingRef = useRef(toggleRecording);
 	startRecordingRef.current = toggleRecording;
 	const pickerPending = useRef(false);
-	const [isPickerPending, setIsPickerPending] = useState(false);
+	const [pickerMode, setPickerMode] = useState<CapturePickerMode | null>(null);
 	const [sourceReady, setSourceReady] = useState(false);
-	const handlePickOnScreen = useCallback(async () => {
-		if (pickerPending.current || recording || finalizing) return;
-		pickerPending.current = true;
-		setIsPickerPending(true);
-		try {
-			if (!(await cancelRecordingStart())) return;
-			if (!(await preparePermissions())) return;
-			const result = await window.electronAPI.pickCaptureTarget();
-			if (result.success && result.source) syncSelectedSource(result.source);
-			// "Start recording" on the picked window, screen or area.
-			if (result.success && result.record) {
-				setStartRequested(true);
-				void Promise.resolve(startRecordingRef.current()).finally(() =>
-					setStartRequested(false),
-				);
+	// Screen Studio's Display, Window and Area: each opens the picker for that kind of target.
+	const handlePickOnScreen = useCallback(
+		async (mode: CapturePickerMode) => {
+			if (pickerPending.current || recording || finalizing) return;
+			pickerPending.current = true;
+			setPickerMode(mode);
+			try {
+				if (!(await cancelRecordingStart())) return;
+				if (!(await preparePermissions())) return;
+				const result = await window.electronAPI.pickCaptureTarget(mode);
+				if (result.success && result.source) syncSelectedSource(result.source);
+				// "Start recording" on the picked window, screen or area.
+				if (result.success && result.record) {
+					setStartRequested(true);
+					void Promise.resolve(startRecordingRef.current()).finally(() =>
+						setStartRequested(false),
+					);
+				}
+				if (result.message && !result.canceled) {
+					if (result.success) toast.info(result.message);
+					else toast.error(result.message);
+				}
+			} catch {
+				toast.error("Unable to open the source picker.");
+			} finally {
+				pickerPending.current = false;
+				setPickerMode(null);
 			}
-			if (result.message && !result.canceled) {
-				if (result.success) toast.info(result.message);
-				else toast.error(result.message);
-			}
-		} catch {
-			toast.error("Unable to open the source picker.");
-		} finally {
-			pickerPending.current = false;
-			setIsPickerPending(false);
-		}
-	}, [recording, cancelRecordingStart, preparePermissions, finalizing, syncSelectedSource]);
+		},
+		[recording, cancelRecordingStart, preparePermissions, finalizing, syncSelectedSource],
+	);
 
 	useEffect(() => {
 		let mounted = true;
@@ -348,21 +359,20 @@ export function LaunchWindow() {
 					<XIcon weight="bold" className="size-4" />
 				</button>
 				<span className={styles.divider} />
-				<button
-					type="button"
-					className={styles.item}
-					title={selectedSource}
-					aria-label="Choose recording source"
-					disabled={isPickerPending || !sourceReady}
-					onClick={() => void handlePickOnScreen()}
-				>
-					<MonitorIcon className={styles.icon} />
-					<span className={styles.label}>
-						{hasSelectedSource
-							? selectedSource
-							: t("recording.pickScreen", "Choose screen")}
-					</span>
-				</button>
+				{SOURCE_MODES.map(({ mode, label, name, Icon }) => (
+					<button
+						key={mode}
+						type="button"
+						className={`${styles.item} ${styles.mode}`}
+						data-active={pickerMode === mode || undefined}
+						aria-label={name}
+						disabled={(pickerMode !== null && pickerMode !== mode) || !sourceReady}
+						onClick={() => void handlePickOnScreen(mode)}
+					>
+						<Icon className={styles.icon} />
+						<span>{label}</span>
+					</button>
+				))}
 				<span className={styles.divider} />
 				<button
 					type="button"

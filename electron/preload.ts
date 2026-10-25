@@ -190,6 +190,7 @@ type HudMenuItem = {
 	type?: "normal" | "checkbox" | "radio" | "separator" | "header";
 	checked?: boolean;
 	enabled?: boolean;
+	submenu?: HudMenuItem[];
 };
 
 contextBridge.exposeInMainWorld("electronAPI", {
@@ -597,8 +598,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	showSourceHighlight: (source: ProcessedDesktopSource) => {
 		return ipcRenderer.invoke("show-source-highlight", source);
 	},
-	pickCaptureTarget: () => {
-		return ipcRenderer.invoke("pick-capture-target");
+	pickCaptureTarget: (mode?: "display" | "window" | "area") => {
+		return ipcRenderer.invoke("pick-capture-target", mode);
+	},
+	capturePickerResizeWindow: (windowId: string, size: { width: number; height: number }) => {
+		return ipcRenderer.invoke("capture-picker-resize-window", windowId, size);
 	},
 	completeCapturePick: (pick: CapturePick | null) => {
 		return ipcRenderer.invoke("complete-capture-pick", pick);

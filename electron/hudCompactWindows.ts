@@ -47,6 +47,8 @@ export interface HudMenuItem {
 	type?: "normal" | "checkbox" | "radio" | "separator" | "header";
 	checked?: boolean;
 	enabled?: boolean;
+	/** A submenu, like Screen Studio's aspect-ratio groups of sizes. */
+	submenu?: HudMenuItem[];
 }
 
 let recordingControlsWindow: BrowserWindow | null = null;
@@ -298,6 +300,13 @@ function buildMenuTemplate(
 	return items.map((item) => {
 		if (item.type === "separator") return { type: "separator" };
 		if (item.type === "header") return { label: item.label ?? "", enabled: false };
+		if (item.submenu) {
+			return {
+				label: item.label ?? "",
+				enabled: item.enabled !== false,
+				submenu: buildMenuTemplate(item.submenu, choose),
+			};
+		}
 		return {
 			label: item.label ?? "",
 			type: item.type ?? "normal",

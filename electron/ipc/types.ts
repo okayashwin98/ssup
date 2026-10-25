@@ -25,7 +25,14 @@ export type CapturePickerWindow = CaptureArea & {
 	appName: string;
 	title: string;
 	display_id?: string;
+	/** The owning app's process, for resizing the window. */
+	pid?: number;
+	/** The owning app's icon as a data URL. */
+	appIcon?: string;
 };
+
+/** Which kind of target the picker offers: Screen Studio's Display, Window and Area. */
+export type CapturePickerMode = "display" | "window" | "area";
 
 /**
  * What the capture picker reports when the user confirms: an area they drew, a

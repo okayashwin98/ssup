@@ -65,6 +65,23 @@
 	color: rgba(255, 255, 255, 0.6);
 }
 
+/* Display, Window and Area: icon over label, as in Screen Studio's bar. */
+.mode {
+	flex-direction: column;
+	justify-content: center;
+	gap: 3px;
+	min-width: 64px;
+	height: 52px;
+	padding: 0 8px;
+	font-size: 11px;
+	color: rgba(255, 255, 255, 0.82);
+}
+
+.mode[data-active] {
+	background: rgba(255, 255, 255, 0.16);
+	color: #fff;
+}
+
 .iconOnly {
 	width: 40px;
 	padding: 0;

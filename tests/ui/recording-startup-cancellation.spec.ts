@@ -99,7 +99,7 @@ for (const resource of ["microphone", "cursor"] as const) {
 			});
 		}, resource);
 		await page.goto("/?windowType=hud-overlay");
-		const source = page.getByRole("button", { name: "Choose recording source" });
+		const source = page.getByRole("button", { name: "Record a window" });
 		await expect(source).toBeEnabled({ timeout: 15000 });
 		await source.click();
 		await expect(page.locator("html")).toHaveAttribute("data-acquiring-capture", "true");

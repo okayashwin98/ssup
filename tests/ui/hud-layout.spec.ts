@@ -1,20 +1,22 @@
 import { expect, test } from "@playwright/test";
 import { installDesktopBridge } from "./bridge";
 
-test("HUD source label is cut short with an ellipsis", async ({ page }) => {
+test("Display, Window and Area each show their icon over their label", async ({ page }) => {
 	await installDesktopBridge(page);
-	await page.addInitScript(() => {
-		window.electronAPI.getSelectedSource = async () => ({
-			id: "window:101:0",
-			name: "A very long document title that overflows the recording source control",
-		});
-	});
 	await page.goto("/?windowType=hud-overlay");
-	const source = page.getByRole("button", { name: "Choose recording source", exact: true });
-	await expect(source).toContainText("A very long document title");
-	const label = source.locator("span").first();
-	await expect(label).toHaveCSS("text-overflow", "ellipsis");
-	expect((await label.boundingBox())!.width).toBeLessThanOrEqual(168);
+	for (const [name, label] of [
+		["Record a display", "Display"],
+		["Record a window", "Window"],
+		["Record an area", "Area"],
+	]) {
+		const button = page.getByRole("button", { name, exact: true });
+		await expect(button).toHaveText(label);
+		const [icon, text] = await Promise.all([
+			button.locator("svg").boundingBox(),
+			button.locator("span").boundingBox(),
+		]);
+		expect(icon!.y + icon!.height).toBeLessThanOrEqual(text!.y + 1);
+	}
 });
 
 test("HUD dividers are vertically centered and Home opens the dashboard", async ({ page }) => {

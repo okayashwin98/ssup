@@ -1,6 +1,9 @@
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { validateCaptureSource } from "../captureSelection";
 import { listCapturePickerWindows } from "../capturePickerSources";
-import { ipcMain } from "electron";
+import { desktopCapturer, ipcMain } from "electron";
+import { ensureWindowResizeBinary } from "../paths/binaries";
 import type { SourceListPickResult } from "../../sourceListPicker";
 import {
 	closeCapturePickerWindows,
@@ -10,10 +13,31 @@ import {
 import { stopWindowBoundsCapture } from "../cursor/bounds";
 import { isCursorCaptureActive, setSelectedSource } from "../state";
 import { createAreaSource, createWindowSource, normalizeCapturePick } from "../sourceArea";
-import type { CapturePick, CapturePickerWindow, SelectedSource } from "../types";
+import type { CapturePick, CapturePickerMode, CapturePickerWindow, SelectedSource } from "../types";
 import { getScreen } from "../utils";
 import { getScreenSourceIdForDisplay, isLikelyLinuxWaylandSession } from "./sourceMapping";
 import { broadcastSelectedSourceChange, getDesktopSources } from "./sources";
+
+const run = promisify(execFile);
+
+/** Each window's app icon, as the picker's window card shows it (Screen Studio-style). */
+async function withAppIcons(windows: CapturePickerWindow[]): Promise<CapturePickerWindow[]> {
+	try {
+		const sources = await desktopCapturer.getSources({
+			types: ["window"],
+			thumbnailSize: { width: 0, height: 0 },
+			fetchWindowIcons: true,
+		});
+		const icons = new Map(
+			sources
+				.filter((source) => source.appIcon && !source.appIcon.isEmpty())
+				.map((source) => [source.id, source.appIcon!.toDataURL()]),
+		);
+		return windows.map((window) => ({ ...window, appIcon: icons.get(window.id) }));
+	} catch {
+		return windows;
+	}
+}
 
 /** The same source the screen list offers for this display. */
 async function createScreenSource(displayId: number): Promise<SelectedSource | null> {
@@ -63,6 +87,7 @@ export function registerCapturePickerHandlers({
 	};
 
 	let activePick: Promise<unknown> | null = null;
+	let pickMode: CapturePickerMode | undefined;
 	const pickTarget = async () => {
 		if (isCursorCaptureActive) return { success: false, canceled: true };
 		if (process.platform === "linux" && isLikelyLinuxWaylandSession(process.env)) {
@@ -86,7 +111,11 @@ export function registerCapturePickerHandlers({
 
 		finishPick(null);
 		// List windows before the overlays cover them.
-		pickableWindows = Promise.resolve(await listCapturePickerWindows());
+		pickableWindows = Promise.resolve(
+			process.platform === "darwin"
+				? await withAppIcons(await listCapturePickerWindows())
+				: await listCapturePickerWindows(),
+		);
 		if (isCursorCaptureActive) return { success: false, canceled: true };
 		const pick = await new Promise<CapturePick | null>((resolve) => {
 			resolvePendingPick = resolve;
@@ -120,9 +149,11 @@ export function registerCapturePickerHandlers({
 		// "Start recording" on the picked window, screen or area starts it straight away.
 		return { success: true, source, record: pick.record === true };
 	};
-	ipcMain.handle("pick-capture-target", () => {
+	ipcMain.handle("pick-capture-target", (_event, mode: unknown) => {
 		if (isCursorCaptureActive) return { success: false, canceled: true };
 		if (!activePick) {
+			pickMode =
+				mode === "display" || mode === "window" || mode === "area" ? mode : undefined;
 			activePick = pickTarget()
 				.catch((error) => {
 					finishPick(null);
@@ -171,6 +202,7 @@ export function registerCapturePickerHandlers({
 				displayBounds: null,
 				lastArea: null,
 				allowArea: process.platform === "darwin",
+				mode: pickMode,
 				windows: [],
 				cursor: null,
 			};
@@ -186,9 +218,60 @@ export function registerCapturePickerHandlers({
 		return {
 			displayBounds: display.bounds,
 			allowArea: process.platform === "darwin",
+			mode: pickMode,
+			displayName: display.label || undefined,
+			refreshRate: display.displayFrequency || undefined,
 			lastArea: null,
 			windows,
 			cursor: getScreen().getCursorScreenPoint(),
 		};
 	});
+
+	// Screen Studio's Resize presets: the real window takes the chosen size.
+	ipcMain.handle(
+		"capture-picker-resize-window",
+		async (event, windowId: unknown, size: { width?: unknown; height?: unknown }) => {
+			if (!isCapturePickerWebContents(event.sender))
+				throw new Error("Unknown picker window.");
+			if (process.platform !== "darwin") return { success: false };
+			const width = Math.round(Number(size?.width));
+			const height = Math.round(Number(size?.height));
+			const windows = await pickableWindows;
+			const target = windows.find((window) => window.id === windowId);
+			if (!target?.pid || !(width >= 100 && height >= 100)) return { success: false };
+			try {
+				const { stdout } = await run(
+					await ensureWindowResizeBinary(),
+					[
+						JSON.stringify({
+							pid: target.pid,
+							x: target.x,
+							y: target.y,
+							width: target.width,
+							height: target.height,
+							newWidth: width,
+							newHeight: height,
+						}),
+					],
+					{ timeout: 5000 },
+				);
+				const frame = JSON.parse(stdout);
+				Object.assign(target, {
+					x: Math.round(frame.x),
+					y: Math.round(frame.y),
+					width: Math.round(frame.width),
+					height: Math.round(frame.height),
+				});
+				return {
+					success: true,
+					frame: { x: target.x, y: target.y, width: target.width, height: target.height },
+				};
+			} catch (error) {
+				const message =
+					(error as { stderr?: string }).stderr?.trim() ||
+					"This window cannot be resized.";
+				return { success: false, message };
+			}
+		},
+	);
 }

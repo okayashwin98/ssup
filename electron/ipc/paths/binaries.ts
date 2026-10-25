@@ -117,6 +117,14 @@ export function getNativeWindowListBinaryPath(): string {
 	return path.join(app.getPath("userData"), "native-tools", "recordly-window-list");
 }
 
+export function getWindowResizeSourcePath(): string {
+	return resolveUnpackedAppPath("electron", "native", "WindowResize.swift");
+}
+
+export function getWindowResizeBinaryPath(): string {
+	return path.join(app.getPath("userData"), "native-tools", "recordly-window-resize");
+}
+
 export function getWindowsCaptureExePath(): string {
 	return resolvePreferredWindowsNativeHelperPath("wgc-capture", "wgc-capture.exe");
 }
@@ -259,6 +267,16 @@ export async function ensureNativeWindowListBinary(): Promise<string> {
 		getNativeWindowListBinaryPath(),
 		"native ScreenCaptureKit window list helper",
 		"recordly-window-list",
+	);
+}
+
+export async function ensureWindowResizeBinary(): Promise<string> {
+	await ensureNativeHelperMigration();
+	return ensureSwiftHelperBinary(
+		getWindowResizeSourcePath(),
+		getWindowResizeBinaryPath(),
+		"window resize helper",
+		"recordly-window-resize",
 	);
 }
 

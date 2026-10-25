@@ -42,6 +42,10 @@ const helpers = [
 		source: "NativeCursorMonitor.swift",
 		output: "recordly-native-cursor-monitor",
 	},
+	{
+		source: "WindowResize.swift",
+		output: "recordly-window-resize",
+	},
 ];
 
 const swiftcCheck = spawnSync("swiftc", ["--version"], { encoding: "utf8" });
