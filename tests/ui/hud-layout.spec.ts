@@ -156,7 +156,10 @@ test("the bar switches an open picker to another mode", async ({ page }) => {
 	await installDesktopBridge(page);
 	await page.addInitScript(() => {
 		// The picker stays open until a mode is chosen there.
-		window.electronAPI.pickCaptureTarget = () => new Promise(() => {});
+		window.electronAPI.pickCaptureTarget = () =>
+			new Promise(() => {
+				document.documentElement.dataset.pickerOpen = "true";
+			});
 	});
 	await page.goto("/?windowType=hud-overlay");
 	const display = page.getByRole("button", { name: "Record a display", exact: true });
