@@ -248,7 +248,8 @@ export function CapturePicker() {
 					}))
 					.filter((entry) => entry.rect.width > 0 && entry.rect.height > 0);
 				setHasWindows(windows.current.length > 0);
-				// Only the screen under the pointer shows its target and Start recording.
+				// Display mode offers every screen at once; otherwise only the screen under
+				// the pointer shows its target and Start recording.
 				const local = context.cursor
 					? {
 							x: context.cursor.x - origin.current.x,
@@ -256,9 +257,11 @@ export function CapturePicker() {
 						}
 					: null;
 				const next =
-					local && rectContains(screenRect(), local.x, local.y)
-						? targetAt(local.x, local.y)
-						: null;
+					context.mode === "display"
+						? { kind: "screen" as const, rect: screenRect() }
+						: local && rectContains(screenRect(), local.x, local.y)
+							? targetAt(local.x, local.y)
+							: null;
 				current.current = next;
 				editingArea.current = false;
 				setTarget(next);
@@ -397,20 +400,6 @@ export function CapturePicker() {
 	const sizeText = target
 		? `${Math.round(target.rect.width)} × ${Math.round(target.rect.height)}`
 		: "";
-	const hint =
-		target?.kind === "area" && editingArea.current
-			? areaTooSmall
-				? "Area is too small · Drag to enlarge · Esc to cancel"
-				: "Move or resize the area · Enter to record · Esc to cancel"
-			: mode === "display"
-				? "Choose a screen to record · Esc to cancel"
-				: mode === "window"
-					? "Choose a window to record · Esc to cancel"
-					: mode === "area"
-						? "Drag to select an area · Esc to cancel"
-						: allowArea
-							? "Click a window or the desktop, or drag an area · Esc to cancel"
-							: "Click a window or the desktop · Esc to cancel";
 	return (
 		<div
 			className="picker-fade-in fixed inset-0 select-none overflow-hidden"
@@ -455,7 +444,7 @@ export function CapturePicker() {
 				press.current = null;
 			}}
 			onPointerLeave={() => {
-				if (press.current || editingArea.current) return;
+				if (press.current || editingArea.current || modeRef.current === "display") return;
 				update(null);
 			}}
 			onContextMenu={(event) => {
@@ -671,9 +660,6 @@ export function CapturePicker() {
 					</Button>
 				</div>
 			)}
-			<div className="pointer-events-none absolute inset-x-0 bottom-24 flex justify-center">
-				<div className="rounded-full bg-black/80 px-4 py-2 text-sm text-white">{hint}</div>
-			</div>
 		</div>
 	);
 }

@@ -99,6 +99,17 @@ test("Display mode highlights the whole screen with its name, size and frame rat
 	expect(await pick(page)).toEqual({ kind: "screen", displayId: 1, record: true });
 });
 
+test("Display mode offers every screen, even the one the pointer is not on", async ({ page }) => {
+	await openPicker(page, "display");
+	const start = page.getByRole("button", { name: "Start recording", exact: true });
+	await expect(start).toBeVisible();
+	await page.mouse.move(600, 300);
+	await page.mouse.move(-10, -10); // the pointer goes to another screen
+	await page.dispatchEvent("div.fixed", "pointerleave");
+	await expect(start).toBeVisible();
+	await expect(page.getByText(/Esc to cancel/)).toHaveCount(0);
+});
+
 test("Window mode shows the app's icon, name, size, Resize and Adjust recording area", async ({
 	page,
 }) => {
