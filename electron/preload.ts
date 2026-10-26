@@ -574,6 +574,20 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	}) => {
 		return ipcRenderer.invoke("finalize-exported-video", payload);
 	},
+	compressExportedVideo: (tempPath: string, jobId: string) =>
+		ipcRenderer.invoke("compress-exported-video", tempPath, jobId),
+	cancelCompressExportedVideo: (jobId: string) =>
+		ipcRenderer.invoke("compress-exported-video-cancel", jobId),
+	onCompressExportedVideoProgress: (
+		callback: (update: { jobId: string; percent: number }) => void,
+	) => {
+		const listener = (
+			_event: Electron.IpcRendererEvent,
+			update: { jobId: string; percent: number },
+		) => callback(update);
+		ipcRenderer.on("compress-exported-video-progress", listener);
+		return () => ipcRenderer.removeListener("compress-exported-video-progress", listener);
+	},
 	discardExportedTemp: (tempPath: string) => {
 		return ipcRenderer.invoke("discard-exported-temp", tempPath);
 	},

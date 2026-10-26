@@ -666,6 +666,23 @@ interface Window {
 			message?: string;
 			error?: string;
 		}>;
+		/** Re-encodes a finished MP4 export with x264 so it is small; keeps the original on failure. */
+		compressExportedVideo: (
+			tempPath: string,
+			jobId: string,
+		) => Promise<{
+			success: boolean;
+			tempPath?: string;
+			compressed?: boolean;
+			reason?: string;
+			inputBytes?: number;
+			outputBytes?: number;
+			error?: string;
+		}>;
+		cancelCompressExportedVideo: (jobId: string) => Promise<{ success: boolean }>;
+		onCompressExportedVideoProgress: (
+			callback: (update: { jobId: string; percent: number }) => void,
+		) => () => void;
 		discardExportedTemp: (tempPath: string) => Promise<{ success: boolean; error?: string }>;
 		getVideoAudioFallbackPaths: (videoPath: string) => Promise<{
 			success: boolean;

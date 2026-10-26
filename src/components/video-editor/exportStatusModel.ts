@@ -4,6 +4,8 @@ export type ExportStatusModel = {
 	isExportSaving: boolean;
 	isExportPreparing: boolean;
 	isExportFinalizing: boolean;
+	/** The finished MP4 is being re-encoded small with x264. */
+	isExportCompressing: boolean;
 	isRenderingAudio: boolean;
 	exportFinalizingProgress: number | null;
 	exportFinalizingPercent: number | null;
@@ -33,6 +35,7 @@ export function resolveExportStatusModel({
 	const isExportPreparing =
 		isExporting && (!exportProgress || exportProgress.phase === "preparing");
 	const isExportFinalizing = exportProgress?.phase === "finalizing";
+	const isExportCompressing = exportProgress?.phase === "compressing";
 	const isRenderingAudio =
 		isExportFinalizing && typeof exportProgress?.audioProgress === "number";
 	const rawFinalizingProgress =
@@ -68,6 +71,7 @@ export function resolveExportStatusModel({
 	const renderSpeedFps =
 		!isExportPreparing &&
 		!isExportFinalizing &&
+		!isExportCompressing &&
 		!isExportSaving &&
 		typeof exportProgress?.renderFps === "number" &&
 		Number.isFinite(exportProgress.renderFps) &&
@@ -93,6 +97,7 @@ export function resolveExportStatusModel({
 		isExportSaving,
 		isExportPreparing,
 		isExportFinalizing,
+		isExportCompressing,
 		isRenderingAudio,
 		exportFinalizingProgress,
 		exportFinalizingPercent,

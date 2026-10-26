@@ -174,6 +174,12 @@ export async function installDesktopBridge(
 				getEditorMode: async () => false,
 				onEditorModeChanged: subscribe,
 				hudIsVisible: async () => true,
+				compressExportedVideo: async (tempPath: string) => {
+					document.documentElement.dataset.compressedExport = tempPath;
+					return { success: true, tempPath, compressed: false, reason: "test" };
+				},
+				cancelCompressExportedVideo: success,
+				onCompressExportedVideoProgress: subscribe,
 				hudOverlayDrag: (phase: string) => {
 					const html = document.documentElement;
 					html.dataset.drag = [html.dataset.drag, phase].filter(Boolean).join(",");

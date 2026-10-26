@@ -5,6 +5,7 @@ import path from "node:path";
 import type { Readable, Writable } from "node:stream";
 import type { SaveDialogOptions } from "electron";
 import { app, BrowserWindow, dialog, ipcMain } from "electron";
+import { compressExportedVideo } from "../export/compressExport";
 import {
 	closeExportStream,
 	isOwnedExportPath,
@@ -1071,6 +1072,66 @@ export function registerExportHandlers() {
 			}
 		},
 	);
+
+	// Every MP4 export is re-encoded with x264 before it is saved or shared, so it comes
+	// out small; on any failure the hardware export is kept as it was.
+	const compressJobs = new Map<string, AbortController>();
+	ipcMain.handle("compress-exported-video", async (event, tempPath: unknown, jobId: unknown) => {
+		if (
+			typeof tempPath !== "string" ||
+			typeof jobId !== "string" ||
+			!isTempPathSafe(tempPath) ||
+			!isOwnedExportPath(tempPath)
+		) {
+			return { success: false, error: "Temp path is not an app-managed export temp" };
+		}
+		const outputPath = tempPath.replace(/(\.mp4)?$/i, "-small.mp4");
+		const controller = new AbortController();
+		compressJobs.set(jobId, controller);
+		const startedAt = Date.now();
+		let lastSent = -1;
+		try {
+			const result = await compressExportedVideo({
+				ffmpegPath: getFfmpegBinaryPath(),
+				inputPath: tempPath,
+				outputPath,
+				signal: controller.signal,
+				onProgress: (fraction) => {
+					const percent = Math.floor(fraction * 100);
+					if (percent === lastSent || event.sender.isDestroyed()) return;
+					lastSent = percent;
+					event.sender.send("compress-exported-video-progress", { jobId, percent });
+				},
+			});
+			if (!result.compressed) {
+				console.log(`[compress-export] Kept the hardware export: ${result.reason}`);
+				return { success: true, tempPath, compressed: false, reason: result.reason };
+			}
+			registerOwnedExportPath(result.outputPath);
+			await removeTemporaryExportFile(tempPath);
+			releaseOwnedExportPath(tempPath);
+			console.log(
+				`[compress-export] ${(result.inputBytes / 1e6).toFixed(1)} MB → ${(result.outputBytes / 1e6).toFixed(1)} MB in ${((Date.now() - startedAt) / 1000).toFixed(1)} s`,
+			);
+			return {
+				success: true,
+				tempPath: result.outputPath,
+				compressed: true,
+				inputBytes: result.inputBytes,
+				outputBytes: result.outputBytes,
+			};
+		} catch (error) {
+			await fs.rm(outputPath, { force: true }).catch(() => undefined);
+			console.warn("[compress-export] Kept the hardware export after an error:", error);
+			return { success: true, tempPath, compressed: false, reason: String(error) };
+		} finally {
+			compressJobs.delete(jobId);
+		}
+	});
+	ipcMain.handle("compress-exported-video-cancel", (_event, jobId: unknown) => {
+		if (typeof jobId === "string") compressJobs.get(jobId)?.abort();
+		return { success: true };
+	});
 
 	ipcMain.handle("discard-exported-temp", async (_event, tempPath: string) => {
 		if (typeof tempPath !== "string" || tempPath.length === 0) {

@@ -96,6 +96,33 @@ export function useExportRunner(input: ExportRunnerInput) {
 					.discardExportedTemp?.(pending.tempFilePath)
 					.catch(() => undefined);
 			};
+			// Every MP4 comes out small: the finished hardware export is re-encoded with x264
+			// before it is saved or shared. Cancel stops it; on failure the export is kept as is.
+			const compressFinishedExport = async (tempPath: string): Promise<string> => {
+				const jobId = `compress-${exportRunId}`;
+				exporterRef.current = {
+					cancel: () => void window.electronAPI.cancelCompressExportedVideo(jobId),
+				};
+				const showPercent = (percentage: number) =>
+					setExportProgress({
+						currentFrame: 0,
+						totalFrames: 0,
+						percentage,
+						estimatedTimeRemaining: 0,
+						phase: "compressing",
+					});
+				showPercent(0);
+				const unsubscribe = window.electronAPI.onCompressExportedVideoProgress((update) => {
+					if (update.jobId === jobId && !exportWasCancelled())
+						showPercent(update.percent);
+				});
+				try {
+					const result = await window.electronAPI.compressExportedVideo(tempPath, jobId);
+					return result.success && result.tempPath ? result.tempPath : tempPath;
+				} finally {
+					unsubscribe();
+				}
+			};
 
 			setIsExporting(true);
 			setExportProgress(null);
@@ -347,15 +374,25 @@ export function useExportRunner(input: ExportRunnerInput) {
 					if (result.success && (result.blob || result.tempFilePath)) {
 						const timestamp = Date.now();
 						const fileName = `export-${timestamp}.mp4`;
-						if (options?.destination === "share") {
-							if (result.tempFilePath) return result.tempFilePath;
-							if (result.blob) {
-								const tempPath = await streamExportBlobToTempFile(
-									result.blob,
-									"mp4",
-								);
-								if (tempPath) return tempPath;
+						let finishedTempPath =
+							result.tempFilePath ??
+							(result.blob
+								? await streamExportBlobToTempFile(result.blob, "mp4")
+								: null);
+						if (finishedTempPath && !exportWasCancelled()) {
+							finishedTempPath = await compressFinishedExport(finishedTempPath);
+						}
+						if (exportWasCancelled()) {
+							if (finishedTempPath) {
+								await discardCancelledTemp({
+									fileName,
+									tempFilePath: finishedTempPath,
+								});
 							}
+							return;
+						}
+						if (options?.destination === "share") {
+							if (finishedTempPath) return finishedTempPath;
 							throw new Error("Could not prepare the video for sharing.");
 						}
 						// The captions always go inside the MP4; .srt/.vtt files only when asked for.
@@ -377,12 +414,12 @@ export function useExportRunner(input: ExportRunnerInput) {
 						};
 						let pendingOnCancel: PendingExportSave;
 
-						if (result.tempFilePath) {
+						if (finishedTempPath) {
 							// Preferred path: main process already holds the finished MP4 on
 							// disk, so we just ask it to move the temp file into place. This
 							// avoids ever allocating a multi-GiB ArrayBuffer in the renderer.
 							saveResult = await window.electronAPI.finalizeExportedVideo({
-								tempPath: result.tempFilePath,
+								tempPath: finishedTempPath,
 								fileName,
 								outputPath:
 									smokeExportConfig.enabled && smokeExportConfig.outputPath
@@ -393,14 +430,14 @@ export function useExportRunner(input: ExportRunnerInput) {
 							if (exportWasCancelled()) {
 								await discardCancelledTemp({
 									fileName,
-									tempFilePath: result.tempFilePath,
+									tempFilePath: finishedTempPath,
 									captionSidecar: sidecarForThisExport,
 								});
 								return;
 							}
 							pendingOnCancel = {
 								fileName,
-								tempFilePath: result.tempFilePath,
+								tempFilePath: finishedTempPath,
 								captionSidecar: sidecarForThisExport,
 							};
 						} else if (result.blob) {
