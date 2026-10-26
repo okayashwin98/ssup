@@ -86,9 +86,22 @@ function screenRect() {
 	return { x: 0, y: 0, width: window.innerWidth, height: window.innerHeight };
 }
 
-/** A size kept around the rectangle's centre and inside the screen. */
-function resizeAroundCentre(rect: AreaRect, width: number, height: number): AreaRect {
+/**
+ * A size kept around the rectangle's centre and inside the screen. With a locked
+ * `ratio`, a size too big for the screen shrinks as a whole so the shape holds.
+ */
+function resizeAroundCentre(
+	rect: AreaRect,
+	width: number,
+	height: number,
+	ratio?: number | null,
+): AreaRect {
 	const bounds = screenRect();
+	if (ratio) {
+		const fit = Math.min(1, bounds.width / width, bounds.height / height);
+		width *= fit;
+		height *= fit;
+	}
 	const w = Math.min(Math.max(Math.round(width), MIN_AREA_SIZE), bounds.width);
 	const h = Math.min(Math.max(Math.round(height), MIN_AREA_SIZE), bounds.height);
 	const cx = rect.x + rect.width / 2;
@@ -330,6 +343,26 @@ export function CapturePicker() {
 		[targetAt],
 	);
 
+	// App icons arrive after the picker opens; a hovered window's card picks its up.
+	useEffect(
+		() =>
+			window.electronAPI.onCapturePickerIcons((icons) => {
+				for (const entry of windows.current) {
+					const icon = icons[entry.window.id];
+					if (icon) entry.window = { ...entry.window, appIcon: icon };
+				}
+				const shown = current.current;
+				if (shown?.kind !== "window" || !icons[shown.window.id]) return;
+				const next = {
+					...shown,
+					window: { ...shown.window, appIcon: icons[shown.window.id] },
+				};
+				current.current = next;
+				setTarget(next);
+			}),
+		[],
+	);
+
 	// Tells the bar while a window is hovered, so its Window icon sways along.
 	const onWindow = target?.kind === "window";
 	useEffect(() => {
@@ -388,10 +421,10 @@ export function CapturePicker() {
 		update({ kind: "window", window: resized, rect: local });
 	};
 
-	const setAreaSize = (width: number, height: number) => {
+	const setAreaSize = (width: number, height: number, ratio = areaRatio) => {
 		const area = current.current;
 		if (area?.kind !== "area") return;
-		editArea(resizeAroundCentre(area.rect, width, height));
+		editArea(resizeAroundCentre(area.rect, width, height, ratio));
 	};
 
 	const onMove = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -676,6 +709,7 @@ export function CapturePicker() {
 													setAreaSize(
 														area.width,
 														area.width / picked.ratio,
+														picked.ratio,
 													);
 												}
 											}}

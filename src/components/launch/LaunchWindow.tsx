@@ -23,7 +23,7 @@ import { useLaunchWindowSystemState } from "./hooks/useLaunchWindowSystemState";
 import { useMicLevel } from "./hooks/useMicLevel";
 import { useRecordingTimer } from "./hooks/useRecordingTimer";
 import { RecordingBarControls } from "./RecordingBar";
-import { SlidingHighlight } from "./SlidingHighlight";
+import { resetSlidingHighlight, SlidingHighlight } from "./SlidingHighlight";
 
 const COUNTDOWN_OPTIONS = [0, 3, 5, 10];
 const SOURCE_MODES = [
@@ -41,12 +41,38 @@ const MENU_GAP = 6;
 function showMenuAt(event: MouseEvent<HTMLElement>, items: MenuItem[]) {
 	const item = event.currentTarget.getBoundingClientRect();
 	const bar = (event.currentTarget.parentElement ?? event.currentTarget).getBoundingClientRect();
-	return window.electronAPI.hudShowMenu({
-		items,
-		x: item.left,
-		y: bar.bottom + MENU_GAP,
-		above: bar.top - MENU_GAP,
-	});
+	return window.electronAPI
+		.hudShowMenu({
+			items,
+			x: item.left,
+			y: bar.bottom + MENU_GAP,
+			above: bar.top - MENU_GAP,
+		})
+		.finally(resetSlidingHighlight);
+}
+
+/** Whether the bar's window is on screen (hiding it leaves the page "visible"). */
+function useHudVisible() {
+	const [visible, setVisible] = useState(false);
+	useEffect(() => {
+		let active = true;
+		let receivedEvent = false;
+		const unsubscribe = window.electronAPI.onHudVisibilityChanged((next) => {
+			receivedEvent = true;
+			if (active) setVisible(next);
+		});
+		void window.electronAPI
+			.hudIsVisible()
+			.then((next) => {
+				if (active && !receivedEvent) setVisible(next);
+			})
+			.catch(() => undefined);
+		return () => {
+			active = false;
+			unsubscribe();
+		};
+	}, []);
+	return visible;
 }
 
 function readBubblePreference() {
@@ -111,17 +137,24 @@ export function LaunchWindow() {
 		}
 	}, [selectedVideoDeviceId, setWebcamDeviceId]);
 
-	// The level line lets go of the microphone before a recording takes it.
-	const [startRequested, setStartRequested] = useState(false);
-	useMicLevel(
-		meterRef,
-		microphoneEnabled && !recording && !finalizing && !startRequested,
-		microphoneDeviceId,
-	);
-
 	// The webcam bubble is its own window, shown while the webcam is on outside the editor.
 	const [showBubble, setShowBubble] = useState(readBubblePreference);
 	const [editorMode, setEditorMode] = useState(true);
+	const barVisible = useHudVisible();
+
+	// The level line listens only while the bar is on screen, and lets go of the
+	// microphone before a recording takes it.
+	const [startRequested, setStartRequested] = useState(false);
+	useMicLevel(
+		meterRef,
+		microphoneEnabled &&
+			barVisible &&
+			!editorMode &&
+			!recording &&
+			!finalizing &&
+			!startRequested,
+		microphoneDeviceId,
+	);
 	useEffect(() => {
 		let active = true;
 		let receivedEvent = false;
@@ -182,13 +215,16 @@ export function LaunchWindow() {
 	const startRecordingRef = useRef(toggleRecording);
 	startRecordingRef.current = toggleRecording;
 	const pickerPending = useRef(false);
+	const requestedMode = useRef<CapturePickerMode>("display");
 	const [pickerMode, setPickerMode] = useState<CapturePickerMode | null>(null);
 	const [sourceReady, setSourceReady] = useState(false);
 	// Screen Studio's Display, Window and Area: each opens the picker for that kind of target.
 	const handlePickOnScreen = useCallback(
 		async (mode: CapturePickerMode) => {
 			if (recording || finalizing) return;
-			// The picker is open: switch it to this mode in place.
+			// The picker is open or opening: switch it to this mode in place. Until it is
+			// open, the mode it opens with is read from requestedMode.
+			requestedMode.current = mode;
 			if (pickerPending.current) {
 				setPickerMode(mode);
 				window.electronAPI.setCapturePickerMode(mode);
@@ -199,7 +235,7 @@ export function LaunchWindow() {
 			try {
 				if (!(await cancelRecordingStart())) return;
 				if (!(await preparePermissions())) return;
-				const result = await window.electronAPI.pickCaptureTarget(mode);
+				const result = await window.electronAPI.pickCaptureTarget(requestedMode.current);
 				if (result.success && result.source) syncSelectedSource(result.source);
 				// "Start recording" on the picked window, screen or area.
 				if (result.success && result.record) {

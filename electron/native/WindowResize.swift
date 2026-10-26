@@ -4,8 +4,8 @@ import Foundation
 
 // Resizes another app's window through Accessibility, for the picker's Resize presets.
 // Input (argv[1]): {"pid", "x", "y", "width", "height", "newWidth", "newHeight"} in global
-// top-left points. The window is the app's one closest to that frame. It keeps its
-// top-left corner unless the new size would leave the screen, then it moves just enough.
+// top-left points. The window is the app's one closest to that frame. At its new size it
+// is centred on the screen it is mostly on.
 // Output: the window's frame afterwards, {"x", "y", "width", "height"}.
 
 struct Request: Decodable {
@@ -76,36 +76,34 @@ guard let window = windows
 	fail("The window could not be found")
 }
 
-// Keep the window on the screen it is on: shift it left/up when the new size overflows.
+// Centre the window, at its new size, on the screen it is mostly on (Screen Studio-style).
+// NSScreen frames are bottom-left; turn them into top-left to compare with AX.
 let primaryHeight = NSScreen.screens.first?.frame.height ?? 0
-let screen = NSScreen.screens.first { screen in
-	// NSScreen frames are bottom-left; turn them into top-left to compare with AX.
-	let visible = screen.visibleFrame
-	let topLeft = CGRect(
-		x: visible.minX,
-		y: primaryHeight - visible.maxY,
-		width: visible.width,
-		height: visible.height
-	)
-	return topLeft.contains(CGPoint(x: target.midX, y: target.midY))
+func topLeft(_ rect: NSRect) -> CGRect {
+	CGRect(x: rect.minX, y: primaryHeight - rect.maxY, width: rect.width, height: rect.height)
 }
-var origin = target.origin
-if let screen {
-	let visible = screen.visibleFrame
-	let bounds = CGRect(
-		x: visible.minX,
-		y: primaryHeight - visible.maxY,
-		width: visible.width,
-		height: visible.height
+let screen = NSScreen.screens.max { first, second in
+	let a = topLeft(first.frame).intersection(target)
+	let b = topLeft(second.frame).intersection(target)
+	return (a.isNull ? 0 : a.width * a.height) < (b.isNull ? 0 : b.width * b.height)
+} ?? NSScreen.main
+func centred(_ size: CGSize) -> CGPoint {
+	guard let screen else { return target.origin }
+	let bounds = topLeft(screen.visibleFrame)
+	return CGPoint(
+		x: max(bounds.minX, bounds.midX - size.width / 2),
+		y: max(bounds.minY, bounds.midY - size.height / 2)
 	)
-	origin.x = max(bounds.minX, min(origin.x, bounds.maxX - request.newWidth))
-	origin.y = max(bounds.minY, min(origin.y, bounds.maxY - request.newHeight))
 }
 
-_ = setPosition(window, origin)
-guard setSize(window, CGSize(width: request.newWidth, height: request.newHeight)) else {
+// Move first so a bigger window has room, then centre on the size the app accepted.
+let requested = CGSize(width: request.newWidth, height: request.newHeight)
+_ = setPosition(window, centred(requested))
+guard setSize(window, requested) else {
 	fail("This window cannot be resized")
 }
+let origin = centred(frame(of: window)?.size ?? requested)
+_ = setPosition(window, origin)
 
-let result = frame(of: window) ?? CGRect(origin: origin, size: CGSize(width: request.newWidth, height: request.newHeight))
+let result = frame(of: window) ?? CGRect(origin: origin, size: requested)
 print("{\"x\":\(result.minX),\"y\":\(result.minY),\"width\":\(result.width),\"height\":\(result.height)}")

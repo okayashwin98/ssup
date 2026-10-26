@@ -173,6 +173,8 @@ export async function installDesktopBridge(
 				onWebcamBubbleDeviceChanged: subscribe,
 				getEditorMode: async () => false,
 				onEditorModeChanged: subscribe,
+				hudIsVisible: async () => true,
+				onHudVisibilityChanged: subscribe,
 				capturePickerSetWindowHover: (hovering: boolean) => {
 					document.documentElement.dataset.windowHover = String(hovering);
 				},
@@ -181,6 +183,7 @@ export async function installDesktopBridge(
 					document.documentElement.dataset.pickerMode = mode;
 				},
 				onCapturePickerModeChanged: subscribe,
+				onCapturePickerIcons: subscribe,
 				getActiveCountdown: async () => ({ success: true, seconds: 3 }),
 				onCountdownTick: subscribe,
 				cancelCountdown: async () => {

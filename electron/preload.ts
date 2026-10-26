@@ -217,6 +217,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		ipcRenderer.on("editor-mode-changed", listener);
 		return () => ipcRenderer.removeListener("editor-mode-changed", listener);
 	},
+	hudIsVisible: () => ipcRenderer.invoke("hud-overlay-is-visible") as Promise<boolean>,
+	onHudVisibilityChanged: (callback: (visible: boolean) => void) => {
+		const listener = (_event: Electron.IpcRendererEvent, visible: boolean) => callback(visible);
+		ipcRenderer.on("hud-visibility-changed", listener);
+		return () => ipcRenderer.removeListener("hud-visibility-changed", listener);
+	},
 	hudOverlayRendererReady: () => {
 		ipcRenderer.send("hud-overlay-renderer-ready");
 	},
@@ -621,6 +627,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
 			callback(mode);
 		ipcRenderer.on("capture-picker-mode-changed", listener);
 		return () => ipcRenderer.removeListener("capture-picker-mode-changed", listener);
+	},
+	onCapturePickerIcons: (callback: (icons: Record<string, string>) => void) => {
+		const listener = (_event: Electron.IpcRendererEvent, icons: Record<string, string>) =>
+			callback(icons);
+		ipcRenderer.on("capture-picker-icons", listener);
+		return () => ipcRenderer.removeListener("capture-picker-icons", listener);
 	},
 	capturePickerSetWindowHover: (hovering: boolean) => {
 		ipcRenderer.send("capture-picker-window-hover", hovering);

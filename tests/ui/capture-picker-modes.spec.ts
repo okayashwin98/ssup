@@ -299,3 +299,16 @@ test("Switching from Display to Window in the bar changes the open picker", asyn
 	await page.getByRole("button", { name: "Start recording", exact: true }).click();
 	expect(await pick(page)).toMatchObject({ kind: "window", windowId: "window:101:0" });
 });
+
+test("A typed size too big for the screen keeps the locked aspect ratio", async ({ page }) => {
+	await openPicker(page, "area", { menuChoice: "16:9" });
+	await page.mouse.move(600, 300);
+	await page.mouse.down();
+	await page.mouse.move(1000, 600, { steps: 6 });
+	await page.mouse.up();
+	await page.getByRole("button", { name: "Aspect ratio", exact: true }).click();
+	await page.getByRole("spinbutton", { name: "Width" }).fill("3000");
+	// 3000 × 1688 does not fit 1440 × 1000, so it shrinks as a whole to 1440 × 810.
+	await expect(page.getByRole("spinbutton", { name: "Width" })).toHaveValue("1440");
+	await expect(page.getByRole("spinbutton", { name: "Height" })).toHaveValue("810");
+});

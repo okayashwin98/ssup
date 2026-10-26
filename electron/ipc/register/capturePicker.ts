@@ -1,10 +1,11 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { BrowserWindow, desktopCapturer, ipcMain } from "electron";
+import { type BrowserWindow, desktopCapturer, ipcMain } from "electron";
 import type { SourceListPickResult } from "../../sourceListPicker";
 import {
 	closeCapturePickerWindows,
 	createCapturePickerWindows,
+	getHudOverlayWindow,
 	isCapturePickerWebContents,
 } from "../../windows";
 import { listCapturePickerWindows } from "../capturePickerSources";
@@ -23,9 +24,8 @@ const run = promisify(execFile);
 // The window card shows icons at 80 pt, so 160 px keeps them sharp on Retina screens.
 const APP_ICON_PIXELS = 160;
 
-/** Sharp icons from macOS for each window's app, keyed by process id. */
-async function sharpAppIcons(windows: CapturePickerWindow[]): Promise<Record<string, string>> {
-	const pids = [...new Set(windows.map((window) => window.pid).filter(Boolean))];
+/** Sharp icons from macOS for these processes, keyed by process id. */
+async function sharpAppIcons(pids: number[]): Promise<Record<string, string>> {
 	if (process.platform !== "darwin" || pids.length === 0) return {};
 	try {
 		const { stdout } = await run(
@@ -39,31 +39,68 @@ async function sharpAppIcons(windows: CapturePickerWindow[]): Promise<Record<str
 	}
 }
 
-/** Each window's app icon, as the picker's window card shows it (Screen Studio-style). */
-async function withAppIcons(windows: CapturePickerWindow[]): Promise<CapturePickerWindow[]> {
-	const sharp = await sharpAppIcons(windows);
-	// Electron's 32 px window icons cover anything macOS has no app icon for.
-	let small = new Map<string, string>();
-	if (windows.some((window) => !window.pid || !sharp[window.pid])) {
-		try {
-			const sources = await desktopCapturer.getSources({
-				types: ["window"],
-				thumbnailSize: { width: 0, height: 0 },
-				fetchWindowIcons: true,
-			});
-			small = new Map(
-				sources
-					.filter((source) => source.appIcon && !source.appIcon.isEmpty())
-					.map((source) => [source.id, source.appIcon!.toDataURL()]),
-			);
-		} catch {
-			// The cards show no icon.
+/** Electron's 32 px window icons, for windows macOS has no app icon for. */
+async function smallWindowIcons(): Promise<Map<string, string>> {
+	try {
+		const sources = await desktopCapturer.getSources({
+			types: ["window"],
+			thumbnailSize: { width: 0, height: 0 },
+			fetchWindowIcons: true,
+		});
+		return new Map(
+			sources
+				.filter((source) => source.appIcon && !source.appIcon.isEmpty())
+				.map((source) => [source.id, source.appIcon!.toDataURL()]),
+		);
+	} catch {
+		return new Map();
+	}
+}
+
+// App icons by app (process id and name, so a reused id is not mistaken for another
+// app), kept between picks so the window cards have them at once.
+const appIconCache = new Map<string, string>();
+const appIconKey = (window: CapturePickerWindow) => `${window.pid}:${window.appName}`;
+
+/** Gives each window the icon already known for its app. */
+function applyCachedAppIcons(windows: CapturePickerWindow[]) {
+	for (const window of windows) {
+		const icon = window.pid ? appIconCache.get(appIconKey(window)) : undefined;
+		if (icon) window.appIcon = icon;
+	}
+}
+
+/**
+ * Fetches the icons still missing, after the picker is already showing, and returns
+ * the ones it found by window id.
+ */
+async function fetchMissingAppIcons(
+	windows: CapturePickerWindow[],
+): Promise<Record<string, string>> {
+	const missing = windows.filter((window) => !window.appIcon);
+	if (missing.length === 0) return {};
+	const pids = [
+		...new Set(missing.map((window) => window.pid).filter((pid) => pid !== undefined)),
+	];
+	const sharp = await sharpAppIcons(pids as number[]);
+	const found: Record<string, string> = {};
+	for (const window of missing) {
+		const icon = window.pid ? sharp[window.pid] : undefined;
+		if (!icon) continue;
+		appIconCache.set(appIconKey(window), icon);
+		window.appIcon = icon;
+		found[window.id] = icon;
+	}
+	if (missing.some((window) => !window.appIcon)) {
+		const small = await smallWindowIcons();
+		for (const window of missing) {
+			const icon = window.appIcon ? undefined : small.get(window.id);
+			if (!icon) continue;
+			window.appIcon = icon;
+			found[window.id] = icon;
 		}
 	}
-	return windows.map((window) => ({
-		...window,
-		appIcon: (window.pid && sharp[window.pid]) || small.get(window.id),
-	}));
+	return found;
 }
 
 /** The same source the screen list offers for this display. */
@@ -113,18 +150,25 @@ export function registerCapturePickerHandlers({
 		resolve?.(pick);
 	};
 
-	// Picker windows (one per screen) whose pointer is over a window; the bar's Window
-	// icon moves while any of them is.
+	// The open picker's windows, one per screen.
+	let pickerWindows: BrowserWindow[] = [];
+	const sendToPickers = (channel: string, payload: unknown) => {
+		for (const window of pickerWindows) {
+			if (!window.isDestroyed()) window.webContents.send(channel, payload);
+		}
+	};
+	const isHudSender = (sender: Electron.WebContents) =>
+		getHudOverlayWindow()?.webContents === sender;
+
+	// Picker windows whose pointer is over a window; the bar's Window icon moves while
+	// any of them is.
 	const hoveringWindow = new Set<number>();
 	let barHover = false;
 	const broadcastWindowHover = () => {
 		const hovering = hoveringWindow.size > 0;
 		if (hovering === barHover) return;
 		barHover = hovering;
-		for (const window of BrowserWindow.getAllWindows()) {
-			if (!window.isDestroyed())
-				window.webContents.send("capture-picker-window-hover", hovering);
-		}
+		getHudOverlayWindow()?.webContents.send("capture-picker-window-hover", hovering);
 	};
 	ipcMain.on("capture-picker-window-hover", (event, hovering: unknown) => {
 		if (!isCapturePickerWebContents(event.sender)) return;
@@ -157,19 +201,24 @@ export function registerCapturePickerHandlers({
 		if (process.platform === "linux") return pickSourceList();
 
 		finishPick(null);
-		// List windows before the overlays cover them.
-		pickableWindows = Promise.resolve(
-			process.platform === "darwin"
-				? await withAppIcons(await listCapturePickerWindows())
-				: await listCapturePickerWindows(),
-		);
+		// List windows before the overlays cover them. Icons known from earlier picks
+		// come at once; the rest arrive while the picker is already showing.
+		const windows = await listCapturePickerWindows();
+		if (process.platform === "darwin") applyCachedAppIcons(windows);
+		pickableWindows = Promise.resolve(windows);
 		if (isCursorCaptureActive) return { success: false, canceled: true };
 		const pick = await new Promise<CapturePick | null>((resolve) => {
 			resolvePendingPick = resolve;
 			// Closing an overlay without confirming cancels the pick.
-			createCapturePickerWindows(() => finishPick(null));
+			pickerWindows = createCapturePickerWindows(() => finishPick(null)) ?? [];
+			if (process.platform === "darwin") {
+				void fetchMissingAppIcons(windows).then((icons) => {
+					if (Object.keys(icons).length > 0) sendToPickers("capture-picker-icons", icons);
+				});
+			}
 		});
 		closeCapturePickerWindows();
+		pickerWindows = [];
 		hoveringWindow.clear();
 		broadcastWindowHover();
 		if (!pick || isCursorCaptureActive) {
@@ -199,12 +248,11 @@ export function registerCapturePickerHandlers({
 		return { success: true, source, record: pick.record === true };
 	};
 	// The bar's Display, Window and Area buttons switch an open picker's mode in place.
-	ipcMain.on("capture-picker-set-mode", (_event, mode: unknown) => {
+	ipcMain.on("capture-picker-set-mode", (event, mode: unknown) => {
+		if (!isHudSender(event.sender)) return;
 		if (!activePick || (mode !== "display" && mode !== "window" && mode !== "area")) return;
 		pickMode = mode;
-		for (const window of BrowserWindow.getAllWindows()) {
-			if (!window.isDestroyed()) window.webContents.send("capture-picker-mode-changed", mode);
-		}
+		sendToPickers("capture-picker-mode-changed", mode);
 	});
 	ipcMain.handle("pick-capture-target", (_event, mode: unknown) => {
 		if (isCursorCaptureActive) return { success: false, canceled: true };
@@ -215,6 +263,7 @@ export function registerCapturePickerHandlers({
 				.catch((error) => {
 					finishPick(null);
 					closeCapturePickerWindows();
+					pickerWindows = [];
 					hoveringWindow.clear();
 					broadcastWindowHover();
 					return {

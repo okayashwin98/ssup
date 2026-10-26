@@ -16,6 +16,9 @@ const mocks = vi.hoisted(() => ({
 	windows: [] as object[],
 	listeners: new Map<string, (...args: unknown[]) => unknown>(),
 	sent: [] as unknown[][],
+	pickerSent: [] as unknown[][],
+	hud: { webContents: { send: (...args: unknown[]) => mocks.sent.push(args) } },
+	iconRuns: [] as string[][],
 }));
 vi.mock("electron", () => ({
 	ipcMain: {
@@ -24,19 +27,28 @@ vi.mock("electron", () => ({
 		on: (name: string, listener: (...args: unknown[]) => unknown) =>
 			mocks.listeners.set(name, listener),
 	},
-	BrowserWindow: {
-		getAllWindows: () => [
-			{
-				isDestroyed: () => false,
-				webContents: { send: (...args: unknown[]) => mocks.sent.push(args) },
-			},
-		],
+}));
+vi.mock("node:child_process", () => ({
+	execFile: (
+		_file: string,
+		args: string[],
+		_options: unknown,
+		callback: (error: Error | null, result: { stdout: string }) => void,
+	) => {
+		mocks.iconRuns.push(args);
+		const icons = Object.fromEntries(args.slice(1).map((pid) => [pid, `icon-of-${pid}`]));
+		callback(null, { stdout: JSON.stringify(icons) });
 	},
+}));
+vi.mock("../paths/binaries", () => ({
+	ensureAppIconsBinary: async () => "/helpers/recordly-app-icons",
+	ensureWindowResizeBinary: async () => "/helpers/recordly-window-resize",
 }));
 vi.mock("../../windows", () => ({
 	createCapturePickerWindows: mocks.create,
 	closeCapturePickerWindows: mocks.close,
 	isCapturePickerWebContents: (sender: object) => mocks.windows.includes(sender),
+	getHudOverlayWindow: () => mocks.hud,
 }));
 vi.mock("../captureSelection", () => ({
 	validateCaptureSource: mocks.validate,
@@ -87,6 +99,64 @@ beforeEach(() => {
 });
 const call = (name: string, sender: object, input?: unknown) =>
 	mocks.handlers.get(name)!({ sender }, input);
+describe("picker signals and app icons", () => {
+	const picker = {
+		isDestroyed: () => false,
+		webContents: { send: (...args: unknown[]) => mocks.pickerSent.push(args) },
+	};
+	const notes = {
+		id: "window:101:0",
+		title: "Launch checklist",
+		appName: "Notes",
+		pid: 4242,
+		x: 0,
+		y: 0,
+		width: 600,
+		height: 400,
+	};
+
+	it("opens before icons load, sends them to the picker, and reuses them next time", async () => {
+		mocks.pickerSent = [];
+		mocks.iconRuns = [];
+		mocks.create.mockReturnValue([picker]);
+		mocks.list.mockImplementation(async () => [{ ...notes }]);
+		const first = call("pick-capture-target", mocks.outsider);
+		await vi.waitFor(() => expect(mocks.create).toHaveBeenCalledOnce());
+		await vi.waitFor(() =>
+			expect(mocks.pickerSent).toEqual([
+				["capture-picker-icons", { "window:101:0": "icon-of-4242" }],
+			]),
+		);
+		await call("complete-capture-pick", mocks.overlay, null);
+		await first;
+
+		const second = call("pick-capture-target", mocks.outsider);
+		await vi.waitFor(() => expect(mocks.create).toHaveBeenCalledTimes(2));
+		const context = (await call("get-capture-picker-context", mocks.overlay, 1)) as {
+			windows: { appIcon?: string }[];
+		};
+		expect(context.windows[0]?.appIcon).toBe("icon-of-4242");
+		expect(mocks.iconRuns).toHaveLength(1);
+		await call("complete-capture-pick", mocks.overlay, null);
+		await second;
+	});
+
+	it("takes mode switches only from the bar, and sends them only to the picker", async () => {
+		mocks.pickerSent = [];
+		mocks.create.mockReturnValue([picker]);
+		const pending = call("pick-capture-target", mocks.outsider, "display");
+		await vi.waitFor(() => expect(mocks.create).toHaveBeenCalledOnce());
+		const setMode = (sender: object, mode: string) =>
+			mocks.listeners.get("capture-picker-set-mode")!({ sender }, mode);
+		setMode(mocks.outsider, "area");
+		setMode(mocks.hud.webContents, "window");
+		expect(mocks.pickerSent).toEqual([["capture-picker-mode-changed", "window"]]);
+		expect(mocks.sent).toEqual([]);
+		await call("complete-capture-pick", mocks.overlay, null);
+		await pending;
+	});
+});
+
 describe("window hover for the bar's Window icon", () => {
 	it("is on while any screen's picker hovers a window, and off when the picker closes", async () => {
 		const second = { id: 2 };

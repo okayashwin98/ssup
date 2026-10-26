@@ -1,5 +1,6 @@
-// The recording bar captures media; the webcam bubble previews the camera.
+// The recording bar captures media; the webcam bubble previews the camera only.
 const CAPTURE_WINDOW_TYPES = new Set(["hud-overlay", "webcam-bubble"]);
+const CAMERA_ONLY_WINDOW_TYPES = new Set(["webcam-bubble"]);
 const TRUSTED_RENDERER_PROTOCOLS = new Set(["http:", "https:", "file:"]);
 const FILE_SECURITY_ORIGINS = new Set(["null", "file://", "file:///"]);
 
@@ -10,6 +11,8 @@ export interface MediaPermissionPolicyRequest {
 	currentDocumentUrl: string;
 	requestingUrl: string;
 	securityOrigins: readonly string[];
+	/** The media asked for, when Electron says ("audio", "video" or "unknown"). */
+	mediaTypes?: readonly string[];
 }
 
 export interface DisplayCapturePolicyRequest {
@@ -132,6 +135,16 @@ export function shouldGrantMediaPermission(
 	if (
 		!isTrustedCaptureDocumentUrl(request.requestingUrl, trustedDocumentBaseUrls) ||
 		!isSameDocument(request.currentDocumentUrl, request.requestingUrl)
+	) {
+		return false;
+	}
+
+	// A camera-only window never gets the microphone.
+	const windowType = parseUrl(request.currentDocumentUrl)?.searchParams.get("windowType");
+	if (
+		windowType &&
+		CAMERA_ONLY_WINDOW_TYPES.has(windowType) &&
+		(request.mediaTypes ?? []).some((type) => type !== "video")
 	) {
 		return false;
 	}

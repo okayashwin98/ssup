@@ -10,7 +10,6 @@ import {
 	type MenuItemConstructorOptions,
 	Notification,
 	type Rectangle,
-	screen,
 } from "electron";
 import { USER_DATA_PATH } from "./appPaths";
 
@@ -362,7 +361,7 @@ export function registerHudCompactWindowIpc(options: {
 				let y = request.y;
 				if (typeof request.above === "number") {
 					const content = win.getContentBounds();
-					const workArea = screen.getDisplayMatching(content).workArea;
+					const workArea = getScreen().getDisplayMatching(content).workArea;
 					const height = estimateMenuHeight(request.items);
 					if (content.y + y + height > workArea.y + workArea.height) {
 						y = request.above - height;

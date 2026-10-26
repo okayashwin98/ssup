@@ -998,6 +998,7 @@ app.whenReady().then(async () => {
 					requestingUrl: details.requestingUrl ?? requestingOrigin,
 					securityOrigins:
 						details.securityOrigin === undefined ? [] : [details.securityOrigin],
+					mediaTypes: details.mediaType ? [details.mediaType] : [],
 				},
 				getTrustedCaptureDocumentBaseUrls(),
 			);
@@ -1017,6 +1018,7 @@ app.whenReady().then(async () => {
 						currentDocumentUrl: webContents.getURL(),
 						requestingUrl: details.requestingUrl,
 						securityOrigins: securityOrigin === undefined ? [] : [securityOrigin],
+						mediaTypes: "mediaTypes" in details ? (details.mediaTypes ?? []) : [],
 					},
 					getTrustedCaptureDocumentBaseUrls(),
 				),

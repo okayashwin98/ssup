@@ -505,6 +505,8 @@ ipcMain.handle("hud-overlay-follow-pointer", () => {
 	};
 });
 
+ipcMain.handle("hud-overlay-is-visible", () => getHudOverlayWindow()?.isVisible() ?? false);
+
 ipcMain.on("hud-overlay-hide", () => {
 	if (hudOverlayRecordingActive && hideRecordingControls()) {
 		return;
@@ -693,6 +695,10 @@ export function createHudOverlayWindow(): BrowserWindow {
 	ipcMain.on("hud-overlay-renderer-ready", handleHudRendererReady);
 
 	hudOverlayWindow = win;
+	// Hiding a window leaves its page "visible", so the bar is told directly; its mic
+	// meter only listens while the bar can be seen.
+	win.on("show", () => win.webContents.send("hud-visibility-changed", true));
+	win.on("hide", () => win.webContents.send("hud-visibility-changed", false));
 
 	// The OS drags the bar window (macOS bar, Linux Wayland). Remember where it was left.
 	if (process.platform === "linux" || process.platform === "darwin") {

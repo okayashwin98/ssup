@@ -71,6 +71,25 @@ describe("shouldGrantMediaPermission", () => {
 		expect(shouldGrantMediaPermission(makeRequest(), TRUSTED_DOCUMENT_BASE_URLS)).toBe(true);
 	});
 
+	it("gives the webcam bubble the camera but never the microphone", () => {
+		const bubble = "http://localhost:5173/?windowType=webcam-bubble";
+		const ask = (mediaTypes: string[]) =>
+			shouldGrantMediaPermission(
+				makeRequest({ currentDocumentUrl: bubble, requestingUrl: bubble, mediaTypes }),
+				TRUSTED_DOCUMENT_BASE_URLS,
+			);
+		expect(ask(["video"])).toBe(true);
+		expect(ask(["audio"])).toBe(false);
+		expect(ask(["video", "audio"])).toBe(false);
+		// The bar keeps both.
+		expect(
+			shouldGrantMediaPermission(
+				makeRequest({ mediaTypes: ["video", "audio"] }),
+				TRUSTED_DOCUMENT_BASE_URLS,
+			),
+		).toBe(true);
+	});
+
 	it("accepts Chromium's trailing-slash HTTP origin serialization", () => {
 		expect(
 			shouldGrantMediaPermission(

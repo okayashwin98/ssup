@@ -232,6 +232,9 @@ interface Window {
 		hudOverlayClose: () => void;
 		getEditorMode: () => Promise<boolean>;
 		onEditorModeChanged: (callback: (inEditor: boolean) => void) => () => void;
+		/** Whether the bar's window is on screen; a hidden window's page still says "visible". */
+		hudIsVisible: () => Promise<boolean>;
+		onHudVisibilityChanged: (callback: (visible: boolean) => void) => () => void;
 		hudOverlayRendererReady: () => void;
 		hudOverlaySetWebcamPreviewVisible: (visible: boolean) => void;
 		hudWindowSetContentSize: (size: { width: number; height: number }) => void;
@@ -304,6 +307,8 @@ interface Window {
 		/** Switches an open picker to another mode, from the bar. */
 		setCapturePickerMode: (mode: CapturePickerMode) => void;
 		onCapturePickerModeChanged: (callback: (mode: CapturePickerMode) => void) => () => void;
+		/** App icons that arrive after the picker opened, by window id. */
+		onCapturePickerIcons: (callback: (icons: Record<string, string>) => void) => () => void;
 		/** The picker tells the bar while its pointer is over a window. */
 		capturePickerSetWindowHover: (hovering: boolean) => void;
 		onCapturePickerWindowHover: (callback: (hovering: boolean) => void) => () => void;

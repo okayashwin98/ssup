@@ -204,3 +204,102 @@ test("one hover fill fades in, then glides between the bar's buttons", async ({ 
 	await page.mouse.move(5, 400); // off the bar
 	await expect(highlight).not.toHaveAttribute("data-shown");
 });
+
+test("a mode clicked while the picker is still opening is the one it opens in", async ({
+	page,
+}) => {
+	await installDesktopBridge(page);
+	await page.addInitScript(() => {
+		const api = window.electronAPI;
+		// The permission check takes a while, as when a prompt is up.
+		api.getPlatform = () =>
+			new Promise((resolve) => {
+				(window as unknown as { finishCheck: () => void }).finishCheck = () =>
+					resolve("linux");
+			});
+		api.pickCaptureTarget = (mode) =>
+			new Promise(() => {
+				document.documentElement.dataset.pickedMode = String(mode);
+			});
+	});
+	await page.goto("/?windowType=hud-overlay");
+	await page.getByRole("button", { name: "Record a display", exact: true }).click();
+	await page.getByRole("button", { name: "Record a window", exact: true }).click();
+	await page.evaluate(() => (window as unknown as { finishCheck: () => void }).finishCheck());
+	await expect(page.locator("html")).toHaveAttribute("data-picked-mode", "window");
+});
+
+test("the mic meter listens only while the bar is on screen and outside the editor", async ({
+	page,
+}) => {
+	await installDesktopBridge(page);
+	await page.addInitScript(() => {
+		const html = () => document.documentElement;
+		const api = window.electronAPI;
+		api.getRecordingPreferences = async () => ({
+			success: true,
+			microphoneEnabled: true,
+			webcamEnabled: false,
+			systemAudioEnabled: false,
+		});
+		api.getEditorMode = async () => false;
+		const subscribeTo = (name: string) => (callback: (value: boolean) => void) => {
+			const listener = (event: Event) => callback((event as CustomEvent<boolean>).detail);
+			window.addEventListener(name, listener);
+			return () => window.removeEventListener(name, listener);
+		};
+		api.onEditorModeChanged = subscribeTo("test-editor-mode");
+		api.onHudVisibilityChanged = subscribeTo("test-visible");
+		api.hudIsVisible = async () => true;
+		let open = 0;
+		navigator.mediaDevices.getUserMedia = async () => {
+			const context = new AudioContext();
+			const stream = context.createMediaStreamDestination().stream;
+			open += 1;
+			html().dataset.micOpen = String(open);
+			for (const track of stream.getTracks()) {
+				const stop = track.stop.bind(track);
+				track.stop = () => {
+					stop();
+					open -= 1;
+					html().dataset.micOpen = String(open);
+				};
+			}
+			return stream;
+		};
+	});
+	await page.goto("/?windowType=hud-overlay");
+	const html = page.locator("html");
+	const send = (name: string, detail: boolean) =>
+		page.evaluate(([n, d]) => window.dispatchEvent(new CustomEvent(n, { detail: d })), [
+			name,
+			detail,
+		] as const);
+	await expect(html).toHaveAttribute("data-mic-open", "1");
+	await send("test-visible", false); // the bar is hidden
+	await expect(html).toHaveAttribute("data-mic-open", "0");
+	await send("test-visible", true);
+	await expect(html).toHaveAttribute("data-mic-open", "1");
+	await send("test-editor-mode", true); // the editor opens
+	await expect(html).toHaveAttribute("data-mic-open", "0");
+});
+
+test("the hover fill clears when a menu closes and glides across short gaps", async ({ page }) => {
+	await installDesktopBridge(page);
+	await page.goto("/?windowType=hud-overlay");
+	const highlight = page.locator('[class*="highlight"]');
+	const display = page.getByRole("button", { name: "Record a display", exact: true });
+	const area = page.getByRole("button", { name: "Record an area", exact: true });
+	await display.hover();
+	await expect(highlight).toHaveAttribute("data-shown", "");
+	// A brief exit, as over the bar's draggable gaps, does not reset it.
+	await page.locator('[class*="bar"]').first().dispatchEvent("pointerleave");
+	await area.hover();
+	await expect(highlight).toHaveAttribute("data-gliding", "");
+	// A native menu closing lets go of it.
+	await page
+		.getByRole("button", { name: /microphone/i })
+		.first()
+		.click();
+	await expect(highlight).not.toHaveAttribute("data-shown");
+});
