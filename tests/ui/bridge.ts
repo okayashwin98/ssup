@@ -174,6 +174,14 @@ export async function installDesktopBridge(
 				getEditorMode: async () => false,
 				onEditorModeChanged: subscribe,
 				hudIsVisible: async () => true,
+				hudOverlayDrag: (phase: string) => {
+					const html = document.documentElement;
+					html.dataset.drag = [html.dataset.drag, phase].filter(Boolean).join(",");
+				},
+				recordingControlsDrag: (phase: string) => {
+					const html = document.documentElement;
+					html.dataset.drag = [html.dataset.drag, phase].filter(Boolean).join(",");
+				},
 				hudWindowHasGlass: () =>
 					(window as unknown as { __testGlass?: boolean }).__testGlass === true,
 				onHudVisibilityChanged: subscribe,

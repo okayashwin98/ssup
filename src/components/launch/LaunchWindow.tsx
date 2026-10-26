@@ -17,6 +17,7 @@ import {
 	WindowModeIcon,
 } from "./BarIcons";
 import styles from "./HudBar.module.css";
+import { useBarDrag } from "./hooks/useBarDrag";
 import { useBarWindowSize } from "./hooks/useBarWindowSize";
 import { useLaunchWindowActions } from "./hooks/useLaunchWindowActions";
 import { useLaunchWindowSystemState } from "./hooks/useLaunchWindowSystemState";
@@ -76,6 +77,9 @@ function useHudVisible() {
 	return visible;
 }
 
+const dragBar = (phase: "start" | "move" | "end", screenX: number, screenY: number) =>
+	window.electronAPI.hudOverlayDrag(phase, screenX, screenY);
+
 function readBubblePreference() {
 	try {
 		return localStorage.getItem(WEBCAM_BUBBLE_STORAGE_KEY) !== "false";
@@ -90,6 +94,7 @@ export function LaunchWindow() {
 	const meterRef = useRef<HTMLSpanElement>(null);
 	useBarWindowSize(rootRef);
 	const onGlass = useWindowGlass();
+	useBarDrag(rootRef, dragBar);
 
 	const {
 		recording,

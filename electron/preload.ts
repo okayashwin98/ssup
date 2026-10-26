@@ -200,6 +200,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	hudOverlaySetSourceSelectionActive: (active: boolean) => {
 		ipcRenderer.send("hud-overlay-set-source-selection-active", active);
 	},
+	recordingControlsDrag: (phase: "start" | "move" | "end", screenX: number, screenY: number) => {
+		ipcRenderer.send("recording-controls-drag", phase, screenX, screenY);
+	},
 	hudOverlayDrag: (phase: "start" | "move" | "end", screenX: number, screenY: number) => {
 		ipcRenderer.send("hud-overlay-drag", phase, screenX, screenY);
 	},

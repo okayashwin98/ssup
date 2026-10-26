@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { MinusIcon, PauseIcon, PlayIcon, XIcon } from "@/components/ui/icons";
 import { useScopedT } from "../../contexts/I18nContext";
 import styles from "./HudBar.module.css";
+import { useBarDrag } from "./hooks/useBarDrag";
 import { useBarWindowSize } from "./hooks/useBarWindowSize";
 import { useWindowGlass } from "./hooks/useWindowGlass";
 
@@ -86,12 +87,16 @@ export function RecordingBarControls({
 	);
 }
 
+const dragRecordingBar = (phase: "start" | "move" | "end", screenX: number, screenY: number) =>
+	window.electronAPI.recordingControlsDrag(phase, screenX, screenY);
+
 /** The recording bar window; the start bar's window keeps the recorder and takes its commands. */
 export default function RecordingBarWindow() {
 	const rootRef = useRef<HTMLDivElement>(null);
 	const [status, setStatus] = useState({ paused: false, elapsed: 0 });
 	useBarWindowSize(rootRef);
 	const onGlass = useWindowGlass();
+	useBarDrag(rootRef, dragRecordingBar);
 
 	useEffect(() => {
 		let active = true;

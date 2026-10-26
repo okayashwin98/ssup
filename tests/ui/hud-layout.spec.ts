@@ -363,3 +363,42 @@ test("without Liquid Glass the bars keep their own frosted fill and edge", async
 	await expect(bar).not.toHaveClass(/onGlass/);
 	expect(await bar.evaluate((element) => getComputedStyle(element).boxShadow)).not.toBe("none");
 });
+
+test("pressing a button and moving drags the bar instead of clicking", async ({ page }) => {
+	await installDesktopBridge(page);
+	await page.addInitScript(() => {
+		window.electronAPI.pickCaptureTarget = (mode) =>
+			new Promise(() => {
+				document.documentElement.dataset.picked = String(mode);
+			});
+	});
+	await page.goto("/?windowType=hud-overlay");
+	const html = page.locator("html");
+	const display = page.getByRole("button", { name: "Record a display", exact: true });
+	const box = (await display.boundingBox())!;
+	await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+	await page.mouse.down();
+	await page.mouse.move(box.x + box.width / 2 + 40, box.y + box.height / 2 + 6, { steps: 8 });
+	await page.mouse.up();
+	await expect(html).toHaveAttribute("data-drag", /^start,(move,)*move,end$/);
+	await page.waitForTimeout(200);
+	await expect(html).not.toHaveAttribute("data-picked");
+
+	// A plain click still clicks, and doesn't drag.
+	await page.evaluate(() => delete document.documentElement.dataset.drag);
+	await display.click();
+	await expect(html).toHaveAttribute("data-picked", "display");
+	await expect(html).not.toHaveAttribute("data-drag");
+});
+
+test("the recording bar drags from anywhere too", async ({ page }) => {
+	await installDesktopBridge(page);
+	await page.goto("/?windowType=recording-controls");
+	const timer = page.getByRole("group", { name: "Recording controls" }).getByRole("status");
+	const box = (await timer.boundingBox())!;
+	await page.mouse.move(box.x + 5, box.y + 5);
+	await page.mouse.down();
+	await page.mouse.move(box.x + 60, box.y + 5, { steps: 6 });
+	await page.mouse.up();
+	await expect(page.locator("html")).toHaveAttribute("data-drag", /^start,.*end$/);
+});

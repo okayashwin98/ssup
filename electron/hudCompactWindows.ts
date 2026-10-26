@@ -489,6 +489,30 @@ export function registerHudCompactWindowIpc(options: {
 
 	ipcMain.handle("webcam-bubble-get-device", () => webcamBubbleDeviceId ?? null);
 
+	// The recording bar is dragged from anywhere on it, like the start bar.
+	let recordingBarDrag: { x: number; y: number } | null = null;
+	ipcMain.on(
+		"recording-controls-drag",
+		(event, phase: unknown, screenX: unknown, screenY: unknown) => {
+			const win = getRecordingControlsWindow();
+			if (!win || BrowserWindow.fromWebContents(event.sender) !== win) return;
+			const x = Number(screenX);
+			const y = Number(screenY);
+			if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+			if (phase === "start") {
+				const bounds = win.getBounds();
+				recordingBarDrag = { x: x - bounds.x, y: y - bounds.y };
+			} else if (phase === "move" && recordingBarDrag) {
+				win.setPosition(
+					Math.round(x - recordingBarDrag.x),
+					Math.round(y - recordingBarDrag.y),
+				);
+			} else if (phase === "end") {
+				recordingBarDrag = null;
+			}
+		},
+	);
+
 	ipcMain.on("hud-window-has-glass", (event) => {
 		event.returnValue = windowHasLiquidGlass(BrowserWindow.fromWebContents(event.sender));
 	});

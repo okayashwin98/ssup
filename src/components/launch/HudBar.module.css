@@ -36,7 +36,7 @@
 	font-weight: 500;
 	white-space: nowrap;
 	user-select: none;
-	-webkit-app-region: drag;
+	/* Dragged from anywhere by useBarDrag, not by a drag region (which can't also click). */
 }
 
 /* On Apple's Liquid Glass (macOS 26+) the glass draws the fill, edge and shadow. */
@@ -52,7 +52,6 @@
 }
 
 .item {
-	-webkit-app-region: no-drag;
 	position: relative;
 	display: inline-flex;
 	align-items: center;
@@ -169,7 +168,6 @@
 }
 
 .close {
-	-webkit-app-region: no-drag;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -224,7 +222,6 @@
 }
 
 .stop {
-	-webkit-app-region: no-drag;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
