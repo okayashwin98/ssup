@@ -697,6 +697,8 @@ async function runVariant(
 		env: {
 			...process.env,
 			RECORDLY_SMOKE_EXPORT: "1",
+			// Removed with the rest of the run's temporary folder.
+			RECORDLY_SMOKE_USER_DATA_DIR: path.join(path.dirname(inputPath), "user-data"),
 			RECORDLY_SMOKE_EXPORT_INPUT: inputPath,
 			RECORDLY_SMOKE_EXPORT_OUTPUT: outputPath,
 			...(useNativeExport ? { RECORDLY_SMOKE_EXPORT_USE_NATIVE: "1" } : {}),
