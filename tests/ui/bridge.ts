@@ -174,6 +174,8 @@ export async function installDesktopBridge(
 				getEditorMode: async () => false,
 				onEditorModeChanged: subscribe,
 				hudIsVisible: async () => true,
+				hudWindowHasGlass: () =>
+					(window as unknown as { __testGlass?: boolean }).__testGlass === true,
 				onHudVisibilityChanged: subscribe,
 				capturePickerSetWindowHover: (hovering: boolean) => {
 					document.documentElement.dataset.windowHover = String(hovering);

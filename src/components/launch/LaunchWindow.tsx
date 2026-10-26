@@ -22,6 +22,7 @@ import { useLaunchWindowActions } from "./hooks/useLaunchWindowActions";
 import { useLaunchWindowSystemState } from "./hooks/useLaunchWindowSystemState";
 import { useMicLevel } from "./hooks/useMicLevel";
 import { useRecordingTimer } from "./hooks/useRecordingTimer";
+import { useWindowGlass } from "./hooks/useWindowGlass";
 import { RecordingBarControls } from "./RecordingBar";
 import { resetSlidingHighlight, SlidingHighlight } from "./SlidingHighlight";
 
@@ -88,6 +89,7 @@ export function LaunchWindow() {
 	const rootRef = useRef<HTMLDivElement>(null);
 	const meterRef = useRef<HTMLSpanElement>(null);
 	useBarWindowSize(rootRef);
+	const onGlass = useWindowGlass();
 
 	const {
 		recording,
@@ -525,7 +527,7 @@ export function LaunchWindow() {
 
 	return (
 		<div ref={rootRef} className={styles.root}>
-			<div className={styles.bar}>
+			<div className={`${styles.bar}${onGlass ? ` ${styles.onGlass}` : ""}`}>
 				<SlidingHighlight />
 				{content}
 			</div>

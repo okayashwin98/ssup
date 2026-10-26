@@ -592,7 +592,7 @@ export function createHudOverlayWindow(): BrowserWindow {
 	// like any window. Other platforms keep the full-display click-through window.
 	const win =
 		process.platform === "darwin"
-			? createFloatingPanel(initialBounds, { vibrancy: true })
+			? createFloatingPanel(initialBounds, { glass: true })
 			: createLegacyHudOverlayWindow(initialBounds);
 
 	const showHudWindow = () => {

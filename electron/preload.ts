@@ -218,6 +218,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		return () => ipcRenderer.removeListener("editor-mode-changed", listener);
 	},
 	hudIsVisible: () => ipcRenderer.invoke("hud-overlay-is-visible") as Promise<boolean>,
+	hudWindowHasGlass: () => ipcRenderer.sendSync("hud-window-has-glass") === true,
 	onHudVisibilityChanged: (callback: (visible: boolean) => void) => {
 		const listener = (_event: Electron.IpcRendererEvent, visible: boolean) => callback(visible);
 		ipcRenderer.on("hud-visibility-changed", listener);

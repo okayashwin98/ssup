@@ -339,3 +339,27 @@ test("hovering a button turns its icon and text white", async ({ page }) => {
 	await expect.poll(() => colour(audio)).toBe("rgb(255, 255, 255)");
 	expect((await display.boundingBox())?.width).toBe(60);
 });
+
+test("on Liquid Glass the bars leave the fill and edge to the glass", async ({ page }) => {
+	await installDesktopBridge(page);
+	await page.addInitScript(() => {
+		(window as unknown as { __testGlass: boolean }).__testGlass = true;
+	});
+	await page.goto("/?windowType=hud-overlay");
+	const bar = page.locator('[class*="bar"]').first();
+	await expect(bar).toHaveClass(/onGlass/);
+	expect(await bar.evaluate((element) => getComputedStyle(element).backgroundColor)).toBe(
+		"rgba(0, 0, 0, 0)",
+	);
+	expect(await bar.evaluate((element) => getComputedStyle(element).boxShadow)).toBe("none");
+	await page.goto("/?windowType=recording-controls");
+	await expect(page.getByRole("group", { name: "Recording controls" })).toHaveClass(/onGlass/);
+});
+
+test("without Liquid Glass the bars keep their own frosted fill and edge", async ({ page }) => {
+	await installDesktopBridge(page);
+	await page.goto("/?windowType=hud-overlay");
+	const bar = page.locator('[class*="bar"]').first();
+	await expect(bar).not.toHaveClass(/onGlass/);
+	expect(await bar.evaluate((element) => getComputedStyle(element).boxShadow)).not.toBe("none");
+});

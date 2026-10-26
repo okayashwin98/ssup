@@ -39,6 +39,12 @@
 	-webkit-app-region: drag;
 }
 
+/* On Apple's Liquid Glass (macOS 26+) the glass draws the fill, edge and shadow. */
+.onGlass {
+	background: transparent;
+	box-shadow: none;
+}
+
 .compact {
 	/* Room for both 27 pt corners, so the curve stays exactly macOS's. */
 	height: 54px;

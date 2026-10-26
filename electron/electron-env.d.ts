@@ -234,6 +234,8 @@ interface Window {
 		onEditorModeChanged: (callback: (inEditor: boolean) => void) => () => void;
 		/** Whether the bar's window is on screen; a hidden window's page still says "visible". */
 		hudIsVisible: () => Promise<boolean>;
+		/** Whether this bar window sits on Apple's Liquid Glass (macOS 26+). */
+		hudWindowHasGlass: () => boolean;
 		onHudVisibilityChanged: (callback: (visible: boolean) => void) => () => void;
 		hudOverlayRendererReady: () => void;
 		hudOverlaySetWebcamPreviewVisible: (visible: boolean) => void;

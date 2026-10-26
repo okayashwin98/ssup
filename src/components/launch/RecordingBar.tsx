@@ -1,8 +1,9 @@
-import { MinusIcon, PauseIcon, PlayIcon, XIcon } from "@/components/ui/icons";
 import { useEffect, useRef, useState } from "react";
+import { MinusIcon, PauseIcon, PlayIcon, XIcon } from "@/components/ui/icons";
 import { useScopedT } from "../../contexts/I18nContext";
 import styles from "./HudBar.module.css";
 import { useBarWindowSize } from "./hooks/useBarWindowSize";
+import { useWindowGlass } from "./hooks/useWindowGlass";
 
 function formatElapsed(seconds: number) {
 	const minutes = Math.floor(seconds / 60)
@@ -90,6 +91,7 @@ export default function RecordingBarWindow() {
 	const rootRef = useRef<HTMLDivElement>(null);
 	const [status, setStatus] = useState({ paused: false, elapsed: 0 });
 	useBarWindowSize(rootRef);
+	const onGlass = useWindowGlass();
 
 	useEffect(() => {
 		let active = true;
@@ -109,7 +111,7 @@ export default function RecordingBarWindow() {
 	return (
 		<div ref={rootRef} className={styles.root}>
 			<div
-				className={`${styles.bar} ${styles.compact}`}
+				className={`${styles.bar} ${styles.compact}${onGlass ? ` ${styles.onGlass}` : ""}`}
 				role="group"
 				aria-label="Recording controls"
 			>

@@ -12,6 +12,7 @@ import {
 	type Rectangle,
 } from "electron";
 import { USER_DATA_PATH } from "./appPaths";
+import { getPrebundledNativeHelperPath } from "./ipc/paths/binaries";
 
 // Screen Studio-style recording windows: the start bar, the small bar shown while
 // recording, and the floating webcam bubble are each a small panel of their own,
@@ -81,24 +82,66 @@ function loadRendererWindow(win: BrowserWindow, windowType: string) {
 	}
 }
 
-/** A small non-activating panel that floats above apps, full-screen apps included. */
+// The glass bars' corner radius, measured from Screen Studio's bar (it also matches the
+// rounding the frosted bar had). The glass draws the corner itself, so the window
+// itself is left square.
+const GLASS_CORNER_RADIUS = 16;
+
+type LiquidGlass = { addGlass: (handle: Buffer, cornerRadius: number) => boolean };
+let liquidGlass: LiquidGlass | null | undefined;
+
+/** Apple's Liquid Glass add-on (macOS 26+), or null where it can't be used. */
+function loadLiquidGlass(): LiquidGlass | null {
+	if (liquidGlass === undefined) liquidGlass = requireLiquidGlass();
+	return liquidGlass;
+}
+
+function requireLiquidGlass(): LiquidGlass | null {
+	const major = Number(process.getSystemVersion().split(".")[0]);
+	if (process.platform !== "darwin" || !(major >= 26)) return null;
+	try {
+		return nodeRequire(getPrebundledNativeHelperPath("recordly-liquid-glass.node"));
+	} catch (error) {
+		console.warn("[liquid-glass] Unavailable; the bars keep their frosted look:", error);
+		return null;
+	}
+}
+
+// Bar windows that have Liquid Glass under them; their pages drop their own fill and edge.
+const glassWindowIds = new Set<number>();
+
+/** Whether a window sits on Liquid Glass (its page asks while loading). */
+export function windowHasLiquidGlass(win: BrowserWindow | null): boolean {
+	return Boolean(win && glassWindowIds.has(win.id));
+}
+
+/**
+ * A small non-activating panel that floats above apps, full-screen apps included. With
+ * `glass`, it sits on Apple's Liquid Glass with the macOS shadow, as Screen Studio's bar
+ * does; before macOS 26, or if that fails, on frosted glass without a shadow.
+ */
 export function createFloatingPanel(
 	bounds: Rectangle,
-	options: { vibrancy: boolean; resizable?: boolean },
+	options: { glass: boolean; resizable?: boolean },
 ): BrowserWindow {
+	const glass = options.glass ? loadLiquidGlass() : null;
+	const frosted = options.glass && !glass;
 	const win = new BrowserWindow({
 		...bounds,
 		type: process.platform === "darwin" ? "panel" : undefined,
 		frame: false,
 		transparent: true,
 		backgroundColor: "#00000000",
-		...(options.vibrancy
-			? { vibrancy: "hud" as const, visualEffectState: "active" as const }
-			: {}),
-		roundedCorners: options.vibrancy,
-		// macOS's window shadow cannot be softened, only turned off; the bar's thin light
-		// edge outlines it instead.
-		hasShadow: false,
+		...(frosted ? { vibrancy: "hud" as const, visualEffectState: "active" as const } : {}),
+		roundedCorners: frosted,
+		// Liquid Glass keeps macOS's shadow and its crisp outline, as Screen Studio's bar has.
+		// The frosted fallback goes without: there the shadow can only be on or off, and on
+		// it was too strong; the bar's own edge outlines it instead.
+		hasShadow: Boolean(glass),
+		// The bars never take the keyboard, like Screen Studio's: a window with the keyboard
+		// gets macOS's much larger shadow, and the picker keeps Escape and Enter. Clicks,
+		// menus and dragging work all the same.
+		focusable: !options.glass,
 		resizable: options.resizable ?? false,
 		minimizable: false,
 		maximizable: false,
@@ -113,6 +156,22 @@ export function createFloatingPanel(
 			backgroundThrottling: false,
 		},
 	});
+	if (glass) {
+		try {
+			if (glass.addGlass(win.getNativeWindowHandle(), GLASS_CORNER_RADIUS)) {
+				glassWindowIds.add(win.id);
+				const id = win.id;
+				win.once("closed", () => glassWindowIds.delete(id));
+			}
+		} catch (error) {
+			console.warn("[liquid-glass] Could not add glass to a bar:", error);
+		}
+		// No glass after all: fall back to the frosted look.
+		if (!glassWindowIds.has(win.id)) {
+			win.setVibrancy("hud");
+			win.setHasShadow(false);
+		}
+	}
 	// Like Screen Studio's bar: above normal and floating windows, below system alerts.
 	win.setAlwaysOnTop(true, "status", 1);
 	if (process.platform === "darwin") {
@@ -181,7 +240,7 @@ export function showRecordingControls(anchor: Rectangle | null) {
 		const bounds = anchor
 			? resizeKeepingBottomCentre(anchor, RECORDING_BAR_DEFAULT_SIZE, display.workArea)
 			: bottomCentreBounds(display.workArea, RECORDING_BAR_DEFAULT_SIZE);
-		win = createFloatingPanel(bounds, { vibrancy: true });
+		win = createFloatingPanel(bounds, { glass: true });
 		recordingControlsWindow = win;
 		applyCaptureProtection(win);
 		win.once("ready-to-show", () => {
@@ -278,7 +337,7 @@ export function setWebcamBubble(visible: boolean, deviceId?: string) {
 		width: WEBCAM_BUBBLE_DEFAULT_SIZE,
 		height: WEBCAM_BUBBLE_DEFAULT_SIZE,
 	};
-	const win = createFloatingPanel(bounds, { vibrancy: false, resizable: true });
+	const win = createFloatingPanel(bounds, { glass: false, resizable: true });
 	win.setAspectRatio(1);
 	win.setMinimumSize(WEBCAM_BUBBLE_MIN_SIZE, WEBCAM_BUBBLE_MIN_SIZE);
 	win.setMaximumSize(WEBCAM_BUBBLE_MAX_SIZE, WEBCAM_BUBBLE_MAX_SIZE);
@@ -429,4 +488,8 @@ export function registerHudCompactWindowIpc(options: {
 	);
 
 	ipcMain.handle("webcam-bubble-get-device", () => webcamBubbleDeviceId ?? null);
+
+	ipcMain.on("hud-window-has-glass", (event) => {
+		event.returnValue = windowHasLiquidGlass(BrowserWindow.fromWebContents(event.sender));
+	});
 }
