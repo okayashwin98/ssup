@@ -20,7 +20,9 @@
 	   through as in Screen Studio's bar, with its thin light edge. */
 	background: rgba(18, 18, 20, 0.08);
 	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
-	border-radius: 12px;
+	/* Matches the rounding macOS gives the frosted window (measured about 14 pt); a
+	   tighter curve puts the light edge outside it, where it gets cut off. */
+	border-radius: 14px;
 	color: #fff;
 	font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", var(--app-font-sans), sans-serif;
 	font-size: 13px;

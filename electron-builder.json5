@@ -56,6 +56,9 @@
   // No release channel: upstream Recordly updates would replace this app.
   "publish": null,
 
+  // Mac builds must carry the Apple Development certificate, so macOS keeps the app's
+  // permissions across updates.
+  "afterSign": "scripts/require-certificate-signature.cjs",
   "mac": {
     "hardenedRuntime": true,
     "entitlements": "build/entitlements.mac.plist",
