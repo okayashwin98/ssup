@@ -35,7 +35,10 @@
     "!electron/native/bin/**/whisper-vad-speech-segments*",
     "!node_modules/ffprobe-static/bin/darwin/**",
     "!node_modules/ffprobe-static/bin/linux/**",
-    "!node_modules/ffprobe-static/bin/win32/ia32/**",
+    "!node_modules/ffprobe-static/bin/win32/**",
+    // SuperShare is Mac-only: leave other platforms' builds of these modules out.
+    "!node_modules/uiohook-napi/prebuilds/linux-*/**",
+    "!node_modules/uiohook-napi/prebuilds/win32-*/**",
     "!electron/native/**/build/**",
     "!*.png",
     "!preview*.png",
@@ -97,28 +100,5 @@
         }
       ]
     }
-  },
-  "linux": {
-    "target": [
-      "AppImage"
-    ],
-    "icon": "icons/icons/png",
-    "artifactName": "${productName}-linux-x64.${ext}",
-    "category": "AudioVideo"
-  },
-  "win": {
-    "target": [
-      "nsis"
-    ],
-    "icon": "icons/icons/win/icon.ico",
-    "executableName": "Recordly",
-    "artifactName": "${productName}-windows-${arch}.${ext}"
-  },
-  "nsis": {
-    "oneClick": false,
-    "allowToChangeInstallationDirectory": true,
-    "createDesktopShortcut": true,
-    "createStartMenuShortcut": true,
-    "shortcutName": "Recordly"
   }
 }
