@@ -323,3 +323,19 @@ test("Escape on the bar closes an open picker", async ({ page }) => {
 	await page.keyboard.press("Escape");
 	await expect(page.locator("html")).toHaveAttribute("data-picker-cancelled", "true");
 });
+
+test("hovering a button turns its icon and text white", async ({ page }) => {
+	await installDesktopBridge(page);
+	await page.goto("/?windowType=hud-overlay");
+	const audio = page.getByRole("button", { name: /system audio/i }).first();
+	const display = page.getByRole("button", { name: "Record a display", exact: true });
+	const label = display.locator("span");
+	const colour = (locator: typeof audio) =>
+		locator.evaluate((element) => getComputedStyle(element).color);
+	await expect.poll(() => colour(label)).toBe("rgba(255, 255, 255, 0.6)");
+	await display.hover();
+	await expect.poll(() => colour(label)).toBe("rgb(255, 255, 255)");
+	await audio.hover();
+	await expect.poll(() => colour(audio)).toBe("rgb(255, 255, 255)");
+	expect((await display.boundingBox())?.width).toBe(60);
+});

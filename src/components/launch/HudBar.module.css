@@ -59,7 +59,9 @@
 	color: rgba(255, 255, 255, 0.95);
 	font: inherit;
 	cursor: default;
-	transition: background-color 120ms ease;
+	transition:
+		background-color 120ms ease,
+		color 120ms ease;
 }
 
 /* Hover is drawn by .highlight, which glides between buttons; a press deepens it. */
@@ -75,13 +77,18 @@
 	color: rgba(255, 255, 255, 0.6);
 }
 
+/* A hovered button's icon and text go full white. */
+.item:hover:not(:disabled),
+.mode:hover:not(:disabled) > span {
+	color: #fff;
+}
+
 /* Display, Window and Area: icon over label, as in Screen Studio's bar. */
 .mode {
 	flex-direction: column;
 	justify-content: center;
 	gap: 3px;
-	/* Square, like the close button. */
-	width: 52px;
+	width: 60px;
 	height: 52px;
 	padding: 0 4px;
 	font-size: 10px;
@@ -91,6 +98,7 @@
 /* Labels sit back behind the icons until their mode is picked. */
 .mode > span {
 	color: rgba(255, 255, 255, 0.6);
+	transition: color 120ms ease;
 }
 
 .mode[data-active] {
