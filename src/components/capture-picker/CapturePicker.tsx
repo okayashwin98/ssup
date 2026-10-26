@@ -186,7 +186,11 @@ export function CapturePicker() {
 	const [target, setTarget] = useState<Target | null>(null);
 	const [allowArea, setAllowArea] = useState(false);
 	const [mode, setMode] = useState<CapturePickerMode | undefined>(undefined);
-	const [display, setDisplay] = useState<{ name?: string; refreshRate?: number }>({});
+	const [display, setDisplay] = useState<{
+		name?: string;
+		refreshRate?: number;
+		scaleFactor?: number;
+	}>({});
 	const [hasWindows, setHasWindows] = useState(true);
 	const [areaRatio, setAreaRatio] = useState<number | null>(null);
 	const [message, setMessage] = useState<string | null>(null);
@@ -286,7 +290,11 @@ export function CapturePicker() {
 				setAllowArea(context.allowArea === true);
 				modeRef.current = context.mode;
 				setMode(context.mode);
-				setDisplay({ name: context.displayName, refreshRate: context.refreshRate });
+				setDisplay({
+					name: context.displayName,
+					refreshRate: context.refreshRate,
+					scaleFactor: context.scaleFactor,
+				});
 				windows.current = context.windows
 					.map((entry) => ({
 						window: entry,
@@ -504,8 +512,12 @@ export function CapturePicker() {
 		(target.rect.width < MIN_AREA_SIZE || target.rect.height < MIN_AREA_SIZE);
 	const showStartCard =
 		target !== null && !press.current?.drawing && !(target.kind === "area" && areaTooSmall);
+	// A display shows its real resolution in pixels, as the recording has it (a 5K
+	// screen is 5120 × 2880, laid out as 2560 × 1440 points). Windows and areas stay in
+	// points, the units the Resize presets and the size fields use.
+	const pixels = target?.kind === "screen" && mode === "display" ? (display.scaleFactor ?? 1) : 1;
 	const sizeText = target
-		? `${Math.round(target.rect.width)} × ${Math.round(target.rect.height)}`
+		? `${Math.round(target.rect.width * pixels)} × ${Math.round(target.rect.height * pixels)}`
 		: "";
 	return (
 		<div

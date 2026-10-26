@@ -300,6 +300,8 @@ interface Window {
 			mode?: CapturePickerMode;
 			displayName?: string;
 			refreshRate?: number;
+			/** Pixels per point on this display (2 on Retina); recordings are in pixels. */
+			scaleFactor?: number;
 			/** On-screen windows on this display, front to back. */
 			windows: CapturePickerWindow[];
 			cursor: { x: number; y: number } | null;

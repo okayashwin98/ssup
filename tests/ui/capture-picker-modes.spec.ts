@@ -55,6 +55,7 @@ async function openPicker(
 					mode,
 					displayName: "Built-in Retina Display",
 					refreshRate: 119.88,
+					scaleFactor: 2,
 					windows: pickerWindows,
 					cursor: null,
 				}),
@@ -94,7 +95,8 @@ test("Display mode highlights the whole screen with its name, size and frame rat
 	await openPicker(page, "display");
 	await page.mouse.move(600, 300); // over a window: Display mode still means the screen
 	await expect(page.getByText("Built-in Retina Display", { exact: true })).toBeVisible();
-	await expect(page.getByText("1440 × 1000 · 120FPS", { exact: true })).toBeVisible();
+	// A Retina display shows its pixels: 1440 × 1000 points at 2× is 2880 × 2000.
+	await expect(page.getByText("2880 × 2000 · 120FPS", { exact: true })).toBeVisible();
 	await page.getByRole("button", { name: "Start recording", exact: true }).click();
 	expect(await pick(page)).toEqual({ kind: "screen", displayId: 1, record: true });
 });

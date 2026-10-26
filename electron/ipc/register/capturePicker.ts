@@ -349,6 +349,7 @@ export function registerCapturePickerHandlers({
 			mode: pickMode,
 			displayName: display.label || undefined,
 			refreshRate: display.displayFrequency || undefined,
+			scaleFactor: display.scaleFactor || 1,
 			lastArea: null,
 			windows,
 			cursor: getScreen().getCursorScreenPoint(),
