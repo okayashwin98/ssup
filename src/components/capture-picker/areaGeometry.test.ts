@@ -92,6 +92,19 @@ describe("ratio-locked resizing", () => {
 		});
 	});
 
+	it("slides along the screen edge from an edge handle instead of shrinking", () => {
+		// 160 × 90 hugging the top edge; dragging its right edge 160 px.
+		const grown = resizeAreaRect(
+			{ x: 100, y: 0, width: 160, height: 90 },
+			"e",
+			160,
+			0,
+			bounds,
+			ratio,
+		);
+		expect(grown).toEqual({ x: 100, y: 0, width: 320, height: 180 });
+	});
+
 	it("stops at the screen's edge without losing the shape", () => {
 		const grown = resizeAreaRect(rect, "se", 5000, 5000, bounds, ratio);
 		expect(grown.x + grown.width).toBeLessThanOrEqual(bounds.width);

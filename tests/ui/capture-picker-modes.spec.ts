@@ -308,7 +308,40 @@ test("A typed size too big for the screen keeps the locked aspect ratio", async 
 	await page.mouse.up();
 	await page.getByRole("button", { name: "Aspect ratio", exact: true }).click();
 	await page.getByRole("spinbutton", { name: "Width" }).fill("3000");
+	await page.keyboard.press("Enter");
 	// 3000 × 1688 does not fit 1440 × 1000, so it shrinks as a whole to 1440 × 810.
 	await expect(page.getByRole("spinbutton", { name: "Width" })).toHaveValue("1440");
 	await expect(page.getByRole("spinbutton", { name: "Height" })).toHaveValue("810");
+});
+
+test("The size fields take a number typed digit by digit", async ({ page }) => {
+	await openPicker(page, "area");
+	await page.mouse.move(600, 300);
+	await page.mouse.down();
+	await page.mouse.move(1000, 600, { steps: 6 });
+	await page.mouse.up();
+	const width = page.getByRole("spinbutton", { name: "Width" });
+	await width.selectText();
+	await page.keyboard.type("1280");
+	await expect(width).toHaveValue("1280");
+	await page.keyboard.press("Enter");
+	await expect(width).toHaveValue("1280");
+	// The arrow keys step at once.
+	await page.keyboard.press("ArrowUp");
+	await expect(width).toHaveValue("1281");
+	await expect(page.getByRole("spinbutton", { name: "Height" })).toHaveValue("300");
+});
+
+test("The area's controls stay on screen for an area as tall as the screen", async ({ page }) => {
+	await openPicker(page, "area");
+	await page.mouse.move(300, 2);
+	await page.mouse.down();
+	await page.mouse.move(1100, 995, { steps: 8 });
+	await page.mouse.up();
+	const start = page.getByRole("button", { name: "Start recording", exact: true });
+	const box = (await start.boundingBox())!;
+	expect(box.y).toBeGreaterThanOrEqual(0);
+	expect(box.y + box.height).toBeLessThanOrEqual(1000);
+	await start.click();
+	expect(await pick(page)).toMatchObject({ kind: "area", record: true });
 });

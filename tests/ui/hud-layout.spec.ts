@@ -303,3 +303,18 @@ test("the hover fill clears when a menu closes and glides across short gaps", as
 		.click();
 	await expect(highlight).not.toHaveAttribute("data-shown");
 });
+
+test("Escape on the bar closes an open picker", async ({ page }) => {
+	await installDesktopBridge(page);
+	await page.addInitScript(() => {
+		window.electronAPI.pickCaptureTarget = () =>
+			new Promise(() => {
+				document.documentElement.dataset.pickerOpen = "true";
+			});
+	});
+	await page.goto("/?windowType=hud-overlay");
+	await page.getByRole("button", { name: "Record a window", exact: true }).click();
+	await expect(page.locator("html")).toHaveAttribute("data-picker-open", "true");
+	await page.keyboard.press("Escape");
+	await expect(page.locator("html")).toHaveAttribute("data-picker-cancelled", "true");
+});

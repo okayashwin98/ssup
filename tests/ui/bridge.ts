@@ -183,6 +183,9 @@ export async function installDesktopBridge(
 					document.documentElement.dataset.pickerMode = mode;
 				},
 				onCapturePickerModeChanged: subscribe,
+				cancelCapturePicker: () => {
+					document.documentElement.dataset.pickerCancelled = "true";
+				},
 				onCapturePickerIcons: subscribe,
 				getActiveCountdown: async () => ({ success: true, seconds: 3 }),
 				onCountdownTick: subscribe,

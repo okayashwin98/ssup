@@ -916,6 +916,8 @@ app.on("window-all-closed", () => {
 
 app.on("activate", () => {
 	if (getHudOverlayWindow()?.isVisible()) return;
+	// While recording, the Dock icon brings back the recording bar, not the start bar.
+	if (revealRecordingControls()) return;
 	// On OS X it's common to re-create a window in the app when the
 	// dock icon is clicked and there are no other windows open.
 	focusOrCreateMainWindow();

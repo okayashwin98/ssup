@@ -619,6 +619,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	capturePickerReady: () => {
 		ipcRenderer.send("capture-picker-ready");
 	},
+	cancelCapturePicker: () => {
+		ipcRenderer.send("capture-picker-cancel");
+	},
 	setCapturePickerMode: (mode: "display" | "window" | "area") => {
 		ipcRenderer.send("capture-picker-set-mode", mode);
 	},

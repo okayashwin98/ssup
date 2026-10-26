@@ -287,9 +287,16 @@ export function setWebcamBubble(visible: boolean, deviceId?: string) {
 	win.once("ready-to-show", () => {
 		if (alive(win)) win.showInactive();
 	});
-	win.on("moved", () => alive(win) && saveWebcamBubbleBounds(win));
-	win.on("resized", () => alive(win) && saveWebcamBubbleBounds(win));
+	// macOS sends "moved" on every step of a drag; save once it settles.
+	let saveTimer: NodeJS.Timeout | null = null;
+	const saveSoon = () => {
+		if (saveTimer) clearTimeout(saveTimer);
+		saveTimer = setTimeout(() => alive(win) && saveWebcamBubbleBounds(win), 400);
+	};
+	win.on("moved", saveSoon);
+	win.on("resized", saveSoon);
 	win.on("closed", () => {
+		if (saveTimer) clearTimeout(saveTimer);
 		if (webcamBubbleWindow === win) webcamBubbleWindow = null;
 	});
 	loadRendererWindow(win, "webcam-bubble");

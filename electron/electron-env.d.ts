@@ -304,6 +304,8 @@ interface Window {
 		) => Promise<{ success: boolean; frame?: CaptureArea; message?: string }>;
 		/** Reveals the picker window once it has painted its first state. */
 		capturePickerReady: () => void;
+		/** Closes an open picker, from the bar (Escape while the bar has the keyboard). */
+		cancelCapturePicker: () => void;
 		/** Switches an open picker to another mode, from the bar. */
 		setCapturePickerMode: (mode: CapturePickerMode) => void;
 		onCapturePickerModeChanged: (callback: (mode: CapturePickerMode) => void) => () => void;

@@ -27,8 +27,8 @@ import {
 	closeRecordingControls,
 	createFloatingPanel,
 	getHudCompanionWindows,
-	hideRecordingControls,
 	registerHudCompactWindowIpc,
+	setWebcamBubble,
 	showRecordingControls,
 } from "./hudCompactWindows";
 import { getHudOverlayTaskbarOptions } from "./hudOverlayWindowOptions";
@@ -508,9 +508,8 @@ ipcMain.handle("hud-overlay-follow-pointer", () => {
 ipcMain.handle("hud-overlay-is-visible", () => getHudOverlayWindow()?.isVisible() ?? false);
 
 ipcMain.on("hud-overlay-hide", () => {
-	if (hudOverlayRecordingActive && hideRecordingControls()) {
-		return;
-	}
+	// From the start bar, so it hides the start bar; the recording bar hides itself
+	// through its own command.
 	if (hudOverlayWindow && !hudOverlayWindow.isDestroyed()) {
 		if (process.platform === "darwin") {
 			hudOverlayWindow.hide();
@@ -735,6 +734,9 @@ export function createHudOverlayWindow(): BrowserWindow {
 	screen.on("display-metrics-changed", handleDisplayMetricsChanged);
 
 	win.on("closed", () => {
+		// The webcam bubble and recording bar belong to the start bar; they go with it.
+		setWebcamBubble(false);
+		closeRecordingControls();
 		ipcMain.removeListener("hud-overlay-renderer-ready", handleHudRendererReady);
 		screen.removeListener("display-removed", handleDisplayRemoved);
 		screen.removeListener("display-metrics-changed", handleDisplayMetricsChanged);

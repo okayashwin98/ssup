@@ -125,6 +125,7 @@ type UseScreenRecorderReturn = {
 	paused: boolean;
 	finalizing: boolean;
 	countdownActive: boolean;
+	starting: boolean;
 	toggleRecording: () => void;
 	pauseRecording: () => void;
 	resumeRecording: () => void;
@@ -2457,6 +2458,8 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 		paused,
 		finalizing,
 		countdownActive,
+		/** From Start until recording runs: countdown, permissions and warm-up. */
+		starting,
 		toggleRecording,
 		pauseRecording,
 		resumeRecording,

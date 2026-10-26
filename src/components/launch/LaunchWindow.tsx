@@ -93,6 +93,8 @@ export function LaunchWindow() {
 		recording,
 		paused,
 		finalizing,
+		starting,
+		countdownActive,
 		toggleRecording,
 		pauseRecording,
 		resumeRecording,
@@ -143,16 +145,16 @@ export function LaunchWindow() {
 	const barVisible = useHudVisible();
 
 	// The level line listens only while the bar is on screen, and lets go of the
-	// microphone before a recording takes it.
-	const [startRequested, setStartRequested] = useState(false);
+	// microphone from the moment a recording starts (countdown included).
 	useMicLevel(
 		meterRef,
 		microphoneEnabled &&
 			barVisible &&
 			!editorMode &&
+			!starting &&
+			!countdownActive &&
 			!recording &&
-			!finalizing &&
-			!startRequested,
+			!finalizing,
 		microphoneDeviceId,
 	);
 	useEffect(() => {
@@ -239,10 +241,7 @@ export function LaunchWindow() {
 				if (result.success && result.source) syncSelectedSource(result.source);
 				// "Start recording" on the picked window, screen or area.
 				if (result.success && result.record) {
-					setStartRequested(true);
-					void Promise.resolve(startRecordingRef.current()).finally(() =>
-						setStartRequested(false),
-					);
+					void startRecordingRef.current();
 				}
 				if (result.message && !result.canceled) {
 					if (result.success) toast.info(result.message);
@@ -257,6 +256,16 @@ export function LaunchWindow() {
 		},
 		[recording, cancelRecordingStart, preparePermissions, finalizing, syncSelectedSource],
 	);
+
+	// Escape on the bar while the picker is open closes the picker.
+	useEffect(() => {
+		if (pickerMode === null) return;
+		const onKey = (event: KeyboardEvent) => {
+			if (event.key === "Escape") window.electronAPI.cancelCapturePicker();
+		};
+		window.addEventListener("keydown", onKey);
+		return () => window.removeEventListener("keydown", onKey);
+	}, [pickerMode]);
 
 	useEffect(() => {
 		let mounted = true;

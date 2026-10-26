@@ -79,7 +79,8 @@ export function frontmostAt<T extends { rect: AreaRect }>(
 
 /**
  * A ratio-locked resize: a corner keeps the opposite corner still, an edge keeps the
- * opposite edge still and grows evenly about the centre line. It never leaves the overlay.
+ * opposite edge still and grows evenly about the centre line, sliding off a screen edge
+ * rather than shrinking. It never leaves the overlay.
  */
 function resizeLockedAreaRect(
 	rect: AreaRect,
@@ -126,29 +127,26 @@ function resizeLockedAreaRect(
 		height = width / ratio;
 	}
 
-	// Room on each axis from the anchor (both ways from a centre line).
-	const roomX =
-		horizontal > 0
-			? bounds.width - anchorX
-			: horizontal < 0
-				? anchorX
-				: 2 * Math.min(anchorX, bounds.width - anchorX);
-	const roomY =
-		vertical > 0
-			? bounds.height - anchorY
-			: vertical < 0
-				? anchorY
-				: 2 * Math.min(anchorY, bounds.height - anchorY);
+	// Room on each axis from the anchor edge; along a centre line the whole screen,
+	// since the rectangle slides off an edge instead of shrinking.
+	const roomX = horizontal > 0 ? bounds.width - anchorX : horizontal < 0 ? anchorX : bounds.width;
+	const roomY = vertical > 0 ? bounds.height - anchorY : vertical < 0 ? anchorY : bounds.height;
 	const fit = Math.min(1, roomX / width, roomY / height);
-	width *= fit;
-	height *= fit;
+	// Round once, then take the other side from it, so the shape holds to the point.
+	const w = Math.round(width * fit);
+	const h = Math.round(w / ratio);
 
-	const x = horizontal > 0 ? anchorX : horizontal < 0 ? anchorX - width : anchorX - width / 2;
-	const y = vertical > 0 ? anchorY : vertical < 0 ? anchorY - height : anchorY - height / 2;
-	return {
-		x: Math.round(x),
-		y: Math.round(y),
-		width: Math.round(width),
-		height: Math.round(height),
-	};
+	const x =
+		horizontal > 0
+			? anchorX
+			: horizontal < 0
+				? anchorX - w
+				: clamp(anchorX - w / 2, 0, bounds.width - w);
+	const y =
+		vertical > 0
+			? anchorY
+			: vertical < 0
+				? anchorY - h
+				: clamp(anchorY - h / 2, 0, bounds.height - h);
+	return { x: Math.round(x), y: Math.round(y), width: w, height: h };
 }

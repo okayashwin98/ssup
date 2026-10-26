@@ -102,6 +102,8 @@ const call = (name: string, sender: object, input?: unknown) =>
 describe("picker signals and app icons", () => {
 	const picker = {
 		isDestroyed: () => false,
+		getBounds: () => ({ x: 0, y: 0, width: 1440, height: 1000 }),
+		focus: vi.fn(),
 		webContents: { send: (...args: unknown[]) => mocks.pickerSent.push(args) },
 	};
 	const notes = {
@@ -152,8 +154,28 @@ describe("picker signals and app icons", () => {
 		setMode(mocks.hud.webContents, "window");
 		expect(mocks.pickerSent).toEqual([["capture-picker-mode-changed", "window"]]);
 		expect(mocks.sent).toEqual([]);
+		// The keyboard goes back to the picker under the pointer.
+		expect(picker.focus).toHaveBeenCalledOnce();
 		await call("complete-capture-pick", mocks.overlay, null);
 		await pending;
+	});
+});
+
+describe("Escape on the bar", () => {
+	it("closes the open picker, but only when it comes from the bar", async () => {
+		const pending = call("pick-capture-target", mocks.outsider);
+		await vi.waitFor(() => expect(mocks.create).toHaveBeenCalledOnce());
+		const cancel = (sender: object) =>
+			mocks.listeners.get("capture-picker-cancel")!({ sender });
+		cancel(mocks.outsider);
+		let settled = false;
+		void pending.then(() => {
+			settled = true;
+		});
+		await new Promise((resolve) => setTimeout(resolve, 20));
+		expect(settled).toBe(false);
+		cancel(mocks.hud.webContents);
+		expect(await pending).toEqual({ success: false, canceled: true });
 	});
 });
 

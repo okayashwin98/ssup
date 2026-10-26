@@ -1,4 +1,5 @@
 import type {
+	CSSProperties,
 	MouseEvent as ReactMouseEvent,
 	ReactNode,
 	PointerEvent as ReactPointerEvent,
@@ -114,6 +115,27 @@ function resizeAroundCentre(
 	};
 }
 
+// The area's control card is about 270 × 125 pt; this keeps it clear of the edges.
+const AREA_CARD_ROOM = { width: 300, height: 150 };
+
+/** Where the area's control card goes, relative to the area, so it stays on screen. */
+function areaCardPlacement(rect: AreaRect): CSSProperties {
+	const bounds = screenRect();
+	const half = AREA_CARD_ROOM.width / 2;
+	const centre = Math.min(
+		Math.max(rect.x + rect.width / 2, half),
+		Math.max(half, bounds.width - half),
+	);
+	const left = centre - rect.x;
+	if (rect.y + rect.height + AREA_CARD_ROOM.height <= bounds.height) {
+		return { left, top: "calc(100% + 12px)", transform: "translateX(-50%)" };
+	}
+	if (rect.y >= AREA_CARD_ROOM.height) {
+		return { left, bottom: "calc(100% + 12px)", transform: "translateX(-50%)" };
+	}
+	return { left, bottom: 16, transform: "translateX(-50%)" };
+}
+
 function StartButton({ onStart }: { onStart: () => void }) {
 	return (
 		<button
@@ -216,6 +238,13 @@ export function CapturePicker() {
 		)
 			return;
 		if (!next && !previous) return;
+		// A Resize error belongs to the window it was for.
+		if (
+			next?.kind !== "window" ||
+			previous?.kind !== "window" ||
+			next.window.id !== previous.window.id
+		)
+			setMessage(null);
 		current.current = next;
 		setTarget(next);
 	};
@@ -595,19 +624,10 @@ export function CapturePicker() {
 						<div
 							className="pointer-events-none absolute flex items-center justify-center"
 							style={
-								// An area's card sits just outside it, so the area itself stays draggable.
+								// An area's card sits just outside it, so the area itself stays draggable,
+								// and always on screen: below, else above, else inside the area's bottom.
 								target.kind === "area"
-									? target.rect.y + target.rect.height + 240 <= window.innerHeight
-										? {
-												left: "50%",
-												top: "calc(100% + 12px)",
-												transform: "translateX(-50%)",
-											}
-										: {
-												left: "50%",
-												bottom: "calc(100% + 12px)",
-												transform: "translateX(-50%)",
-											}
+									? areaCardPlacement(target.rect)
 									: { inset: 0 }
 							}
 						>
@@ -785,6 +805,62 @@ export function CapturePicker() {
 }
 
 /** Exact width and height for an area, as Screen Studio's Area mode offers. */
+/**
+ * One typed size. Typing edits a draft that applies on Enter or when the field is left,
+ * so a number can be typed digit by digit; the arrow keys and steppers apply at once.
+ */
+function SizeField({
+	value,
+	label,
+	onCommit,
+}: {
+	value: number;
+	label: string;
+	onCommit: (next: number) => void;
+}) {
+	const [draft, setDraft] = useState<string | null>(null);
+	const commit = (text: string) => {
+		const next = Number(text);
+		if (text.trim() !== "" && Number.isFinite(next)) onCommit(Math.max(next, MIN_AREA_SIZE));
+	};
+	return (
+		<input
+			aria-label={label}
+			type="number"
+			min={MIN_AREA_SIZE}
+			className="pointer-events-auto w-20 rounded-md bg-white/20 px-2 py-0.5 text-center text-sm text-white tabular-nums outline-none focus:bg-white/30"
+			style={{ textShadow: "none" }}
+			value={draft ?? String(Math.round(value))}
+			onPointerDown={(event) => event.stopPropagation()}
+			onPointerUp={(event) => event.stopPropagation()}
+			onChange={(event) => {
+				const text = event.target.value;
+				// Steppers and arrow keys send no input type; typing does.
+				if (!(event.nativeEvent as InputEvent).inputType) {
+					setDraft(null);
+					commit(text);
+				} else {
+					setDraft(text);
+				}
+			}}
+			onKeyDown={(event) => {
+				if (event.key === "Enter" && draft !== null) {
+					commit(draft);
+					setDraft(null);
+				} else if (event.key === "Escape") {
+					// Undo the typing, or leave the field so the next Escape closes the picker.
+					if (draft !== null) setDraft(null);
+					else event.currentTarget.blur();
+				}
+			}}
+			onBlur={() => {
+				if (draft !== null) commit(draft);
+				setDraft(null);
+			}}
+		/>
+	);
+}
+
 function AreaSizeFields({
 	rect,
 	ratio,
@@ -794,35 +870,19 @@ function AreaSizeFields({
 	ratio: number | null;
 	onSize: (width: number, height: number) => void;
 }) {
-	const field = (value: number, onChange: (next: number) => void, label: string) => (
-		<input
-			aria-label={label}
-			type="number"
-			min={MIN_AREA_SIZE}
-			className="pointer-events-auto w-20 rounded-md bg-white/20 px-2 py-0.5 text-center text-sm text-white tabular-nums outline-none focus:bg-white/30"
-			style={{ textShadow: "none" }}
-			value={Math.round(value)}
-			onPointerDown={(event) => event.stopPropagation()}
-			onPointerUp={(event) => event.stopPropagation()}
-			onChange={(event) => {
-				const next = Number(event.target.value);
-				if (Number.isFinite(next) && next >= MIN_AREA_SIZE) onChange(next);
-			}}
-		/>
-	);
 	return (
 		<>
-			{field(
-				rect.width,
-				(width) => onSize(width, ratio ? width / ratio : rect.height),
-				"Width",
-			)}
+			<SizeField
+				label="Width"
+				value={rect.width}
+				onCommit={(width) => onSize(width, ratio ? width / ratio : rect.height)}
+			/>
 			<span>×</span>
-			{field(
-				rect.height,
-				(height) => onSize(ratio ? height * ratio : rect.width, height),
-				"Height",
-			)}
+			<SizeField
+				label="Height"
+				value={rect.height}
+				onCommit={(height) => onSize(ratio ? height * ratio : rect.width, height)}
+			/>
 		</>
 	);
 }

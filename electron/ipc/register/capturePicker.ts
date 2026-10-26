@@ -62,8 +62,12 @@ async function smallWindowIcons(): Promise<Map<string, string>> {
 const appIconCache = new Map<string, string>();
 const appIconKey = (window: CapturePickerWindow) => `${window.pid}:${window.appName}`;
 
-/** Gives each window the icon already known for its app. */
+/** Gives each window the icon already known for its app, forgetting apps now gone. */
 function applyCachedAppIcons(windows: CapturePickerWindow[]) {
+	const open = new Set(windows.map(appIconKey));
+	for (const key of appIconCache.keys()) {
+		if (!open.has(key)) appIconCache.delete(key);
+	}
 	for (const window of windows) {
 		const icon = window.pid ? appIconCache.get(appIconKey(window)) : undefined;
 		if (icon) window.appIcon = icon;
@@ -248,11 +252,27 @@ export function registerCapturePickerHandlers({
 		return { success: true, source, record: pick.record === true };
 	};
 	// The bar's Display, Window and Area buttons switch an open picker's mode in place.
+	// Clicking the bar can give it the keyboard; its keys come back to the picker
+	// under the pointer, so Escape and Enter keep working there.
+	const focusPickerUnderPointer = () => {
+		const cursor = getScreen().getCursorScreenPoint();
+		const under = pickerWindows.find((window) => {
+			if (window.isDestroyed()) return false;
+			const { x, y, width, height } = window.getBounds();
+			return cursor.x >= x && cursor.x < x + width && cursor.y >= y && cursor.y < y + height;
+		});
+		(under ?? pickerWindows.find((window) => !window.isDestroyed()))?.focus();
+	};
 	ipcMain.on("capture-picker-set-mode", (event, mode: unknown) => {
 		if (!isHudSender(event.sender)) return;
 		if (!activePick || (mode !== "display" && mode !== "window" && mode !== "area")) return;
 		pickMode = mode;
 		sendToPickers("capture-picker-mode-changed", mode);
+		focusPickerUnderPointer();
+	});
+	// Escape pressed while the bar has the keyboard closes the picker.
+	ipcMain.on("capture-picker-cancel", (event) => {
+		if (isHudSender(event.sender)) finishPick(null);
 	});
 	ipcMain.handle("pick-capture-target", (_event, mode: unknown) => {
 		if (isCursorCaptureActive) return { success: false, canceled: true };
