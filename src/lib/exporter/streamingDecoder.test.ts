@@ -465,6 +465,124 @@ describe("StreamingVideoDecoder decode failures", () => {
 	});
 });
 
+describe("StreamingVideoDecoder decoders that hold frames back", () => {
+	beforeEach(() => {
+		vi.restoreAllMocks();
+		mockDemuxerLoad.mockResolvedValue(undefined);
+		mockDemuxerGetDecoderConfig.mockResolvedValue({
+			codec: "avc1.64003c",
+			codedWidth: 5120,
+			codedHeight: 2880,
+		});
+		mockDemuxerRead.mockImplementation(
+			() =>
+				new ReadableStream({
+					start(controller) {
+						for (let i = 0; i < 120; i++)
+							controller.enqueue({
+								type: i === 0 ? "key" : "delta",
+								timestamp: (i * 1_000_000) / 30,
+								duration: 33_333,
+								byteLength: 4,
+							});
+						controller.close();
+					},
+				}),
+		);
+		Object.assign(globalThis, {
+			window: {
+				location: { href: "http://localhost:5173/" },
+				electronAPI: {
+					readLocalFile: mockReadLocalFile,
+					getLocalMediaUrl: mockGetLocalMediaUrl,
+				},
+			},
+		});
+	});
+
+	afterEach(() => {
+		vi.useRealTimers();
+		vi.unstubAllGlobals();
+	});
+
+	it("keeps feeding a decoder that holds 30 frames before returning the first", async () => {
+		// Like the Mac's decoder on 5K video: nothing comes out until 30 frames are queued.
+		class HoldingDecoder {
+			state: CodecState = "unconfigured";
+			private held: EncodedVideoChunk[] = [];
+			constructor(private readonly callbacks: { output: (frame: VideoFrame) => void }) {}
+			get decodeQueueSize() {
+				return this.held.length;
+			}
+			configure() {
+				this.state = "configured";
+			}
+			decode(chunk: EncodedVideoChunk) {
+				this.held.push(chunk);
+				if (this.held.length > 30) this.emit();
+			}
+			async flush() {
+				while (this.held.length > 0) this.emit();
+			}
+			close() {
+				this.state = "closed";
+			}
+			private emit() {
+				const chunk = this.held.shift()!;
+				this.callbacks.output({
+					timestamp: chunk.timestamp,
+					close: vi.fn(),
+				} as unknown as VideoFrame);
+			}
+		}
+		vi.stubGlobal("VideoDecoder", HoldingDecoder);
+		const decoder = new StreamingVideoDecoder({ maxDecodeQueue: 8 });
+		await decoder.loadMetadata("/tmp/5k.mp4");
+		const onFrame = vi.fn(async (frame: VideoFrame) => frame.close());
+		await decoder.decodeAll(30, undefined, undefined, onFrame);
+		expect(onFrame).toHaveBeenCalledTimes(120);
+	}, 15_000);
+
+	it("stops with a clear error when the decoder returns nothing at all", async () => {
+		vi.useFakeTimers({
+			toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval", "performance"],
+		});
+		class SilentDecoder {
+			state: CodecState = "unconfigured";
+			decodeQueueSize = 0;
+			private rejectFlush: ((error: DOMException) => void) | null = null;
+			configure() {
+				this.state = "configured";
+			}
+			decode() {
+				this.decodeQueueSize++;
+			}
+			flush() {
+				return new Promise<void>((_, reject) => {
+					this.rejectFlush = reject;
+				});
+			}
+			close() {
+				this.state = "closed";
+				this.rejectFlush?.(new DOMException("closed", "AbortError"));
+			}
+		}
+		vi.stubGlobal("VideoDecoder", SilentDecoder);
+		const decoder = new StreamingVideoDecoder({ maxDecodeQueue: 8 });
+		await decoder.loadMetadata("/tmp/5k.mp4");
+		const onFrame = vi.fn(async () => {});
+		const result = decoder.decodeAll(30, undefined, undefined, onFrame).catch((error) => error);
+		await vi.advanceTimersByTimeAsync(25_000);
+		const failure = await result;
+		expect(failure).toBeInstanceOf(Error);
+		expect(failure.message).toContain("[VIDEO_DECODER_STALLED]");
+		expect(failure.message).toContain("returned no frames for 20 seconds");
+		expect(onFrame).not.toHaveBeenCalled();
+		// A stall is not replayed with software decoding.
+		expect(mockDemuxerRead).toHaveBeenCalledTimes(1);
+	});
+});
+
 describe("StreamingVideoDecoder local media loading", () => {
 	beforeEach(() => {
 		vi.restoreAllMocks();

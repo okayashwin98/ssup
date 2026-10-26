@@ -1046,6 +1046,11 @@ export class ModernVideoExporter {
 		const isVideoDecodeFailure = /VideoDecoder failure|VIDEO_DECODE|VIDEO_CODEC/i.test(message);
 
 		if (isVideoDecodeFailure) {
+			if (message.includes("VIDEO_DECODER_STALLED")) {
+				guidance.add(
+					"The export stopped because the video decoder stopped returning frames. Your project is unchanged; try exporting again.",
+				);
+			}
 			if (message.includes("VIDEO_DECODE_RECOVERY_FAILED")) {
 				guidance.add(
 					"The default decoder and software retry both failed. Compare their source times below; failure near the same point suggests a source/codec issue but does not prove corruption.",

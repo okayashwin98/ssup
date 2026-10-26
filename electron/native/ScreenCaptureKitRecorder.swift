@@ -390,8 +390,7 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 			let crop = Self.pixelCrop(for: captureRect, on: display, scale: scaleFactor)
 			windowSourceRect = crop.rect
 			windowCropDisplayId = display.displayID
-			outputWidth = crop.width
-			outputHeight = crop.height
+			(outputWidth, outputHeight) = Self.hardwareEncodableSize(width: crop.width, height: crop.height)
 			streamConfig.sourceRect = crop.rect
 			streamConfig.width = outputWidth
 			streamConfig.height = outputHeight
@@ -416,8 +415,10 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 			)
 			let displayBounds = CGDisplayBounds(display.displayID)
 			let scaleFactor = ScreenCaptureRecorder.scaleFactor(for: display.displayID)
-			outputWidth = max(2, Int(displayBounds.width) * scaleFactor)
-			outputHeight = max(2, Int(displayBounds.height) * scaleFactor)
+			(outputWidth, outputHeight) = Self.hardwareEncodableSize(
+				width: max(2, Int(displayBounds.width) * scaleFactor),
+				height: max(2, Int(displayBounds.height) * scaleFactor)
+			)
 			streamConfig.width = outputWidth
 			streamConfig.height = outputHeight
 		}
@@ -1205,6 +1206,21 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 			),
 			width,
 			height
+		)
+	}
+
+	/// Apple's hardware H.264 encoder takes at most 4096 pixels a side. Above that macOS
+	/// encodes in software, which kept about 4 cores busy on a 5K screen, so larger
+	/// captures are scaled down to fit, keeping their shape and an even size.
+	static let maxHardwareEncodeSide = 4096
+
+	static func hardwareEncodableSize(width: Int, height: Int) -> (width: Int, height: Int) {
+		let longestSide = max(width, height)
+		guard longestSide > maxHardwareEncodeSide else { return (width, height) }
+		let scale = Double(maxHardwareEncodeSide) / Double(longestSide)
+		return (
+			max(2, Int((Double(width) * scale).rounded()) & ~1),
+			max(2, Int((Double(height) * scale).rounded()) & ~1)
 		)
 	}
 

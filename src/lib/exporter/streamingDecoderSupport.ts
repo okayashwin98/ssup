@@ -33,6 +33,8 @@ export function getVideoDecodeFailureCode(error: unknown): string {
 			return "VIDEO_DECODER_RESOURCE_EXHAUSTED";
 		case "InvalidStateError":
 			return "VIDEO_DECODER_INVALID_STATE";
+		case "TimeoutError":
+			return "VIDEO_DECODER_STALLED";
 		default:
 			return "VIDEO_DECODE_FAILED";
 	}

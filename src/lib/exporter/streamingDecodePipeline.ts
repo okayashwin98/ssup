@@ -37,6 +37,14 @@ interface StreamingDecodeContext {
 const STARTUP_STABILIZATION_SECONDS = 1.25;
 const STARTUP_MAX_DECODE_QUEUE = 12;
 const STARTUP_MAX_PENDING_FRAMES = 28;
+// Decoders hold some frames back before returning the first. At 5K the Mac's decoder holds
+// more than the queue limit, so the export waited on the decoder while the decoder waited
+// for input. When nothing is waiting to be rendered and the decoder returns nothing for a
+// moment, the queue limit grows by one, up to this many.
+const DECODER_HOLDBACK_WAIT_MS = 40;
+const MAX_EXTRA_DECODE_QUEUE = 64;
+// No frame from the decoder for this long stops the export with an error instead of a freeze.
+export const DECODER_STALL_TIMEOUT_MS = 20_000;
 
 export async function decodeVideoStream(
 	context: StreamingDecodeContext,
@@ -157,10 +165,24 @@ async function decodeVideoStreamAttempt(
 		}
 	};
 
-	const waitForBackpressureProgress = () =>
-		new Promise<void>((resolve) => {
-			backpressureWaiters.add(resolve);
+	/** Resolves true on progress, or false once `timeoutMs` passes without any. */
+	const waitForBackpressureProgress = (timeoutMs?: number) =>
+		new Promise<boolean>((resolve) => {
+			const onProgress = () => {
+				clearTimeout(timer);
+				resolve(true);
+			};
+			const timer =
+				timeoutMs === undefined
+					? undefined
+					: setTimeout(() => {
+							backpressureWaiters.delete(onProgress);
+							resolve(false);
+						}, timeoutMs);
+			backpressureWaiters.add(onProgress);
 		});
+	let extraDecodeQueue = 0;
+	let lastDecoderOutputAt = performance.now();
 
 	console.log(
 		`[StreamingVideoDecoder] Startup-safe decode backpressure active for first ${startupStabilizationSeconds}s (${startupFrameBudget} frames)`,
@@ -202,6 +224,7 @@ async function decodeVideoStreamAttempt(
 
 	context.decoder = new VideoDecoder({
 		output: (frame: VideoFrame) => {
+			lastDecoderOutputAt = performance.now();
 			if (frameResolve) {
 				const resolve = frameResolve;
 				frameResolve = null;
@@ -235,6 +258,35 @@ async function decodeVideoStreamAttempt(
 			throw buildVideoDecodeFailure(fallbackError, getDecoderFailureContext());
 		}
 	}
+
+	// Frames waiting on the renderer mean the decoder is idle by design, not stuck.
+	const stallTimer = setInterval(() => {
+		const decoder = context.decoder;
+		if (decodeDone || decodeError || context.cancelled || decoder?.state !== "configured") {
+			clearInterval(stallTimer);
+			return;
+		}
+		if (pendingFrames.length > 0) {
+			lastDecoderOutputAt = performance.now();
+			return;
+		}
+		if (performance.now() - lastDecoderOutputAt < DECODER_STALL_TIMEOUT_MS) return;
+		clearInterval(stallTimer);
+		recordFirstDecodeError(
+			new DOMException(
+				`The video decoder returned no frames for ${DECODER_STALL_TIMEOUT_MS / 1000} seconds.`,
+				"TimeoutError",
+			),
+		);
+		// Closing rejects a pending flush, so the feed loop can finish.
+		decoder.close();
+		if (frameResolve) {
+			const resolve = frameResolve;
+			frameResolve = null;
+			resolve(null);
+		}
+		notifyBackpressureProgress();
+	}, 1000);
 
 	const getNextFrame = (): Promise<VideoFrame | null> => {
 		if (decodeError) return Promise.resolve(null);
@@ -274,9 +326,9 @@ async function decodeVideoStreamAttempt(
 				}
 
 				const decodeQueueLimit =
-					exportFrameIndex < startupFrameBudget
+					(exportFrameIndex < startupFrameBudget
 						? Math.min(context.maxDecodeQueue, STARTUP_MAX_DECODE_QUEUE)
-						: context.maxDecodeQueue;
+						: context.maxDecodeQueue) + extraDecodeQueue;
 				const pendingFrameLimit =
 					exportFrameIndex < startupFrameBudget
 						? Math.min(context.maxPendingFrames, STARTUP_MAX_PENDING_FRAMES)
@@ -290,7 +342,17 @@ async function decodeVideoStreamAttempt(
 						pendingFrames.length > pendingFrameLimit) &&
 					!context.cancelled
 				) {
-					await waitForBackpressureProgress();
+					const decoderHoldingBack =
+						pendingFrames.length === 0 &&
+						context.decoder!.decodeQueueSize > decodeQueueLimit &&
+						extraDecodeQueue < MAX_EXTRA_DECODE_QUEUE;
+					const progressed = await waitForBackpressureProgress(
+						decoderHoldingBack ? DECODER_HOLDBACK_WAIT_MS : undefined,
+					);
+					if (!progressed) {
+						extraDecodeQueue++;
+						break;
+					}
 				}
 				if (context.cancelled || decodeError) break;
 				if (context.decoder!.state !== "configured") {
@@ -316,6 +378,7 @@ async function decodeVideoStreamAttempt(
 			recordFirstDecodeError(e);
 		} finally {
 			decodeDone = true;
+			clearInterval(stallTimer);
 			if (frameResolve) {
 				const resolve = frameResolve;
 				frameResolve = null;
