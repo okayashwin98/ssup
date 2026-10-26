@@ -35,7 +35,8 @@
 }
 
 .compact {
-	height: 52px;
+	/* Room for both 27 pt corners, so the curve stays exactly macOS's. */
+	height: 54px;
 	padding: 0 8px;
 }
 

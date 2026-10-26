@@ -68,6 +68,11 @@ test("recording bar shows the time and sends its commands to the start bar", asy
 	await controls.getByRole("button", { name: "Pause", exact: true }).click();
 	await controls.getByRole("button", { name: "Stop", exact: true }).click();
 	await expect(page.locator("html")).toHaveAttribute("data-commands", "pause,stop");
+	// Tall enough for both of macOS's 27 pt corners.
+	expect((await controls.boundingBox())?.height).toBe(54);
+	expect(
+		await controls.evaluate((element) => getComputedStyle(element).borderTopRightRadius),
+	).toBe("27px");
 	await page.screenshot({ path: "test-results/hud-recording.png" });
 });
 
