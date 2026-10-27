@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 import { installDesktopBridge, installDesktopBridgeOverrides } from "./bridge";
 
 async function setup(page: Page) {
@@ -88,10 +88,11 @@ test("Clips supports selection, remove all, undo and real timeline drag insertio
 	await expect(page.getByLabel("Select first.mp4")).toHaveCount(0);
 	await page.keyboard.press("Meta+z");
 	await expect(page.getByLabel("Select first.mp4")).toBeVisible();
+	// The Clips menu has no "Move all to Trash".
 	await panel.getByRole("button", { name: "Clip library actions", exact: true }).click();
-	await page.getByRole("menuitem", { name: "Move all to Trash", exact: true }).click();
-	await expect(panel.getByText("Your recordings appear here")).toBeVisible();
-	await page.keyboard.press("Control+z");
+	await expect(page.getByRole("menuitem", { name: "Open recordings folder" })).toBeVisible();
+	await expect(page.getByRole("menuitem", { name: "Move all to Trash" })).toHaveCount(0);
+	await page.keyboard.press("Escape");
 	await expect(page.getByLabel("Select second.mp4")).toBeVisible();
 	const card = panel.locator('[data-recording-path="/recordings/second.mp4"]');
 	const clip = page.locator('[data-variant="clip"]');

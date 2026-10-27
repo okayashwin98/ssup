@@ -51,7 +51,8 @@
 		"skipBack": "Skip Back",
 		"skipForward": "Skip Forward",
 		"muteUnmute": "Mute/Unmute",
-		"volume": "Preview volume"
+		"volume": "Preview volume",
+		"loop": "Loop playback"
 	},
 	"annotations": {
 		"settings": "Annotation Settings",

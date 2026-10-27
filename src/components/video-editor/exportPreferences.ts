@@ -63,7 +63,8 @@ export function normalizeExportPreferences(raw: Partial<ExportPreferences>): Exp
 				? raw.exportQuality
 				: "source",
 		mp4FrameRate: normalizeExportMp4FrameRate(raw.mp4FrameRate),
-		exportFormat: raw.exportFormat === "gif" ? "gif" : "mp4",
+		// GIF is no longer offered; a saved GIF choice exports MP4.
+		exportFormat: "mp4",
 		gifFrameRate:
 			raw.gifFrameRate === 15 ||
 			raw.gifFrameRate === 20 ||

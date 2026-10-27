@@ -1,6 +1,6 @@
 import { AccountAvatar } from "@/components/ui/account-avatar";
 import type { User } from "@supabase/supabase-js";
-import { Camera, ClosedCaptioning, Cursor, Gear, FrameCorners } from "@/components/ui/icons";
+import { Camera, ClosedCaptioning, Cursor, FrameCorners, Gauge } from "@/components/ui/icons";
 import {
 	ToggleButtonGroup,
 	ToggleButton,
@@ -37,14 +37,11 @@ export function EditorSidebar({
 	onAccountClick,
 }: Props) {
 	const [advancedSections, setAdvancedSections] = useState<Record<string, boolean>>({});
-	// Settings always shows its Advanced tab; other sections keep their Advanced switch.
-	const advanced =
-		activeSection === "settings" ? true : (advancedSections[activeSection] ?? false);
+	// Motion shows everything; other sections keep their Advanced switch.
+	const advanced = activeSection === "motion" ? true : (advancedSections[activeSection] ?? false);
 	const hasAdvanced =
 		!settingsPanelProps.selectedAnnotationId &&
-		["scene", "frame", "crop", "cursor", "webcam", "captions", "zoom"].includes(
-			activeSection,
-		);
+		["scene", "frame", "crop", "cursor", "webcam", "captions", "zoom"].includes(activeSection);
 	const sections = useMemo(
 		() => [
 			{
@@ -60,9 +57,9 @@ export function EditorSidebar({
 				icon: ClosedCaptioning,
 			},
 			{
-				id: "settings" as const,
-				label: t("settings.sections.settings", "Settings"),
-				icon: Gear,
+				id: "motion" as const,
+				label: t("settings.sections.motion", "Motion"),
+				icon: Gauge,
 			},
 		],
 		[t],

@@ -94,20 +94,6 @@ export function RecordingLibraryPanel({
 								<FolderOpen weight="fill" className="size-4" />
 								<Label>Open recordings folder</Label>
 							</Dropdown.Item>
-							<Dropdown.Item
-								id="trash"
-								textValue="Move all to Trash"
-								variant="danger"
-								isDisabled={
-									!library.entries.length || library.busy || library.importing
-								}
-								onAction={() =>
-									void library.remove(library.entries.map((entry) => entry.path))
-								}
-							>
-								<Trash className="size-4" />
-								<Label>Move all to Trash</Label>
-							</Dropdown.Item>
 						</Dropdown.Menu>
 					</Dropdown.Popover>
 				</Dropdown>

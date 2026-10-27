@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
-import { installDesktopBridge } from "./bridge";
 import { completeSupabaseSignIn } from "./auth";
+import { installDesktopBridge } from "./bridge";
+import { openDashboardSettings } from "./settings";
 
 test("settings opens permissions and the carousel banner adapts to each page", async ({ page }) => {
 	await page.emulateMedia({ reducedMotion: "reduce" });
@@ -9,7 +10,7 @@ test("settings opens permissions and the carousel banner adapts to each page", a
 	await expect(page.getByRole("button", { name: "Home", exact: true })).toBeVisible({
 		timeout: 15000,
 	});
-	await page.getByRole("radio", { name: "Settings", exact: true }).click();
+	await openDashboardSettings(page);
 	await page.getByRole("row", { name: "Permissions", exact: true }).click();
 	await page.getByRole("button", { name: "Review permissions" }).click();
 	const tour = page.getByRole("dialog", { name: "Welcome to SuperShare" });
@@ -30,7 +31,10 @@ test("settings opens permissions and the carousel banner adapts to each page", a
 	await expect(pages.getByRole("button")).toHaveCount(2);
 	await expect(tour.getByRole("listitem")).toHaveCount(0);
 	await expect(pages).toBeInViewport();
-	await expect(page.locator(".modal__container")).not.toHaveAttribute("data-entering", "true");
+	await expect(page.locator(".modal__container").last()).not.toHaveAttribute(
+		"data-entering",
+		"true",
+	);
 	const permissionBounds = (await tour.boundingBox())!;
 	const banner = tour.locator("[data-onboarding-artwork]");
 	const bannerBounds = (await banner.boundingBox())!;
@@ -89,7 +93,7 @@ test("settings opens permissions and the carousel banner adapts to each page", a
 	await tour.getByRole("button", { name: "Start recording", exact: true }).click();
 	await expect(tour).not.toBeVisible();
 	await expect(page.locator("html")).toHaveAttribute("data-hud-opened", "true");
-	await page.getByRole("radio", { name: "Settings", exact: true }).click();
+	await openDashboardSettings(page);
 	await page.getByRole("row", { name: "Permissions", exact: true }).click();
 	await page.getByRole("button", { name: "Review permissions" }).click();
 	await expect(tour.getByRole("heading", { name: "Allow SuperShare to record" })).toBeVisible();
@@ -128,7 +132,7 @@ test("onboarding fits a compact window with reduced motion", async ({ page }) =>
 	await expect(page.getByRole("button", { name: "Home", exact: true })).toBeVisible({
 		timeout: 15000,
 	});
-	await page.getByRole("radio", { name: "Settings", exact: true }).click();
+	await openDashboardSettings(page);
 	await page.getByRole("row", { name: "Permissions", exact: true }).click();
 	await page.getByRole("button", { name: "Review permissions" }).click();
 	const tour = page.getByRole("dialog", { name: "Welcome to SuperShare" });
@@ -164,7 +168,7 @@ test("short dark windows keep the banner and navigation visible while the accoun
 	await installDesktopBridge(page);
 	await page.emulateMedia({ reducedMotion: "reduce" });
 	await page.goto("/?windowType=editor");
-	await page.getByRole("radio", { name: "Settings", exact: true }).click();
+	await openDashboardSettings(page);
 	await page.getByRole("row", { name: "Permissions", exact: true }).click();
 	await page.getByRole("button", { name: "Review permissions" }).click();
 	await page.setViewportSize({ width: 390, height: 600 });
@@ -297,7 +301,7 @@ test("missing macOS permissions gate Start recording until access is allowed", a
 		});
 	});
 	await page.goto("/?windowType=editor");
-	await page.getByRole("radio", { name: "Settings", exact: true }).click();
+	await openDashboardSettings(page);
 	await page.getByRole("row", { name: "Permissions", exact: true }).click();
 	await page.getByRole("button", { name: "Review permissions" }).click();
 	const tour = page.getByRole("dialog", { name: "Welcome to SuperShare" });
@@ -358,7 +362,7 @@ for (const platform of ["win32", "linux"]) {
 			};
 		}, platform);
 		await page.goto("/?windowType=editor");
-		await page.getByRole("radio", { name: "Settings", exact: true }).click();
+		await openDashboardSettings(page);
 		await page.getByRole("row", { name: "Permissions", exact: true }).click();
 		await page.getByRole("button", { name: "Review permissions" }).click();
 		const tour = page.getByRole("dialog", { name: "Welcome to SuperShare" });

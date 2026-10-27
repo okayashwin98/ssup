@@ -45,22 +45,13 @@ export function DashboardSettings({ onImportFile }: { onImportFile: () => Promis
 		<section aria-label="Dashboard settings" className="dashboard-settings max-w-2xl py-10">
 			<h1 className="mb-8 text-lg font-semibold">Settings</h1>
 			<SettingsSections
-				categories={[
-					"motion",
-					"advanced",
-					"general",
-					"account",
-					"permissions",
-					"recording",
-					"files",
-				]}
+				// Motion lives in the editor's Motion panel.
+				categories={["general", "account", "permissions", "recording", "advanced"]}
 			>
-				<SettingsCategory
-					category={["general", "account", "permissions", "motion", "advanced"]}
-				>
+				<SettingsCategory category={["general", "account", "permissions", "advanced"]}>
 					{settingsContent}
 				</SettingsCategory>
-				<SettingsCategory category="files">
+				<SettingsCategory category="recording">
 					<SettingsRow title="Open video or project">
 						<Button
 							variant="secondary"
@@ -141,7 +132,7 @@ export function DashboardSettings({ onImportFile }: { onImportFile: () => Promis
 						</SettingsRow>
 					)}
 				</SettingsCategory>
-				<SettingsCategory category="files">
+				<SettingsCategory category="recording">
 					<SettingsRow
 						title="Projects folder"
 						description={directory || "Named projects save automatically."}

@@ -11,10 +11,10 @@ type Category =
 	| "advanced";
 const labels: Record<Category, string> = {
 	general: "General",
-	account: "Account",
+	account: "Profile",
 	permissions: "Permissions",
 	motion: "Motion",
-	recording: "Recording",
+	recording: "Recording & Files",
 	files: "Files",
 	advanced: "Advanced",
 };
@@ -36,18 +36,21 @@ export function SettingsSections({
 	return (
 		<SettingsCategoryContext.Provider value={active}>
 			<div className="space-y-6">
-				<ChoiceGroup
-					aria-label="Settings sections"
-					value={active}
-					onValueChange={(value) => setSelected(value as Category)}
-					size="sm"
-				>
-					{categories.map((category) => (
-						<ChoiceItem key={category} value={category}>
-							{labels[category]}
-						</ChoiceItem>
-					))}
-				</ChoiceGroup>
+				{/* One category needs no tabs. */}
+				{categories.length > 1 && (
+					<ChoiceGroup
+						aria-label="Settings sections"
+						value={active}
+						onValueChange={(value) => setSelected(value as Category)}
+						size="sm"
+					>
+						{categories.map((category) => (
+							<ChoiceItem key={category} value={category}>
+								{labels[category]}
+							</ChoiceItem>
+						))}
+					</ChoiceGroup>
+				)}
 				<div role="region" aria-label={`${labels[active]} settings`} className="space-y-6">
 					{children}
 				</div>

@@ -100,13 +100,6 @@ export function EditorExportMenu(props: Props) {
 		mp4FrameRate,
 		setMp4FrameRate,
 		exportFormat,
-		setExportFormat,
-		gifFrameRate,
-		setGifFrameRate,
-		gifLoop,
-		setGifLoop,
-		gifSizePreset,
-		setGifSizePreset,
 		includeCaptionSidecar,
 		setIncludeCaptionSidecar,
 	} = exportSettings;
@@ -119,7 +112,7 @@ export function EditorExportMenu(props: Props) {
 		exportedFilePath,
 		hasPendingExportSave,
 	} = exportSession;
-	const { gifOutputDimensions, mp4OutputDimensions } = exportDimensions;
+	const { mp4OutputDimensions } = exportDimensions;
 	const {
 		isExportPreparing,
 		isExportSaving,
@@ -136,8 +129,6 @@ export function EditorExportMenu(props: Props) {
 
 	const settingsForm = (
 		<ExportSettingsMenu
-			exportFormat={destination === "link" ? "mp4" : exportFormat}
-			onExportFormatChange={setExportFormat}
 			exportEncodingMode={exportEncodingMode}
 			onExportEncodingModeChange={setExportEncodingMode}
 			mp4FrameRate={mp4FrameRate}
@@ -148,21 +139,13 @@ export function EditorExportMenu(props: Props) {
 			nvidiaCudaExportAvailable={nvidiaCudaExportAvailable}
 			exportQuality={exportQuality}
 			onExportQualityChange={setExportQuality}
-			gifFrameRate={gifFrameRate}
-			onGifFrameRateChange={setGifFrameRate}
-			gifLoop={gifLoop}
-			onGifLoopChange={setGifLoop}
-			gifSizePreset={gifSizePreset}
-			onGifSizePresetChange={setGifSizePreset}
 			showCaptionSidecarOption={hasCaptionsForSidecar && exportFormat === "mp4"}
 			includeCaptionSidecar={includeCaptionSidecar}
 			onIncludeCaptionSidecarChange={setIncludeCaptionSidecar}
 			mp4OutputDimensions={mp4OutputDimensions}
-			gifOutputDimensions={gifOutputDimensions}
 			onExport={handleStartExportFromDropdown}
 			hideHeading
 			hideAction={destination === "link"}
-			linkMode={destination === "link"}
 			className="rounded-none bg-transparent px-5 pb-5 pt-0 shadow-none"
 		/>
 	);

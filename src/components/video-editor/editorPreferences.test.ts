@@ -206,7 +206,7 @@ describe("editorPreferences", () => {
 			showCursor: false,
 			aspectRatio: "native",
 			zoomInOverlapMs: 200,
-			exportFormat: "gif",
+			exportFormat: "mp4", // GIF is no longer offered
 			gifFrameRate: 30,
 			gifLoop: false,
 			customAspectWidth: "21",
@@ -331,7 +331,7 @@ describe("editorPreferences", () => {
 			padding: { top: 30, right: 30, bottom: 30, left: 30, linked: true },
 			aspectRatio: "4:5",
 			exportEncodingMode: "quality",
-			exportFormat: "gif",
+			exportFormat: "mp4", // GIF is no longer offered
 			gifFrameRate: 20,
 			gifLoop: false,
 			gifSizePreset: "large",

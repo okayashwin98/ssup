@@ -191,6 +191,8 @@ import { VideocameraOffIcon as VideocameraOffBold } from "@solar-icons/react/bol
 import { VolumeCrossIcon as VolumeCrossLinear } from "@solar-icons/react/linear/volume-cross";
 import { VolumeCrossIcon as VolumeCrossBold } from "@solar-icons/react/bold/volume-cross";
 import { VolumeLoudIcon as VolumeLoudLinear } from "@solar-icons/react/linear/volume-loud";
+import { RepeatIcon as RepeatLinear } from "@solar-icons/react/linear/repeat";
+import { RepeatIcon as RepeatBold } from "@solar-icons/react/bold/repeat";
 import { VolumeLoudIcon as VolumeLoudBold } from "@solar-icons/react/bold/volume-loud";
 import { VolumeSmallIcon as VolumeSmallLinear } from "@solar-icons/react/linear/volume-small";
 import { VolumeSmallIcon as VolumeSmallBold } from "@solar-icons/react/bold/volume-small";
@@ -262,6 +264,7 @@ export const SignOut = solar(LogoutLinear, LogoutBold);
 export const SkipBack = solar(SkipPreviousLinear, SkipPreviousBold);
 export const SkipForward = solar(SkipNextLinear, SkipNextBold);
 export const SpeakerHigh = solar(VolumeLoudLinear, VolumeLoudBold);
+export const Repeat = solar(RepeatLinear, RepeatBold);
 export const SpeakerHighIcon = solar(VolumeLoudLinear, VolumeLoudBold);
 export const SpeakerLow = solar(VolumeSmallLinear, VolumeSmallBold);
 export const SpeakerX = solar(VolumeCrossLinear, VolumeCrossBold);

@@ -2297,11 +2297,10 @@ export function SettingsPanel({
 	);
 
 	const effectSectionContent = (() => {
-		const settingsSectionContent = (
-			<SettingsSections
-				// General and Account live in the dashboard's Settings.
-				categories={["motion", "advanced", "permissions"]}
-			>
+		// Every settings category; the dashboard's Settings and the editor's Motion panel
+		// each show their own part of it.
+		const settingsCategories = (
+			<>
 				<SettingsCategory category="account">
 					<AccountSettings key={accountUser?.id ?? "signed-out"} user={accountUser} />
 				</SettingsCategory>
@@ -2618,7 +2617,18 @@ export function SettingsPanel({
 						</section>
 					) : null}
 				</SettingsCategory>
+			</>
+		);
+		const settingsSectionContent = (
+			<SettingsSections
+				// General and Account live in the dashboard's Settings.
+				categories={["advanced", "permissions"]}
+			>
+				{settingsCategories}
 			</SettingsSections>
+		);
+		const motionSectionContent = (
+			<SettingsSections categories={["motion"]}>{settingsCategories}</SettingsSections>
 		);
 
 		const sceneSectionContent = (
@@ -2828,6 +2838,8 @@ export function SettingsPanel({
 		switch (activeEffectSection) {
 			case "settings":
 				return settingsSectionContent;
+			case "motion":
+				return motionSectionContent;
 			case "scene":
 				return sceneSectionContent;
 			case "zoom":

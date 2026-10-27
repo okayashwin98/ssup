@@ -114,6 +114,7 @@ export type EditorEffectSection =
 	| "caption"
 	| "webcam"
 	| "settings"
+	| "motion"
 	| "zoom"
 	| "frame"
 	| "crop"

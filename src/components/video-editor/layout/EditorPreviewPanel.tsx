@@ -15,6 +15,7 @@ import {
 	SpeakerHigh,
 	SpeakerLow,
 	SpeakerX,
+	Repeat,
 } from "@/components/ui/icons";
 import type { Dispatch, RefObject, SetStateAction } from "react";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,7 @@ import type { useAppearanceState } from "../state/useAppearanceState";
 import type { useTimelineState } from "../state/useTimelineState";
 import type { TimelineEditorHandle } from "../timeline/TimelineEditor";
 import type { VideoPlaybackRef } from "../VideoPlayback";
+import { setPreviewLoop, usePreviewLoop } from "../videoPlayback/previewLoop";
 import { EditorVideoPreview } from "./EditorVideoPreview";
 
 type Props = {
@@ -82,6 +84,7 @@ function formatTime(seconds: number) {
 }
 
 export function EditorPreviewPanel(props: Props) {
+	const loop = usePreviewLoop();
 	const {
 		t,
 		videoPath,
@@ -344,7 +347,18 @@ export function EditorPreviewPanel(props: Props) {
 					</div>
 				</div>
 
-				<div className="editor-playback-volume z-10 ml-auto flex items-center">
+				<div className="editor-playback-volume z-10 ml-auto flex items-center gap-1">
+					<Button
+						variant="ghost"
+						size="icon"
+						aria-pressed={loop}
+						aria-label={t("editor.playback.loop", "Loop playback")}
+						title={t("editor.playback.loop", "Loop playback")}
+						className={loop ? "text-accent" : undefined}
+						onClick={() => setPreviewLoop(!loop)}
+					>
+						<Repeat className="size-3.5" />
+					</Button>
 					<Popover>
 						<PopoverTrigger asChild>
 							<Button

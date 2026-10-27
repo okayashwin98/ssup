@@ -1,10 +1,11 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 import { installDesktopBridge } from "./bridge";
+import { openDashboardSettings } from "./settings";
 
 async function openAccountSettings(page: Page) {
-	await page.getByRole("radio", { name: "Settings", exact: true }).click();
-	await page.getByRole("row", { name: "Account", exact: true }).click();
-	return page.getByRole("region", { name: "Account settings", exact: true });
+	await openDashboardSettings(page);
+	await page.getByRole("row", { name: "Profile", exact: true }).click();
+	return page.getByRole("region", { name: "Profile settings", exact: true });
 }
 
 test("account settings save the Supabase profile and share it with the dashboard", async ({
@@ -30,21 +31,9 @@ test("account settings save the Supabase profile and share it with the dashboard
 	await expect(account.getByRole("textbox", { name: /^Display name\*?$/ })).toHaveValue(
 		"Jordan Chen",
 	);
-	await expect(
-		page
-			.getByRole("button", { name: "SuperShare account", exact: true })
-			.locator('[aria-label="Jordan Chen"]'),
-	).toBeVisible();
 	await page.reload();
 	account = await openAccountSettings(page);
 	await expect(account.getByRole("textbox", { name: /^Display name\*?$/ })).toHaveValue(
-		"Jordan Chen",
-	);
-	await page.getByRole("button", { name: "Home", exact: true }).click();
-	const dashboard = page.getByRole("dialog", { name: "Projects dashboard", exact: true });
-	await dashboard.getByRole("button", { name: "Settings", exact: true }).click();
-	await dashboard.getByRole("row", { name: "Account", exact: true }).click();
-	await expect(dashboard.getByRole("textbox", { name: /^Display name\*?$/ })).toHaveValue(
 		"Jordan Chen",
 	);
 	await page.screenshot({
@@ -147,7 +136,7 @@ test("Settings refreshes macOS permissions and opens the permissions carousel", 
 		});
 	});
 	await page.goto("/?windowType=editor");
-	await page.getByRole("radio", { name: "Settings", exact: true }).click();
+	await openDashboardSettings(page);
 	await page.getByRole("row", { name: "Permissions", exact: true }).click();
 	const permissions = page.getByRole("region", { name: "Permissions settings", exact: true });
 	await expect(permissions.getByText("Required", { exact: true })).toHaveCount(2);

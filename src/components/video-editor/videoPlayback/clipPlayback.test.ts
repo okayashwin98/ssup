@@ -32,6 +32,7 @@ describe("clip timeline playback", () => {
 			{ id: "left", startMs: 0, endMs: 1000, sourceStartMs: 0, speed: 3 },
 			{ id: "right", startMs: 2000, endMs: 4000, sourceStartMs: 6000, speed: 3 },
 		],
+		shouldLoop?: () => boolean,
 	) {
 		const video = {
 			duration: 12,
@@ -57,9 +58,33 @@ describe("clip timeline playback", () => {
 			onPlaying,
 			onError,
 			onSourceSeek,
+			shouldLoop,
 		});
 		return { video, playback, onTime, onPlaying, onError, onSourceSeek };
 	}
+	it("with loop on, starts again from the beginning at the end instead of stopping", async () => {
+		const { video, playback, onTime } = setup(undefined, () => true);
+		await playback.play();
+		video.currentTime = 3;
+		advance(1000);
+		video.currentTime = 12;
+		advance(1000);
+		expect(playback.isPlaying).toBe(true);
+		expect(onTime).toHaveBeenLastCalledWith(0, 0);
+		expect(video.currentTime).toBe(0);
+	});
+
+	it("keeps playing through a seek, and a paused preview stays paused", async () => {
+		const { video, playback } = setup();
+		await playback.play();
+		playback.seek(2.5);
+		expect(playback.isPlaying).toBe(true);
+		expect(video.currentTime).toBe(7.5);
+		playback.pause();
+		playback.seek(0.5);
+		expect(playback.isPlaying).toBe(false);
+	});
+
 	it("crosses a source cut at the same 2.8s timeline timestamp without playing the removed footage", async () => {
 		const { video, playback, onTime, onSourceSeek } = setup([
 			{ id: "a", startMs: 0, endMs: 2800, sourceStartMs: 0, speed: 1 },

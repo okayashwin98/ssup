@@ -48,10 +48,8 @@ export function useEditorPlaybackControls({
 		[getActivePlayback],
 	);
 
-	const handleTimelineSeek = useCallback(
-		(time: number) => handleSeek(time, { pause: true }),
-		[handleSeek],
-	);
+	// Playing keeps playing from the new position; paused stays paused.
+	const handleTimelineSeek = useCallback((time: number) => handleSeek(time), [handleSeek]);
 
 	const handlePreviewSkipBack = useCallback(() => {
 		const currentMs = timelinePlayheadTime * 1000;

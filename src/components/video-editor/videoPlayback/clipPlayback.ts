@@ -26,6 +26,7 @@ export function createClipPlayback({
 	onPlaying,
 	onError,
 	onSourceSeek,
+	shouldLoop,
 }: {
 	video: HTMLVideoElement;
 	getClips: () => ClipRegion[];
@@ -33,6 +34,8 @@ export function createClipPlayback({
 	onPlaying: (playing: boolean) => void;
 	onError: (error: unknown) => void;
 	onSourceSeek?: (reason: "cut" | "seek") => void;
+	/** Read at the end of the timeline: true starts again from the beginning. */
+	shouldLoop?: () => boolean;
 }) {
 	let timeMs = 0;
 	let playing = false;
@@ -142,7 +145,12 @@ export function createClipPlayback({
 		sync();
 		if (!playing) return;
 		if (timeMs >= duration()) {
-			pause();
+			if (shouldLoop?.() && duration() > 0) {
+				timeMs = 0;
+				lastTick = now;
+				sync(true);
+				if (playing) request = requestAnimationFrame(tick);
+			} else pause();
 		} else {
 			if (activeClip && !video.seeking && video.paused) playSource();
 			request = requestAnimationFrame(tick);

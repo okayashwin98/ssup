@@ -1,3 +1,4 @@
+import { getPreviewLoop } from "./videoPlayback/previewLoop";
 import {
 	Application,
 	Container,
@@ -1921,6 +1922,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			const transport = createClipPlayback({
 				video,
 				getClips: () => clipRegionsRef.current,
+				shouldLoop: getPreviewLoop,
 				onSourceSeek: (reason) => {
 					preserveCameraAcrossCut = reason === "cut";
 				},
