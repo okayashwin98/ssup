@@ -153,9 +153,15 @@
  outline: 2px solid var(--focus);
  outline-offset: 2px;
 }
+/* Selected text shows clearly on every surface, in the theme colour. */
 ::selection {
- background: var(--accent-soft);
- color: var(--foreground);
+ background: color-mix(in srgb, var(--accent) 38%, transparent);
+ color: inherit;
+}
+input,
+textarea {
+ caret-color: var(--accent);
+ cursor: text;
 }
 
 @container (max-width: 110px) {
@@ -199,17 +205,44 @@
   background: transparent;
 }
 
+/* Rename fields look like the app's other fields: a soft fill and the field corner,
+   with the text where the name sat before (the fill reaches 6px past it). */
 .inline-project-name {
- background: transparent;
+ background: color-mix(in srgb, var(--foreground) 7%, transparent);
  border: 0;
- border-radius: 0;
- box-shadow: none;
+ border-radius: var(--field-radius, 12px);
+ box-shadow: 0 0 0 1.5px var(--accent);
  outline: none;
- padding: 0;
+ margin-inline: -6px;
+ padding: 0 6px;
  color: inherit;
 }
-.inline-project-name:focus { outline: none; box-shadow: none; }
-.inline-project-name:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.inline-project-name:focus,
+.inline-project-name:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--accent); }
+
+/* The Raw tab's frosted folders (FrostedFolder): light by default, dark with the app. */
+:root {
+ --folder-back-top: rgb(214, 214, 219);
+ --folder-back-bottom: rgb(192, 192, 198);
+ --folder-window: rgb(244, 244, 246);
+ --folder-base: rgb(236, 236, 239);
+ --folder-tint-0: rgba(255, 255, 255, 0.4);
+ --folder-tint-1: rgba(250, 250, 252, 0.46);
+ --folder-tint-2: rgba(232, 232, 237, 0.58);
+ --folder-tint-3: rgba(210, 210, 216, 0.74);
+ --folder-outline: rgba(0, 0, 0, 0.1);
+}
+.dark {
+ --folder-back-top: rgb(78, 78, 80);
+ --folder-back-bottom: rgb(52, 52, 54);
+ --folder-window: rgb(20, 20, 22);
+ --folder-base: rgb(26, 26, 28);
+ --folder-tint-0: rgba(175, 175, 178, 0.24);
+ --folder-tint-1: rgba(140, 140, 142, 0.32);
+ --folder-tint-2: rgba(72, 72, 74, 0.56);
+ --folder-tint-3: rgba(34, 34, 36, 0.8);
+ --folder-outline: transparent;
+}
 
 .dashboard-shell {
  background-color: color-mix(in srgb, var(--background) 92%, var(--foreground) 8%);

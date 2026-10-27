@@ -141,7 +141,7 @@ export function ProjectCard({
 								autoFocus
 								onFocus={(event) => event.currentTarget.select()}
 								aria-label={entry.rawSource ? "Raw file name" : "Project name"}
-								className="inline-project-name h-5 w-full pr-8 text-[12px] font-medium"
+								className="inline-project-name h-6 w-[calc(100%+12px)] pr-8 text-[12px] font-medium"
 								value={name}
 								disabled={busy}
 								maxLength={120}

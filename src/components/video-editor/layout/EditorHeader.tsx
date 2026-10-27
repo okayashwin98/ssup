@@ -159,7 +159,8 @@ export function EditorHeader(props: Props) {
 								}}
 								disabled={isSavingProjectName}
 								className="inline-project-name h-9 min-w-0 max-w-full text-sm font-semibold tracking-tight text-foreground/90 disabled:cursor-wait"
-								style={{ width: `${Math.max(12, projectNameDraft.length + 1)}ch` }}
+								// The field's 6px of padding each side sits outside the text.
+							style={{ width: `calc(${Math.max(12, projectNameDraft.length + 1)}ch + 12px)` }}
 								aria-label={t("editor.project.renameInput", "Project name")}
 							/>
 						</form>

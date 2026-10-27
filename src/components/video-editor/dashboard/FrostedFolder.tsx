@@ -62,7 +62,14 @@ export function FrostedFolder({
 	const back = (lift: boolean) => (
 		<>
 			<rect x="120" y="118" width="706" height="570" rx="46" fill={ref("back")} />
-			<rect x="143" y="138" width="662" height="540" rx="30" fill="rgb(20,20,22)" />
+			<rect
+				x="143"
+				y="138"
+				width="662"
+				height="540"
+				rx="30"
+				style={{ fill: "var(--folder-window)" }}
+			/>
 			{/* Not clipped to the window, so on hover the recordings rise out of the folder. */}
 			<g
 				className={lift ? "transition-transform duration-300 ease-out" : undefined}
@@ -98,8 +105,8 @@ export function FrostedFolder({
 						<path d={FRONT} />
 					</clipPath>
 					<linearGradient id={`back${id}`} x1="0" y1="0" x2="0" y2="1">
-						<stop offset="0" stopColor="rgb(78,78,80)" />
-						<stop offset="1" stopColor="rgb(52,52,54)" />
+						<stop offset="0" style={{ stopColor: "var(--folder-back-top)" }} />
+						<stop offset="1" style={{ stopColor: "var(--folder-back-bottom)" }} />
 					</linearGradient>
 					{/* Brightest just under the top edge, falling to about half by the bottom. */}
 					<linearGradient
@@ -110,10 +117,10 @@ export function FrostedFolder({
 						x2="0"
 						y2="698"
 					>
-						<stop offset="0" stopColor="rgb(175,175,178)" stopOpacity="0.24" />
-						<stop offset="0.25" stopColor="rgb(140,140,142)" stopOpacity="0.32" />
-						<stop offset="0.6" stopColor="rgb(72,72,74)" stopOpacity="0.56" />
-						<stop offset="1" stopColor="rgb(34,34,36)" stopOpacity="0.8" />
+						<stop offset="0" style={{ stopColor: "var(--folder-tint-0)" }} />
+						<stop offset="0.25" style={{ stopColor: "var(--folder-tint-1)" }} />
+						<stop offset="0.6" style={{ stopColor: "var(--folder-tint-2)" }} />
+						<stop offset="1" style={{ stopColor: "var(--folder-tint-3)" }} />
 					</linearGradient>
 					{/* The heavier blur fades in going down. */}
 					<linearGradient
@@ -178,7 +185,7 @@ export function FrostedFolder({
 				{/* The glass: lightly blurred at the top, heavily blurred and darker at the bottom. */}
 				<g clipPath={ref("front")}>
 					{/* Opaque base, so the sharp folder behind never shows through the blur's soft edges. */}
-					<path d={FRONT} fill="rgb(26,26,28)" />
+					<path d={FRONT} style={{ fill: "var(--folder-base)" }} />
 					<g filter={ref("soft")}>{back(false)}</g>
 					<g mask={ref("heavy")}>
 						<g filter={ref("deep")}>{back(false)}</g>
@@ -204,6 +211,13 @@ export function FrostedFolder({
 					/>
 					<path d={FRONT} fill="none" stroke={ref("rim")} strokeWidth="5" />
 				</g>
+				{/* A fine outline so the glass reads against a light page too. */}
+				<path
+					d={FRONT}
+					fill="none"
+					strokeWidth="2"
+					style={{ stroke: "var(--folder-outline)" }}
+				/>
 			</svg>
 		</div>
 	);

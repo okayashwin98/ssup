@@ -260,7 +260,7 @@ export function EditorShell(props: Props) {
 		);
 
 	return (
-		<div className="flex h-screen flex-col overflow-hidden bg-editor-bg text-foreground selection:bg-accent/20">
+		<div className="flex h-screen flex-col overflow-hidden bg-editor-bg text-foreground">
 			<EditorHeader
 				clipsOpen={library.open}
 				onToggleClips={() => library.setOpen((open) => !open)}
