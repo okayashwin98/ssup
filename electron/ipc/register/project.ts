@@ -1,9 +1,18 @@
 import { persistRecentMetadata } from "../project/recentMetadata";
-import { renameLibraryProject } from "../project/renameLibraryProject";
+import { getRenamedProjectPath, renameLibraryProject } from "../project/renameLibraryProject";
 import { createUntitledProject } from "../project/createUntitledProject";
 import { buildRecordingProjectName } from "../project/recordingProjectName";
 import { trashLibraryProjects } from "../project/trashProjects";
-import { assertProjectFolderRenameAllowed, reconcileProjectFolder } from "../project/projectMedia";
+import {
+	assertProjectFolderRenameAllowed,
+	getProjectFilePath,
+	getProjectMediaFolder,
+	isLibraryProjectPath,
+	isReservedProjectFolderName,
+	ownsProjectFolder,
+	reconcileProjectFolder,
+	removeFolderIfEmpty,
+} from "../project/projectMedia";
 import { getRecordingThumbnail } from "../recording/thumbnail";
 import { listRecordings, setRecordingsRemoved } from "../recording/library";
 import { importRecording, discardRecordingImport } from "../recording/importRecording";
@@ -17,12 +26,12 @@ import { buildMediaUrl, getMediaServerBaseUrl } from "../../mediaServer";
 import { LEGACY_PROJECT_FILE_EXTENSIONS, PROJECT_FILE_EXTENSION } from "../constants";
 import { getProjectBackupPath, writeProjectFileAtomically } from "../project/atomicSave";
 import {
-	getProjectsDir,
 	getProjectThumbnailPath,
 	isPathInsideDirectory,
 	isTrustedProjectPath,
 	listProjectLibraryEntries,
 	loadProjectFromPath,
+	loadProjectPathMoves,
 	readProjectPreview,
 	loadRecentProjectPaths,
 	persistRecordingsDirectorySetting,
@@ -76,7 +85,10 @@ function normalizeProjectSaveName(projectName?: string | null) {
 	}
 
 	const withoutExtension = trimmedName.replace(
-		new RegExp(`\\.${PROJECT_FILE_EXTENSION}$`, "i"),
+		new RegExp(
+			`\\.(${[PROJECT_FILE_EXTENSION, ...LEGACY_PROJECT_FILE_EXTENSIONS].join("|")})$`,
+			"i",
+		),
 		"",
 	);
 	const withoutInvalidFilesystemChars = withoutExtension.replace(/[<>:"/\\|?*]/g, "");
@@ -145,6 +157,13 @@ function ensureProjectDataHasProjectId(projectData: unknown) {
 		projectId,
 		projectData: withProjectId(projectData, projectId),
 	};
+}
+
+async function pathExists(filePath: string) {
+	return fs.access(filePath).then(
+		() => true,
+		() => false,
+	);
 }
 
 async function resolveComparablePath(filePath: string) {
@@ -251,8 +270,8 @@ function followMovedMedia(rename: (filePath: string) => string | null | undefine
  */
 async function fileProjectRecordings(projectPath: string) {
 	try {
-		const projectsDir = await getProjectsDir();
-		if (!isPathInsideDirectory(projectPath, projectsDir)) return;
+		const recordingsDir = await getRecordingsDir();
+		if (!isLibraryProjectPath(recordingsDir, projectPath)) return;
 		if (currentProjectPath && normalizePath(currentProjectPath) === normalizePath(projectPath))
 			return;
 		await fs.access(projectPath);
@@ -261,7 +280,7 @@ async function fileProjectRecordings(projectPath: string) {
 			.filter((entry) => normalizePath(entry) !== normalizePath(projectPath));
 		await reconcileProjectFolder(
 			projectPath,
-			await getRecordingsDir(),
+			recordingsDir,
 			writeProjectFileAtomically,
 			others,
 		);
@@ -283,13 +302,18 @@ export function registerProjectHandlers() {
 				await assertProjectFolderRenameAllowed(
 					recordingsDir,
 					source,
-					path.join(path.dirname(source), `${name.trim()}${path.extname(source)}`),
+					getRenamedProjectPath(source, name, recordingsDir),
 				);
 			const target = await renameLibraryProject(
 				source,
 				name,
 				entries.entries.map((entry) => entry.path),
-				(value) => [getProjectThumbnailPath(value), getProjectBackupPath(value)],
+				(value) => [
+					getProjectThumbnailPath(value),
+					getProjectBackupPath(value),
+					getProjectBackupPath(getProjectBackupPath(value)),
+				],
+				recordingsDir,
 			);
 			const isOpen =
 				currentProjectPath !== null &&
@@ -519,14 +543,16 @@ export function registerProjectHandlers() {
 			thumbnailDataUrl?: string | null,
 		) => {
 			try {
-				const projectsDir = await getProjectsDir();
+				const recordingsDir = await getRecordingsDir();
 				const preparedProject = ensureProjectDataHasProjectId(projectData);
+				// Older .recordly files saved outside the library keep saving in place.
 				const trustedExistingProjectPath =
 					existingProjectPath &&
-					path.extname(existingProjectPath).toLowerCase() ===
-						`.${PROJECT_FILE_EXTENSION}` &&
+					[`.${PROJECT_FILE_EXTENSION}`, ".recordly"].includes(
+						path.extname(existingProjectPath).toLowerCase(),
+					) &&
 					(isTrustedProjectPath(existingProjectPath) ||
-						isPathInsideDirectory(existingProjectPath, projectsDir))
+						isLibraryProjectPath(recordingsDir, existingProjectPath))
 						? path.resolve(existingProjectPath)
 						: null;
 
@@ -559,7 +585,7 @@ export function registerProjectHandlers() {
 
 				const result = await dialog.showSaveDialog({
 					title: "Save SuperShare Project",
-					defaultPath: path.join(projectsDir, defaultName),
+					defaultPath: path.join(recordingsDir, defaultName),
 					filters: [
 						{ name: "SuperShare Project", extensions: [PROJECT_FILE_EXTENSION] },
 						{ name: "JSON", extensions: ["json"] },
@@ -618,15 +644,35 @@ export function registerProjectHandlers() {
 					};
 				}
 
-				const projectsDir = await getProjectsDir();
+				const recordingsDir = await getRecordingsDir();
 				const namedSaveMode = normalizeNamedProjectSaveMode(mode);
 				const activeProjectPath = isTrustedProjectPath(currentProjectPath)
 					? currentProjectPath
 					: null;
-				const targetProjectPath = path.join(
-					projectsDir,
-					`${normalizedProjectName}.${PROJECT_FILE_EXTENSION}`,
-				);
+				if (isReservedProjectFolderName(normalizedProjectName)) {
+					return {
+						success: false,
+						message: "This name is reserved for an app folder. Choose another name.",
+					};
+				}
+				// Saved as <recordings>/<name>/<name>.ssup, beside its recordings.
+				const targetProjectPath = getProjectFilePath(recordingsDir, normalizedProjectName);
+				const targetFolder = path.dirname(targetProjectPath);
+				const activeFolder = activeProjectPath
+					? getProjectMediaFolder(recordingsDir, activeProjectPath)
+					: null;
+				// Never save into a folder that holds other recordings.
+				if (
+					!(await pathExists(targetProjectPath)) &&
+					(await pathExists(targetFolder)) &&
+					activeFolder?.toLowerCase() !== targetFolder.toLowerCase()
+				) {
+					return {
+						success: false,
+						message:
+							"A recordings folder with this name already exists. Choose another name.",
+					};
+				}
 				const [activeResolvedPath, targetResolvedPath] = await Promise.all([
 					activeProjectPath
 						? resolveComparablePath(activeProjectPath)
@@ -655,6 +701,7 @@ export function registerProjectHandlers() {
 					return overwriteCheck;
 				}
 
+				await fs.mkdir(targetFolder, { recursive: true });
 				await writeProjectFileAtomically(
 					targetProjectPath,
 					JSON.stringify(preparedProject.projectData, null, 2),
@@ -676,6 +723,16 @@ export function registerProjectHandlers() {
 					await fs
 						.rm(getProjectBackupPath(activeProjectPath), { force: true })
 						.catch(() => undefined);
+					await fs
+						.rm(getProjectBackupPath(getProjectBackupPath(activeProjectPath)), {
+							force: true,
+						})
+						.catch(() => undefined);
+					// Its recordings join the new folder once the project closes; an empty folder goes now.
+					if (ownsProjectFolder(recordingsDir, activeProjectPath))
+						await removeFolderIfEmpty(path.dirname(activeProjectPath)).catch(
+							() => undefined,
+						);
 
 					const recentProjectPaths = await loadRecentProjectPaths();
 					const filteredRecentProjectPaths: string[] = [];
@@ -709,10 +766,9 @@ export function registerProjectHandlers() {
 
 	ipcMain.handle("load-project-file", async () => {
 		try {
-			const projectsDir = await getProjectsDir();
 			const result = await dialog.showOpenDialog({
 				title: "Open SuperShare Project",
-				defaultPath: projectsDir,
+				defaultPath: await getRecordingsDir(),
 				filters: [
 					{
 						name: "SuperShare Project",
@@ -758,9 +814,10 @@ export function registerProjectHandlers() {
 
 	ipcMain.handle("get-projects-directory", async () => {
 		try {
+			// Projects live in their own folders inside the recordings folder.
 			return {
 				success: true,
-				path: await getProjectsDir(),
+				path: await getRecordingsDir(),
 			};
 		} catch (error) {
 			return {
@@ -776,7 +833,7 @@ export function registerProjectHandlers() {
 			try {
 				const prepared = ensureProjectDataHasProjectId(projectData);
 				const target = await createUntitledProject(
-					await getProjectsDir(),
+					await getRecordingsDir(),
 					JSON.stringify(prepared.projectData, null, 2),
 					buildRecordingProjectName(
 						(prepared.projectData as { videoPath?: unknown })?.videoPath,
@@ -843,6 +900,7 @@ export function registerProjectHandlers() {
 				success: true,
 				projectsDir: library.projectsDir,
 				entries: library.entries,
+				pathMoves: await loadProjectPathMoves(),
 			};
 		} catch (error) {
 			return {
@@ -869,7 +927,7 @@ export function registerProjectHandlers() {
 
 	ipcMain.handle("open-projects-directory", async () => {
 		try {
-			const projectsDir = await getProjectsDir();
+			const projectsDir = await getRecordingsDir();
 			const openPathResult = await shell.openPath(projectsDir);
 			if (openPathResult) {
 				return {

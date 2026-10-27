@@ -2,15 +2,69 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { belongsToRecording } from "../recording/recordingFiles";
+import {
+	hasProjectFileExtension,
+	PROJECT_FILE_EXTENSION,
+	PROJECTS_DIRECTORY_NAME,
+} from "./projectFileNames";
 
 /** Each library project keeps its raw files in `<recordings>/<project name>/`. */
 export function getProjectMediaFolder(recordingsDir: string, projectPath: string) {
 	return path.join(recordingsDir, path.basename(projectPath, path.extname(projectPath)));
 }
 
+/** A library project's file lives in its own folder: `<recordings>/<name>/<name>.ssup`. */
+export function getProjectFilePath(recordingsDir: string, name: string) {
+	return path.join(recordingsDir, name, `${name}.${PROJECT_FILE_EXTENSION}`);
+}
+
+/** True when the project file sits in the folder named after it, with its recordings. */
+export function ownsProjectFolder(recordingsDir: string, projectPath: string) {
+	const folder = path.dirname(path.resolve(projectPath));
+	return (
+		folder === path.resolve(getProjectMediaFolder(recordingsDir, projectPath)) &&
+		!isReservedProjectFolderName(path.basename(folder))
+	);
+}
+
+/** In a project folder of the recordings folder, or in the old shared Projects folder. */
+export function isLibraryProjectPath(recordingsDir: string, projectPath: string) {
+	const folder = path.dirname(path.resolve(projectPath));
+	return (
+		path.dirname(folder) === path.resolve(recordingsDir) &&
+		!path.basename(folder).startsWith(".")
+	);
+}
+
 /** Names a project may not take because its folder would clash with app folders. */
 export function isReservedProjectFolderName(name: string) {
 	return name.trim().toLowerCase() === "projects" || name.trim().startsWith(".");
+}
+
+/** Project files in the recordings folder's project folders, plus any left in the old Projects folder. */
+export async function listLibraryProjectFiles(recordingsDir: string) {
+	const found: string[] = [];
+	const scan = async (folder: string) => {
+		for (const entry of await fs.readdir(folder, { withFileTypes: true }).catch(() => [])) {
+			if (entry.isFile() && hasProjectFileExtension(entry.name))
+				found.push(path.join(folder, entry.name));
+		}
+	};
+	for (const entry of await fs.readdir(recordingsDir, { withFileTypes: true }).catch(() => [])) {
+		if (entry.isDirectory() && !isReservedProjectFolderName(entry.name))
+			await scan(path.join(recordingsDir, entry.name));
+	}
+	await scan(path.join(recordingsDir, PROJECTS_DIRECTORY_NAME));
+	return found;
+}
+
+/** Removes a folder that holds nothing (Finder's .DS_Store aside). */
+export async function removeFolderIfEmpty(folder: string) {
+	const names = await fs.readdir(folder).catch(() => null);
+	if (!names || names.some((name) => name !== ".DS_Store")) return false;
+	await fs.rm(path.join(folder, ".DS_Store"), { force: true });
+	await fs.rmdir(folder);
+	return true;
 }
 
 function toFsPath(value: string): string | null {
@@ -187,6 +241,8 @@ export async function getProjectMediaToTrash(
 ) {
 	const others = new Set<string>();
 	for (const other of otherProjectPaths) {
+		// Another project's own file counts as use, so its folder is never trashed.
+		others.add(path.resolve(other));
 		const data = await readJson(other).catch(() => null);
 		for (const file of getReferencedPaths(data)) others.add(file);
 	}
@@ -232,15 +288,22 @@ export async function reconcileProjectFolder(
 	if (folders.size !== 1) return;
 	const [source] = folders;
 	if (source === target || isReservedProjectFolderName(path.basename(target))) return;
-	if (await exists(target)) return;
+	// An existing folder is joined only when it already holds this project's file (renamed while open).
+	const merge = await exists(target);
+	if (
+		merge &&
+		(path.dirname(path.resolve(projectPath)) !== path.resolve(target) ||
+			(await isSameFolder(source, target)))
+	)
+		return;
 	for (const other of otherProjectPaths) {
+		if (path.resolve(other).startsWith(`${source}${path.sep}`)) return;
 		const data = await readJson(other).catch(() => null);
 		if ([...getReferencedPaths(data)].some((file) => file.startsWith(`${source}${path.sep}`)))
 			return;
 	}
-	await fs.rename(source, target);
-	try {
-		await rewriteProjectFiles(
+	const rewrite = () =>
+		rewriteProjectFiles(
 			projectPath,
 			(file) =>
 				file.startsWith(`${source}${path.sep}`)
@@ -248,8 +311,36 @@ export async function reconcileProjectFolder(
 					: null,
 			write,
 		);
+	if (!merge) {
+		await fs.rename(source, target);
+		try {
+			await rewrite();
+		} catch (error) {
+			await fs.rename(target, source).catch(() => undefined);
+			throw error;
+		}
+		return;
+	}
+	const names = (await fs.readdir(source)).filter((name) => name !== ".DS_Store");
+	for (const name of names) if (await exists(path.join(target, name))) return;
+	const moved: string[] = [];
+	try {
+		for (const name of names) {
+			await fs.rename(path.join(source, name), path.join(target, name));
+			moved.push(name);
+		}
+		await rewrite();
 	} catch (error) {
-		await fs.rename(target, source).catch(() => undefined);
+		for (const name of moved)
+			await fs
+				.rename(path.join(target, name), path.join(source, name))
+				.catch(() => undefined);
 		throw error;
 	}
+	await removeFolderIfEmpty(source).catch(() => undefined);
+}
+
+async function isSameFolder(left: string, right: string) {
+	const [a, b] = await Promise.all([fs.stat(left), fs.stat(right)]);
+	return a.dev === b.dev && a.ino === b.ino;
 }

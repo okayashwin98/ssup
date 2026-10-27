@@ -1,11 +1,15 @@
 import path from "node:path";
 import { USER_DATA_PATH } from "../appPaths";
 
-export const PROJECT_FILE_EXTENSION = "recordly";
-export const LEGACY_PROJECT_FILE_EXTENSIONS = ["openscreen"];
-export const PROJECTS_DIRECTORY_NAME = "Projects";
+export {
+	LEGACY_PROJECT_FILE_EXTENSIONS,
+	PROJECT_FILE_EXTENSION,
+	PROJECTS_DIRECTORY_NAME,
+} from "./project/projectFileNames";
 export const PROJECT_THUMBNAIL_SUFFIX = ".preview.png";
 export const RECENT_PROJECTS_FILE = path.join(USER_DATA_PATH, "recent-projects.json");
+/** Old → new project paths from the move into project folders, for the dashboard to follow. */
+export const PROJECT_PATH_MOVES_FILE = path.join(USER_DATA_PATH, "project-path-moves.json");
 export const MAX_RECENT_PROJECTS = 16;
 export const SHORTCUTS_FILE = path.join(USER_DATA_PATH, "shortcuts.json");
 export const RECORDINGS_SETTINGS_FILE = path.join(USER_DATA_PATH, "recordings-settings.json");

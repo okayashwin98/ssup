@@ -49,9 +49,9 @@ describe("recording project names", () => {
 		dirs.push(dir);
 		const first = await createUntitledProject(dir, "{}", "Figma – Oct 23, 2026");
 		const second = await createUntitledProject(dir, "{}", "Figma – Oct 23, 2026");
-		expect([path.basename(first), path.basename(second)]).toEqual([
-			"Figma – Oct 23, 2026.recordly",
-			"Figma – Oct 23, 2026 2.recordly",
+		expect([path.relative(dir, first), path.relative(dir, second)]).toEqual([
+			path.join("Figma – Oct 23, 2026", "Figma – Oct 23, 2026.ssup"),
+			path.join("Figma – Oct 23, 2026 2", "Figma – Oct 23, 2026 2.ssup"),
 		]);
 	});
 });

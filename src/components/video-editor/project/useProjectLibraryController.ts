@@ -9,6 +9,7 @@ import type { useTimelineState } from "../state/useTimelineState";
 import { getClipSourceEndMs, getClipSourceStartMs, type SpeedRegion } from "../types";
 import type { VideoPlaybackRef } from "../VideoPlayback";
 import { findPreviewClipAtTimelineTime } from "../videoPlayback/clipPlayback";
+import { followProjectPathMoves } from "./projectPathMoves";
 
 type Input = {
 	project: ReturnType<typeof useProjectState>;
@@ -87,6 +88,7 @@ export function useProjectLibraryController({
 			if (!result.success) {
 				throw new Error(result.error || "Failed to load project library");
 			}
+			if (result.pathMoves) followProjectPathMoves(result.pathMoves);
 
 			setProjectLibraryEntries(
 				result.entries.map((entry) => {

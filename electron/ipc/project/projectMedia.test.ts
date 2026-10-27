@@ -130,6 +130,30 @@ describe("project folders", () => {
 		expect(await exists(path.join(recordings, "Shared"))).toBe(true);
 	});
 
+	it("joins an existing folder only when the project's file already lives in it", async () => {
+		const { video } = await makeRecording("1792000000007");
+		const legacy = await makeProject("Elsewhere", { videoPath: video });
+		await moveProjectMediaIntoFolder(legacy, recordings, write);
+		// Renamed to a name whose folder holds other recordings: nothing moves.
+		const renamed = path.join(projects, "Busy.recordly");
+		await fs.rename(legacy, renamed);
+		await fs.mkdir(path.join(recordings, "Busy"));
+		await touch(path.join(recordings, "Busy", "other.mp4"));
+		await reconcileProjectFolder(renamed, recordings, write, []);
+		expect(await fs.readdir(path.join(recordings, "Busy"))).toEqual(["other.mp4"]);
+		expect((await readJson(renamed)).videoPath).toBe(
+			path.join(recordings, "Elsewhere", "recording-1792000000007.mp4"),
+		);
+		// The same project saved in its own folder takes its recordings in.
+		const owned = path.join(recordings, "Busy", "Busy.ssup");
+		await fs.rename(renamed, owned);
+		await reconcileProjectFolder(owned, recordings, write, []);
+		expect(await exists(path.join(recordings, "Elsewhere"))).toBe(false);
+		expect((await readJson(owned)).videoPath).toBe(
+			path.join(recordings, "Busy", "recording-1792000000007.mp4"),
+		);
+	});
+
 	it("refuses names that clash with an app folder or an existing recordings folder", async () => {
 		const source = path.join(projects, "A.recordly");
 		await expect(
@@ -167,6 +191,10 @@ describe("project folders", () => {
 			videoPath: path.join(folder, "recording-1792000000002.mp4"),
 		});
 		expect(await getProjectMediaToTrash(recordings, project, [other])).toEqual([]);
+		// Nor when another project's file sits in the folder.
+		const neighbour = path.join(folder, "Neighbour.ssup");
+		await fs.writeFile(neighbour, "{}");
+		expect(await getProjectMediaToTrash(recordings, project, [neighbour])).toEqual([]);
 	});
 });
 

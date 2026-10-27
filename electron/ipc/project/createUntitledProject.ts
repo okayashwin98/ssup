@@ -1,14 +1,18 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
-/** Publish a complete new project without overwriting a concurrent or existing save. */
+import { getProjectFilePath, isReservedProjectFolderName } from "./projectMedia";
+/**
+ * Publish a complete new project in its own folder, `<recordings>/<name>/<name>.ssup`,
+ * without overwriting a concurrent or existing save or joining another project's folder.
+ */
 export async function createUntitledProject(
-	directory: string,
+	recordingsDir: string,
 	contents: string,
 	baseName?: string,
 ) {
-	await fs.mkdir(directory, { recursive: true });
-	const temporary = path.join(directory, `.recordly-new-${randomUUID()}.tmp`);
+	await fs.mkdir(recordingsDir, { recursive: true });
+	const temporary = path.join(recordingsDir, `.recordly-new-${randomUUID()}.tmp`);
 	try {
 		const file = await fs.open(temporary, "wx");
 		try {
@@ -22,12 +26,21 @@ export async function createUntitledProject(
 			const name = baseName
 				? `${baseName}${suffix ? ` ${suffix + 1}` : ""}`
 				: `Untitled Project${suffix ? ` ${suffix}` : ""}`;
-			const target = path.join(directory, `${name}.recordly`);
+			if (isReservedProjectFolderName(name)) continue;
+			const target = getProjectFilePath(recordingsDir, name);
+			// Creating the folder claims the name; an existing folder belongs to someone else.
+			try {
+				await fs.mkdir(path.dirname(target));
+			} catch (error) {
+				if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+				continue;
+			}
 			try {
 				await fs.link(temporary, target);
 				return target;
 			} catch (error) {
-				if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+				await fs.rmdir(path.dirname(target)).catch(() => undefined);
+				throw error;
 			}
 		}
 	} finally {

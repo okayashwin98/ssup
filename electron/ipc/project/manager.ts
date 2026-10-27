@@ -14,11 +14,13 @@ import {
 	LEGACY_PROJECT_FILE_EXTENSIONS,
 	MAX_RECENT_PROJECTS,
 	PROJECT_FILE_EXTENSION,
+	PROJECT_PATH_MOVES_FILE,
 	PROJECT_THUMBNAIL_SUFFIX,
-	PROJECTS_DIRECTORY_NAME,
 	RECENT_PROJECTS_FILE,
 	RECORDINGS_SETTINGS_FILE,
 } from "../constants";
+import { hasProjectFileExtension } from "./projectFileNames";
+import { isLibraryProjectPath, listLibraryProjectFiles } from "./projectMedia";
 import {
 	approvedLocalReadPaths,
 	currentProjectPath,
@@ -36,7 +38,7 @@ import {
 	parseJsonWithByteOrderMark,
 } from "../utils";
 
-export { normalizePath, normalizeVideoSourcePath };
+export { hasProjectFileExtension, normalizePath, normalizeVideoSourcePath };
 
 export function getAssetRootPath() {
 	if (app.isPackaged) {
@@ -244,12 +246,6 @@ export async function resolveProjectMediaSources(
 	}
 }
 
-export async function getProjectsDir() {
-	const projectsDir = path.join(await getRecordingsDir(), PROJECTS_DIRECTORY_NAME);
-	await fs.mkdir(projectsDir, { recursive: true });
-	return projectsDir;
-}
-
 export async function persistRecordingsDirectorySetting(nextDir: string) {
 	setCustomRecordingsDir(path.resolve(nextDir));
 	setRecordingsDirLoaded(true);
@@ -258,11 +254,6 @@ export async function persistRecordingsDirectorySetting(nextDir: string) {
 		JSON.stringify({ recordingsDir: path.resolve(nextDir) }, null, 2),
 		"utf-8",
 	);
-}
-
-export function hasProjectFileExtension(filePath: string) {
-	const extension = path.extname(filePath).replace(/^\./, "").toLowerCase();
-	return [PROJECT_FILE_EXTENSION, ...LEGACY_PROJECT_FILE_EXTENSIONS].includes(extension);
 }
 
 export function getProjectThumbnailPath(projectPath: string) {
@@ -314,6 +305,22 @@ export async function saveRecentProjectPaths(paths: string[]) {
 		JSON.stringify({ paths: normalizedPaths }, null, 2),
 		"utf-8",
 	);
+}
+
+/** Old → new paths of projects the app moved into their own folders. */
+export async function loadProjectPathMoves(): Promise<Record<string, string>> {
+	try {
+		const content = await fs.readFile(PROJECT_PATH_MOVES_FILE, "utf-8");
+		const parsed = parseJsonWithByteOrderMark<{ moves?: unknown }>(content);
+		if (!parsed.moves || typeof parsed.moves !== "object") return {};
+		return Object.fromEntries(
+			Object.entries(parsed.moves).filter(
+				(entry): entry is [string, string] => typeof entry[1] === "string",
+			),
+		);
+	} catch {
+		return {};
+	}
 }
 
 export async function rememberRecentProject(projectPath: string) {
@@ -403,7 +410,7 @@ async function getProjectRecordingInfo(
 
 export async function buildProjectLibraryEntry(
 	projectPath: string,
-	projectsDir: string,
+	recordingsDir: string,
 	onThumbnailReady?: (ready: ProjectThumbnailReady) => void,
 ): Promise<ProjectLibraryEntry | null> {
 	try {
@@ -445,7 +452,7 @@ export async function buildProjectLibraryEntry(
 			isCurrent: Boolean(
 				currentProjectPath && normalizePath(currentProjectPath) === normalizedPath,
 			),
-			isInProjectsDirectory: path.dirname(normalizedPath) === normalizePath(projectsDir),
+			isInProjectsDirectory: isLibraryProjectPath(recordingsDir, normalizedPath),
 			...recordingInfo,
 		};
 	} catch {
@@ -456,31 +463,15 @@ export async function buildProjectLibraryEntry(
 export async function listProjectLibraryEntries(
 	onThumbnailReady?: (ready: ProjectThumbnailReady) => void,
 ) {
-	const projectsDir = await getProjectsDir();
-	const projectPaths: string[] = [];
-
-	try {
-		const entries = await fs.readdir(projectsDir, { withFileTypes: true });
-		for (const entry of entries) {
-			if (!entry.isFile()) {
-				continue;
-			}
-
-			const entryPath = path.join(projectsDir, entry.name);
-			if (hasProjectFileExtension(entryPath)) {
-				projectPaths.push(entryPath);
-			}
-		}
-	} catch {
-		// Ignore directory read failures and fall back to recent files.
-	}
-
+	// Each project lives in its own folder of the recordings folder.
+	const recordingsDir = await getRecordingsDir();
+	const projectPaths = await listLibraryProjectFiles(recordingsDir);
 	const recentProjectPaths = await loadRecentProjectPaths();
 	const candidatePaths = Array.from(new Set([...projectPaths, ...recentProjectPaths]));
 	const entries = (
 		await Promise.all(
 			candidatePaths.map((candidatePath) =>
-				buildProjectLibraryEntry(candidatePath, projectsDir, onThumbnailReady),
+				buildProjectLibraryEntry(candidatePath, recordingsDir, onThumbnailReady),
 			),
 		)
 	)
@@ -490,7 +481,7 @@ export async function listProjectLibraryEntries(
 	await saveRecentProjectPaths(entries.map((entry) => entry.path));
 
 	return {
-		projectsDir,
+		projectsDir: recordingsDir,
 		entries,
 	};
 }

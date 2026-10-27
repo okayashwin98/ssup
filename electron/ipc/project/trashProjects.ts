@@ -10,7 +10,10 @@ type Dependencies = {
 	/** When set, each project's raw recordings go to Trash with it unless another project uses them. */
 	recordingsDir?: string;
 };
-/** Only library project files may be trashed, with the raw recordings only they use. */
+/**
+ * Only library project files may be trashed, with the raw recordings only they use.
+ * Sidecars already trashed with the project's folder are skipped as missing.
+ */
 export async function trashLibraryProjects(paths: unknown, deps: Dependencies) {
 	if (
 		!Array.isArray(paths) ||
@@ -35,7 +38,15 @@ export async function trashLibraryProjects(paths: unknown, deps: Dependencies) {
 						() => [] as string[],
 					)
 				: [];
-			await deps.trash(projectPath);
+			// A folder holding the project file goes to Trash once, file, backups and preview included.
+			const folder = path.dirname(projectPath);
+			if (media.includes(folder)) {
+				await deps.trash(folder);
+				trashedMedia.push(folder);
+				media.splice(media.indexOf(folder), 1);
+			} else {
+				await deps.trash(projectPath);
+			}
 			deleted.push(projectPath);
 			for (const sidecar of [
 				deps.thumbnailPath(projectPath),

@@ -8,7 +8,6 @@ import { toast } from "@/components/ui/toast";
 export const DashboardSettingsContext = createContext<ReactNode>(null);
 export function DashboardSettings({ onImportFile }: { onImportFile: () => Promise<void> }) {
 	const settingsContent = useContext(DashboardSettingsContext);
-	const [directory, setDirectory] = useState("");
 	const [recordings, setRecordings] = useState("");
 	const [hideHud, setHideHud] = useState(true);
 	const [captureSupported, setCaptureSupported] = useState(false);
@@ -131,34 +130,6 @@ export function DashboardSettings({ onImportFile }: { onImportFile: () => Promis
 							</Button>
 						</SettingsRow>
 					)}
-				</SettingsCategory>
-				<SettingsCategory category="recording">
-					<SettingsRow
-						title="Projects folder"
-						description={directory || "Named projects save automatically."}
-					>
-						<Button
-							variant="secondary"
-							size="sm"
-							onClick={async () => {
-								try {
-									const result = await window.electronAPI.getProjectsDirectory();
-									if (!result.success || !result.path)
-										throw Error("Could not open projects folder");
-									setDirectory(result.path);
-									await window.electronAPI.revealInFolder(result.path);
-								} catch (e) {
-									toast.error(String(e));
-								}
-							}}
-						>
-							Show folder
-						</Button>
-					</SettingsRow>
-					<p className="text-xs text-muted-foreground">
-						Named projects save automatically. Previews refresh when you return to
-						Projects.
-					</p>
 				</SettingsCategory>
 			</SettingsSections>
 		</section>

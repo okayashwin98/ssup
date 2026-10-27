@@ -993,6 +993,8 @@ interface Window {
 				durationMs?: number;
 				recordedAt?: number;
 			}>;
+			/** Old → new paths of projects the app moved into their own folders. */
+			pathMoves?: Record<string, string>;
 			error?: string;
 		}>;
 		openProjectFileAtPath: (filePath: string) => Promise<{
