@@ -181,3 +181,23 @@ test("a failed rename shows a clear message that clears on the next action", asy
 	await page.getByRole("button", { name: "Product walkthrough", exact: true }).click();
 	await expect(page.getByText("Could not rename recording: Not found")).toHaveCount(0);
 });
+
+test("Link offers upload sizes up to the recording's own, 1080p first", async ({ page }) => {
+	await page.goto("/tests/ui/publish.html");
+	await page.getByRole("button", { name: "Publish", exact: true }).click();
+	await page.getByRole("row", { name: "Link", exact: true }).click();
+	const sizes = page.getByRole("grid", { name: "Resolution" }).getByRole("row");
+	// The fixture's recording is 3024 × 1898: 4K would be larger than it.
+	await expect(sizes).toHaveText(["720p", "1080p", "1440p"]);
+	await expect(page.getByRole("row", { name: "1080p", exact: true })).toHaveAttribute(
+		"aria-selected",
+		"true",
+	);
+	await page.getByRole("row", { name: "1440p", exact: true }).click();
+	await page.reload();
+	await page.getByRole("button", { name: "Publish", exact: true }).click();
+	await expect(page.getByRole("row", { name: "1440p", exact: true })).toHaveAttribute(
+		"aria-selected",
+		"true",
+	);
+});

@@ -1,3 +1,4 @@
+import type { ShareResolution } from "@/lib/exporter/types";
 import { type RefObject, useCallback } from "react";
 import { toast } from "@/components/ui/toast";
 import type { ExportFormat, ExportSettings } from "@/lib/exporter";
@@ -93,13 +94,17 @@ export function useExportDialogActions({
 		void handleExport(resolvedSettings, { destination: "download" });
 	}, [resolveCurrentSettings, session, handleExport]);
 
-	const prepareExportForShare = useCallback(async () => {
+	// The menu passes the size it shows, which may be smaller than the saved choice.
+	const prepareExportForShare = useCallback(async (resolution?: ShareResolution) => {
 		const resolvedSettings = resolveCurrentSettings("mp4");
 		if (!resolvedSettings) return undefined;
 		session.setExportError(null);
 		session.setShowExportDropdown(true);
-		return handleExport(resolveShareExportSettings(resolvedSettings), { destination: "share" });
-	}, [resolveCurrentSettings, session, handleExport]);
+		return handleExport(
+			resolveShareExportSettings(resolvedSettings, resolution ?? settings.shareResolution),
+			{ destination: "share" },
+		);
+	}, [resolveCurrentSettings, session, handleExport, settings.shareResolution]);
 
 	const handleCancelExport = useCallback(() => {
 		if (!session.isExporting) return;

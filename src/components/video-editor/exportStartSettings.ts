@@ -65,9 +65,13 @@ export function resolveExportStartSettings({
 	};
 }
 
-export function resolveShareExportSettings(settings: ExportSettings): ExportSettings {
+export function resolveShareExportSettings(
+	settings: ExportSettings,
+	shareResolution: ExportSettings["shareResolution"] = 1080,
+): ExportSettings {
 	return {
 		...settings,
+		shareResolution,
 		format: "mp4",
 		quality: "source",
 		encodingMode: "fast",

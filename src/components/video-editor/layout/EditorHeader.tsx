@@ -1,3 +1,4 @@
+import type { ShareResolution } from "@/lib/exporter/types";
 import { Separator } from "@heroui/react";
 import {
 	House,
@@ -55,7 +56,7 @@ type Props = {
 	handleStartExportFromDropdown: () => void;
 	revealExportedFile: () => void;
 	exportMessage: string | null;
-	prepareExportForShare: () => Promise<string | undefined>;
+	prepareExportForShare: (resolution?: ShareResolution) => Promise<string | undefined>;
 	onRequestShareSignIn: () => void;
 	shareRequestNonce: number;
 	authToken?: string;

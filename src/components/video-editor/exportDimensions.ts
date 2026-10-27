@@ -103,22 +103,33 @@ export function calculateMp4ExportDimensions(
 	};
 }
 
-const SHARED_VIDEO_LONG_SIDE_MAX = 1920;
-const SHARED_VIDEO_SHORT_SIDE_MAX = 1080;
-
+/** Fits a shared video within `shortSide`p (16:9 bounds, either way round), never upscaling. */
 export function capMp4ShareDimensions(
 	width: number,
 	height: number,
+	shortSide = 1080,
 ): { width: number; height: number } {
 	const normalizedWidth = normalizeEvenDimension(width);
 	const normalizedHeight = normalizeEvenDimension(height);
 	const landscape = normalizedWidth >= normalizedHeight;
-	const maxWidth = landscape ? SHARED_VIDEO_LONG_SIDE_MAX : SHARED_VIDEO_SHORT_SIDE_MAX;
-	const maxHeight = landscape ? SHARED_VIDEO_SHORT_SIDE_MAX : SHARED_VIDEO_LONG_SIDE_MAX;
+	const longSide = Math.round((shortSide * 16) / 9);
+	const maxWidth = landscape ? longSide : shortSide;
+	const maxHeight = landscape ? shortSide : longSide;
 	const scale = Math.min(1, maxWidth / normalizedWidth, maxHeight / normalizedHeight);
 
 	return {
 		width: normalizeEvenDimension(normalizedWidth * scale),
 		height: normalizeEvenDimension(normalizedHeight * scale),
 	};
+}
+
+/** The share sizes worth offering for a video: none larger than the video itself. */
+export function availableShareResolutions(
+	width: number,
+	height: number,
+	sizes: readonly number[],
+): number[] {
+	const shortSide = Math.min(width, height);
+	const fitting = sizes.filter((size) => size <= shortSide);
+	return fitting.length ? fitting : sizes.slice(0, 1);
 }

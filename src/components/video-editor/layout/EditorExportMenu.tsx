@@ -1,3 +1,5 @@
+import { SHARE_RESOLUTIONS, type ShareResolution } from "@/lib/exporter/types";
+import { availableShareResolutions } from "../exportDimensions";
 import { copyText } from "@/lib/copyText";
 import { LinkSimple, HardDrive, Export } from "@phosphor-icons/react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -10,7 +12,7 @@ import { toast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { useI18n } from "@/contexts/I18nContext";
-import { ExportSettingsMenu } from "../ExportSettingsMenu";
+import { Choices, ExportSettingsMenu } from "../ExportSettingsMenu";
 import type { useExportDimensions } from "../export/useExportDimensions";
 import type { useExportSession } from "../export/useExportSession";
 import type { useExportSettings } from "../export/useExportSettings";
@@ -37,7 +39,7 @@ type Props = {
 	revealExportedFile: () => void;
 	exportMessage: string | null;
 	projectTitle: string;
-	prepareExportForShare: () => Promise<string | undefined>;
+	prepareExportForShare: (resolution?: ShareResolution) => Promise<string | undefined>;
 	onRequestShareSignIn: () => void;
 	shareRequestNonce: number;
 	authToken?: string;
@@ -100,6 +102,8 @@ export function EditorExportMenu(props: Props) {
 		mp4FrameRate,
 		setMp4FrameRate,
 		exportFormat,
+		shareResolution: savedShareResolution,
+		setShareResolution,
 		includeCaptionSidecar,
 		setIncludeCaptionSidecar,
 	} = exportSettings;
@@ -113,6 +117,19 @@ export function EditorExportMenu(props: Props) {
 		hasPendingExportSave,
 	} = exportSession;
 	const { mp4OutputDimensions } = exportDimensions;
+	// Sizes larger than the recording aren't offered; a saved larger choice shows the largest.
+	const shareResolutionChoices = (
+		mp4OutputDimensions
+			? availableShareResolutions(
+					mp4OutputDimensions.source.width,
+					mp4OutputDimensions.source.height,
+					SHARE_RESOLUTIONS,
+				)
+			: SHARE_RESOLUTIONS
+	) as ShareResolution[];
+	const shareResolution = shareResolutionChoices.includes(savedShareResolution)
+		? savedShareResolution
+		: shareResolutionChoices[shareResolutionChoices.length - 1];
 	const {
 		isExportPreparing,
 		isExportSaving,
@@ -225,12 +242,21 @@ export function EditorExportMenu(props: Props) {
 							</div>
 							<div>
 								{destination === "link" ? (
-									<div className="px-5 pb-5">
+									<div className="space-y-4 px-5 pb-5">
+										<Choices
+											label="Resolution"
+											value={shareResolution}
+											onChange={setShareResolution}
+											options={shareResolutionChoices.map((size) => ({
+												value: size,
+												label: size === 2160 ? "4K" : `${size}p`,
+											}))}
+										/>
 										<CloudShareButton
 											inline
 											projectPath={props.projectPath}
 											projectTitle={props.projectTitle}
-											prepareFile={props.prepareExportForShare}
+											prepareFile={() => props.prepareExportForShare(shareResolution)}
 											onCancelPrepare={handleCancelExport}
 											preparationProgress={exportProgress?.percentage ?? 0}
 											authToken={props.authToken}

@@ -34,7 +34,7 @@ interface ExportSettingsMenuProps {
 	hideAction?: boolean;
 }
 
-function Choices<T extends string | number>({
+export function Choices<T extends string | number>({
 	label,
 	value,
 	options,

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
 	calculateMp4ExportDimensions,
 	calculateMp4SourceDimensions,
+	availableShareResolutions,
 	capMp4ShareDimensions,
 	shouldDebounceMp4SupportProbe,
 } from "./exportDimensions";
@@ -19,6 +20,26 @@ describe("capMp4ShareDimensions", () => {
 
 	it("keeps unusual aspect ratios and even dimensions", () => {
 		expect(capMp4ShareDimensions(3441, 1441)).toEqual({ width: 1920, height: 802 });
+	});
+
+	it("fits the chosen size: 720p, 1440p and 4K", () => {
+		expect(capMp4ShareDimensions(3840, 2160, 720)).toEqual({ width: 1280, height: 720 });
+		expect(capMp4ShareDimensions(5120, 2880, 1440)).toEqual({ width: 2560, height: 1440 });
+		expect(capMp4ShareDimensions(4096, 2304, 2160)).toEqual({ width: 3840, height: 2160 });
+		expect(capMp4ShareDimensions(2160, 3840, 1440)).toEqual({ width: 1440, height: 2560 });
+		// Never larger than the recording.
+		expect(capMp4ShareDimensions(1920, 1080, 2160)).toEqual({ width: 1920, height: 1080 });
+	});
+});
+
+describe("availableShareResolutions", () => {
+	it("offers no size larger than the recording's short side", () => {
+		const sizes = [720, 1080, 1440, 2160];
+		expect(availableShareResolutions(3024, 1898, sizes)).toEqual([720, 1080, 1440]);
+		expect(availableShareResolutions(4096, 2304, sizes)).toEqual([720, 1080, 1440, 2160]);
+		expect(availableShareResolutions(1080, 1920, sizes)).toEqual([720, 1080]);
+		// A tiny recording still gets one choice.
+		expect(availableShareResolutions(640, 360, sizes)).toEqual([720]);
 	});
 });
 

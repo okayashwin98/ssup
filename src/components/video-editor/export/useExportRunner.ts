@@ -298,6 +298,7 @@ export function useExportRunner(input: ExportRunnerInput) {
 							? capMp4ShareDimensions(
 									requestedDimensions.width,
 									requestedDimensions.height,
+									settings.shareResolution,
 								)
 							: requestedDimensions;
 					const bitrate = getMp4ExportBitrate({

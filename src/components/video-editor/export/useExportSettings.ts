@@ -24,6 +24,7 @@ export function useExportSettings(
 		preferences.includeCaptionSidecar,
 	);
 	const [publishDestination, setPublishDestination] = useState(preferences.publishDestination);
+	const [shareResolution, setShareResolution] = useState(preferences.shareResolution);
 	const [exportQuality, setExportQuality] = useState<ExportQuality>(preferences.exportQuality);
 	const [exportEncodingMode, setExportEncodingMode] = useState<ExportEncodingMode>(
 		preferences.exportEncodingMode,
@@ -44,6 +45,7 @@ export function useExportSettings(
 	useEffect(() => {
 		saveEditorPreferences({
 			publishDestination,
+			shareResolution,
 			includeCaptionSidecar,
 			exportQuality,
 			exportEncodingMode,
@@ -57,6 +59,7 @@ export function useExportSettings(
 		});
 	}, [
 		publishDestination,
+		shareResolution,
 		includeCaptionSidecar,
 		exportQuality,
 		exportEncodingMode,
@@ -87,6 +90,8 @@ export function useExportSettings(
 	return {
 		publishDestination,
 		setPublishDestination,
+		shareResolution,
+		setShareResolution,
 		includeCaptionSidecar,
 		setIncludeCaptionSidecar,
 		exportQuality,

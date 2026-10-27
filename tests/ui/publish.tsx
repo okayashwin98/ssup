@@ -1,10 +1,11 @@
-import { useState, type ComponentProps } from "react";
+import { type ComponentProps, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { I18nProvider, useI18n } from "@/contexts/I18nContext";
 import { EditorExportMenu } from "@/components/video-editor/layout/EditorExportMenu";
+import { I18nProvider, useI18n } from "@/contexts/I18nContext";
 import "@/index.css";
 import { loadEditorPreferences } from "@/components/video-editor/editorPreferences";
 import { useExportSettings } from "@/components/video-editor/export/useExportSettings";
+
 const noop = () => undefined;
 let finishUpload: (() => void) | undefined;
 let reportUpload:
@@ -64,7 +65,15 @@ function Preview() {
 				? "[VIDEO_DECODE_ENCODING_ERROR] sourceTimeSec=0.500"
 				: undefined,
 		},
-		exportDimensions: { gifOutputDimensions: { width: 800, height: 450 } },
+		exportDimensions: {
+			gifOutputDimensions: { width: 800, height: 450 },
+			mp4OutputDimensions: {
+				medium: { width: 1280, height: 720 },
+				good: { width: 1920, height: 1080 },
+				high: { width: 2560, height: 1440 },
+				source: { width: 3024, height: 1898 },
+			},
+		},
 		exportStatus: {},
 		handleOpenExportDropdown: () => setOpen(true),
 		handleExportDropdownClose: () => setOpen(false),

@@ -191,9 +191,15 @@ export interface GifExportConfig {
 	height: number;
 }
 
+/** The short side of a shared video: 720p, 1080p, 1440p or 4K. */
+export type ShareResolution = 720 | 1080 | 1440 | 2160;
+export const SHARE_RESOLUTIONS: readonly ShareResolution[] = [720, 1080, 1440, 2160];
+
 export interface ExportSettings {
 	format: ExportFormat;
 	includeCaptionSidecar?: boolean;
+	/** Share uploads only: the largest short side the upload is scaled down to. */
+	shareResolution?: ShareResolution;
 	// MP4 settings
 	quality?: ExportQuality;
 	encodingMode?: ExportEncodingMode;

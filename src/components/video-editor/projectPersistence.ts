@@ -1077,6 +1077,7 @@ export function stripProjectUserPreferences<T extends object>(editor: T): T {
 		"gifLoop",
 		"gifSizePreset",
 		"publishDestination",
+		"shareResolution",
 		"includeCaptionSidecar",
 		"whisperExecutablePath",
 		"whisperModelPath",

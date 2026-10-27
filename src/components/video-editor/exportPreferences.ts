@@ -8,7 +8,7 @@ import type {
 	GifFrameRate,
 	GifSizePreset,
 } from "@/lib/exporter";
-import { isValidMp4FrameRate } from "@/lib/exporter/types";
+import { isValidMp4FrameRate, SHARE_RESOLUTIONS, type ShareResolution } from "@/lib/exporter/types";
 
 export interface ExportPreferences {
 	exportEncodingMode: ExportEncodingMode;
@@ -21,6 +21,7 @@ export interface ExportPreferences {
 	gifLoop: boolean;
 	gifSizePreset: GifSizePreset;
 	publishDestination: "link" | "local";
+	shareResolution: ShareResolution;
 	includeCaptionSidecar: boolean;
 }
 
@@ -80,6 +81,9 @@ export function normalizeExportPreferences(raw: Partial<ExportPreferences>): Exp
 				? raw.gifSizePreset
 				: "medium",
 		publishDestination: raw.publishDestination === "local" ? "local" : "link",
+		shareResolution: SHARE_RESOLUTIONS.includes(raw.shareResolution as ShareResolution)
+			? (raw.shareResolution as ShareResolution)
+			: 1080,
 		includeCaptionSidecar: raw.includeCaptionSidecar === true,
 	};
 }
