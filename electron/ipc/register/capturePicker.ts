@@ -170,11 +170,15 @@ export function registerCapturePickerHandlers({
 		event.returnValue = isCapturePickerWebContents(event.sender) && liquidGlassAvailable();
 	});
 	// Answers whether the glass was placed, so the page can keep its own fill if not.
+	// Electron sends the first value given to returnValue, so it's set exactly once.
 	ipcMain.on("capture-picker-glass-rects", (event, rects: unknown) => {
-		event.returnValue = false;
-		if (!isCapturePickerWebContents(event.sender) || !Array.isArray(rects)) return;
-		const win = BrowserWindow.fromWebContents(event.sender);
-		if (!win) return;
+		const win = isCapturePickerWebContents(event.sender)
+			? BrowserWindow.fromWebContents(event.sender)
+			: null;
+		if (!win || !Array.isArray(rects)) {
+			event.returnValue = false;
+			return;
+		}
 		const clean: GlassRect[] = rects
 			.slice(0, 8)
 			.map((rect) => ({
