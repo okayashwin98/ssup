@@ -27,6 +27,7 @@ vi.mock("electron", () => ({
 		on: (name: string, listener: (...args: unknown[]) => unknown) =>
 			mocks.listeners.set(name, listener),
 	},
+	BrowserWindow: { fromWebContents: () => null },
 }));
 vi.mock("node:child_process", () => ({
 	execFile: (
@@ -39,6 +40,10 @@ vi.mock("node:child_process", () => ({
 		const icons = Object.fromEntries(args.slice(1).map((pid) => [pid, `icon-of-${pid}`]));
 		callback(null, { stdout: JSON.stringify(icons) });
 	},
+}));
+vi.mock("../../hudCompactWindows", () => ({
+	liquidGlassAvailable: () => false,
+	setWindowGlassRects: vi.fn(),
 }));
 vi.mock("../paths/binaries", () => ({
 	ensureAppIconsBinary: async () => "/helpers/recordly-app-icons",
@@ -176,29 +181,6 @@ describe("Escape on the bar", () => {
 		expect(settled).toBe(false);
 		cancel(mocks.hud.webContents);
 		expect(await pending).toEqual({ success: false, canceled: true });
-	});
-});
-
-describe("window hover for the bar's Window icon", () => {
-	it("is on while any screen's picker hovers a window, and off when the picker closes", async () => {
-		const second = { id: 2 };
-		Object.assign(mocks.overlay, { id: 1 });
-		mocks.windows = [mocks.overlay, second];
-		const hover = (sender: object, hovering: boolean) =>
-			mocks.listeners.get("capture-picker-window-hover")!({ sender }, hovering);
-		const pending = call("pick-capture-target", mocks.outsider);
-		await vi.waitFor(() => expect(mocks.create).toHaveBeenCalledOnce());
-		hover(mocks.overlay, true);
-		hover(second, true);
-		hover(mocks.overlay, false);
-		hover(mocks.outsider, false); // not a picker: ignored
-		expect(mocks.sent).toEqual([["capture-picker-window-hover", true]]);
-		await call("complete-capture-pick", mocks.overlay, null);
-		await pending;
-		expect(mocks.sent).toEqual([
-			["capture-picker-window-hover", true],
-			["capture-picker-window-hover", false],
-		]);
 	});
 });
 

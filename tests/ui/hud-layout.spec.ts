@@ -131,30 +131,37 @@ test("the webcam bubble window plays the camera", async ({ page }) => {
 		.toBe(true);
 });
 
-test("the Window icon sways while the picker's pointer is over a window", async ({ page }) => {
+test("the selected mode's icon sways while the picker waits, and a second click turns it off", async ({
+	page,
+}) => {
 	await installDesktopBridge(page);
 	await page.addInitScript(() => {
-		window.electronAPI.onCapturePickerWindowHover = (callback) => {
-			const listener = (event: Event) => callback((event as CustomEvent<boolean>).detail);
-			window.addEventListener("test-window-hover", listener);
-			return () => window.removeEventListener("test-window-hover", listener);
-		};
+		// The picker stays open until it's canceled.
+		window.electronAPI.pickCaptureTarget = () =>
+			new Promise((resolve) => {
+				window.electronAPI.cancelCapturePicker = () => {
+					document.documentElement.dataset.pickerCanceled = "true";
+					resolve({ success: false, canceled: true });
+				};
+			});
 	});
 	await page.goto("/?windowType=hud-overlay");
-	const icon = page.getByRole("button", { name: "Record a window", exact: true }).locator("svg");
-	const swaying = () => icon.evaluate((element) => getComputedStyle(element).animationName);
-	await expect.poll(swaying).toBe("none");
-	await page.evaluate(() =>
-		window.dispatchEvent(new CustomEvent("test-window-hover", { detail: true })),
-	);
-	await expect.poll(swaying).toBe("hover-sway");
-	await expect(
-		page.getByRole("button", { name: "Record a display", exact: true }).locator("svg"),
-	).not.toHaveClass(/hover-sway/);
-	await page.evaluate(() =>
-		window.dispatchEvent(new CustomEvent("test-window-hover", { detail: false })),
-	);
-	await expect.poll(swaying).toBe("none");
+	const display = page.getByRole("button", { name: "Record a display", exact: true });
+	const windowButton = page.getByRole("button", { name: "Record a window", exact: true });
+	const sway = (button: typeof display) =>
+		button.locator("svg").evaluate((element) => getComputedStyle(element).animationName);
+	await expect.poll(() => sway(windowButton)).toBe("none");
+	await windowButton.click();
+	await expect.poll(() => sway(windowButton)).toBe("hover-sway");
+	await expect.poll(() => sway(display)).toBe("none");
+	await display.click();
+	await expect.poll(() => sway(display)).toBe("hover-sway");
+	await expect.poll(() => sway(windowButton)).toBe("none");
+	// The selected mode again: the picker closes and the bar is back to normal.
+	await display.click();
+	await expect(page.locator("html")).toHaveAttribute("data-picker-canceled", "true");
+	await expect(display).not.toHaveAttribute("data-active", "true");
+	await expect.poll(() => sway(display)).toBe("none");
 });
 
 test("the bar switches an open picker to another mode", async ({ page }) => {
@@ -401,4 +408,64 @@ test("the recording bar drags from anywhere too", async ({ page }) => {
 	await page.mouse.move(box.x + 60, box.y + 5, { steps: 6 });
 	await page.mouse.up();
 	await expect(page.locator("html")).toHaveAttribute("data-drag", /^start,.*end$/);
+});
+
+test("a drag whose release never arrived ends at the next move instead of following the pointer", async ({
+	page,
+}) => {
+	await installDesktopBridge(page);
+	await page.goto("/?windowType=hud-overlay");
+	const html = page.locator("html");
+	const display = page.getByRole("button", { name: "Record a display", exact: true });
+	const box = (await display.boundingBox())!;
+	await page.mouse.move(box.x + 10, box.y + 10);
+	await page.mouse.down();
+	await page.mouse.move(box.x + 40, box.y + 10, { steps: 4 });
+	// The button comes up somewhere the bar never hears about it.
+	await page.evaluate(() => {
+		const bar = document.querySelector('[class*="bar"]')!;
+		bar.dispatchEvent(
+			new PointerEvent("pointermove", {
+				bubbles: true,
+				pointerId: 1,
+				buttons: 0,
+				screenX: 500,
+				screenY: 500,
+			}),
+		);
+	});
+	await expect(html).toHaveAttribute("data-drag", /end$/);
+	await page.evaluate(() => delete document.documentElement.dataset.drag);
+	await page.mouse.move(box.x + 80, box.y + 60, { steps: 4 });
+	await expect(html).not.toHaveAttribute("data-drag");
+	await page.mouse.up();
+});
+
+test("the selected mode takes no extra hover fill; the recording bar's buttons get one", async ({
+	page,
+}) => {
+	await installDesktopBridge(page);
+	await page.addInitScript(() => {
+		window.electronAPI.pickCaptureTarget = () => new Promise(() => undefined);
+	});
+	await page.goto("/?windowType=hud-overlay");
+	const highlight = page.locator('[class*="highlight"]');
+	const windowButton = page.getByRole("button", { name: "Record a window", exact: true });
+	await windowButton.click();
+	await expect(windowButton).toHaveAttribute("data-active", "true");
+	await page.mouse.move(0, 0);
+	await windowButton.hover();
+	await page.waitForTimeout(100);
+	await expect(highlight).not.toHaveAttribute("data-shown");
+	await page.getByRole("button", { name: "Record an area", exact: true }).hover();
+	await expect(highlight).toHaveAttribute("data-shown", "");
+
+	await page.goto("/?windowType=recording-controls");
+	const pause = page
+		.getByRole("group", { name: "Recording controls" })
+		.getByRole("button", { name: /pause/i });
+	await pause.hover();
+	await expect(page.locator('[class*="highlight"]')).toHaveAttribute("data-shown", "");
+	await page.getByRole("button", { name: /stop/i }).hover();
+	await expect(page.locator('[class*="highlight"]')).not.toHaveAttribute("data-shown");
 });

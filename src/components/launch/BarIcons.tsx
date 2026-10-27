@@ -120,3 +120,24 @@ export function DashboardIcon(props: SVGProps<SVGSVGElement>) {
 		</Frame>
 	);
 }
+
+// Pause and play for the recording bar, drawn on whole pixels so they stay crisp at 20 × 20.
+export function PauseBarIcon(props: SVGProps<SVGSVGElement>) {
+	return (
+		<Frame {...props}>
+			<rect x="6" y="4" width="3" height="12" rx="1" fill="currentColor" />
+			<rect x="11" y="4" width="3" height="12" rx="1" fill="currentColor" />
+		</Frame>
+	);
+}
+
+export function PlayBarIcon(props: SVGProps<SVGSVGElement>) {
+	return (
+		<Frame {...props}>
+			<path
+				d="M7 5.2v9.6a1 1 0 0 0 1.53.85l7.7-4.8a1 1 0 0 0 0-1.7l-7.7-4.8A1 1 0 0 0 7 5.2Z"
+				fill="currentColor"
+			/>
+		</Frame>
+	);
+}

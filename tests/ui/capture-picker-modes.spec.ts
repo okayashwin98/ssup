@@ -108,9 +108,7 @@ test("Display mode offers every screen, even the one the pointer is not on", asy
 		page
 			.locator("div.fixed > div")
 			.first()
-			.evaluate((element) =>
-				getComputedStyle(element).backgroundImage.includes("90, 67, 245"),
-			);
+			.evaluate((element) => getComputedStyle(element).backgroundImage.includes("gradient"));
 	await expect(start).toBeVisible();
 	await page.mouse.move(600, 300);
 	await expect.poll(tinted).toBe(true);
@@ -121,18 +119,76 @@ test("Display mode offers every screen, even the one the pointer is not on", asy
 	await expect(page.getByText(/Esc to cancel/)).toHaveCount(0);
 });
 
-test("A hovered window's icon sways, and the picker tells the bar", async ({ page }) => {
+test("A hovered window's icon sways, and only Area mode has the crosshair", async ({ page }) => {
+	await installDesktopBridgeOverrides(page, () => {
+		window.electronAPI.onCapturePickerModeChanged = (callback) => {
+			const listener = (event: Event) =>
+				callback((event as CustomEvent<"display" | "window" | "area">).detail);
+			window.addEventListener("test-picker-mode", listener);
+			return () => window.removeEventListener("test-picker-mode", listener);
+		};
+	});
 	await openPicker(page, "window");
-	const html = page.locator("html");
 	await page.mouse.move(600, 300);
 	await expect(page.locator("img.hover-sway")).toHaveCount(1);
-	await expect(html).toHaveAttribute("data-window-hover", "true");
-	const moved = await page
+	const sway = await page
 		.locator("img.hover-sway")
-		.evaluate((element) => getComputedStyle(element).animationName);
-	expect(moved).toBe("hover-sway");
-	await page.mouse.move(1380, 60); // the desktop
-	await expect(html).toHaveAttribute("data-window-hover", "false");
+		.evaluate((element) => [
+			getComputedStyle(element).animationName,
+			getComputedStyle(element).animationDuration,
+		]);
+	expect(sway).toEqual(["hover-sway", "1.067s"]);
+	const cursor = () =>
+		page
+			.locator("div.fixed")
+			.first()
+			.evaluate((element) => getComputedStyle(element).cursor);
+	expect(await cursor()).toBe("default");
+	await page.evaluate(() =>
+		window.dispatchEvent(new CustomEvent("test-picker-mode", { detail: "area" })),
+	);
+	await expect.poll(cursor).toBe("crosshair");
+	await page.evaluate(() =>
+		window.dispatchEvent(new CustomEvent("test-picker-mode", { detail: "display" })),
+	);
+	await expect.poll(cursor).toBe("default");
+});
+
+test("On Liquid Glass, Resize and Adjust recording area drop their fill and get glass under them", async ({
+	page,
+}) => {
+	await page.addInitScript(() => {
+		(window as unknown as { __testGlass: boolean }).__testGlass = true;
+	});
+	await openPicker(page, "window");
+	await page.mouse.move(600, 300);
+	const resize = page.getByRole("button", { name: "Resize", exact: true });
+	const adjust = page.getByRole("button", { name: "Adjust recording area", exact: true });
+	await expect(resize).toBeVisible();
+	await expect(resize).toHaveAttribute("data-glass", "true");
+	await expect(adjust).toHaveAttribute("data-glass", "true");
+	expect(await resize.evaluate((element) => getComputedStyle(element).backgroundColor)).toBe(
+		"rgba(0, 0, 0, 0)",
+	);
+	const sent = async () =>
+		JSON.parse((await page.locator("html").getAttribute("data-glass-rects")) ?? "[]") as {
+			x: number;
+			y: number;
+			width: number;
+			height: number;
+		}[];
+	// Placed at the buttons' final positions, once the card's entrance animation ends.
+	await expect.poll(async () => (await sent()).length).toBe(2);
+	const box = (await adjust.boundingBox())!;
+	await expect
+		.poll(async () =>
+			(await sent()).some(
+				(rect) => Math.abs(rect.x - box.x) <= 1 && Math.abs(rect.y - box.y) <= 1,
+			),
+		)
+		.toBe(true);
+	await page.mouse.move(1380, 60); // the desktop: no buttons, no glass
+	await expect.poll(async () => (await sent()).length).toBe(0);
 });
 
 test("Window mode shows the icon and Start recording only on the hovered window", async ({

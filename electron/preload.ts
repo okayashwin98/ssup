@@ -640,6 +640,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	cancelCapturePicker: () => {
 		ipcRenderer.send("capture-picker-cancel");
 	},
+	capturePickerHasGlass: () => ipcRenderer.sendSync("capture-picker-has-glass") === true,
+	capturePickerSetGlassRects: (
+		rects: { x: number; y: number; width: number; height: number; radius: number }[],
+	) => {
+		ipcRenderer.send("capture-picker-glass-rects", rects);
+	},
 	setCapturePickerMode: (mode: "display" | "window" | "area") => {
 		ipcRenderer.send("capture-picker-set-mode", mode);
 	},
@@ -654,15 +660,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
 			callback(icons);
 		ipcRenderer.on("capture-picker-icons", listener);
 		return () => ipcRenderer.removeListener("capture-picker-icons", listener);
-	},
-	capturePickerSetWindowHover: (hovering: boolean) => {
-		ipcRenderer.send("capture-picker-window-hover", hovering);
-	},
-	onCapturePickerWindowHover: (callback: (hovering: boolean) => void) => {
-		const listener = (_event: Electron.IpcRendererEvent, hovering: boolean) =>
-			callback(hovering);
-		ipcRenderer.on("capture-picker-window-hover", listener);
-		return () => ipcRenderer.removeListener("capture-picker-window-hover", listener);
 	},
 	getSelectedSource: () => {
 		return ipcRenderer.invoke("get-selected-source");

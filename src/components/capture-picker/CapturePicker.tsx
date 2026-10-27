@@ -4,7 +4,7 @@ import type {
 	ReactNode,
 	PointerEvent as ReactPointerEvent,
 } from "react";
-import { useCallback, useEffect, useReducer, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	AREA_HANDLES,
@@ -81,7 +81,7 @@ const AREA_RATIOS: Array<{ label: string; ratio: number | null }> = [
 // Everything that is not the hovered target sits under this dim.
 const DIM = "rgba(0,0,0,0.6)";
 // The hovered screen or window is tinted in the Start recording button's colour.
-const HIGHLIGHT = "rgba(90,67,245,0.28)";
+const HIGHLIGHT = "rgba(var(--brand-accent-rgb), 0.28)";
 
 function screenRect() {
 	return { x: 0, y: 0, width: window.innerWidth, height: window.innerHeight };
@@ -136,18 +136,24 @@ function areaCardPlacement(rect: AreaRect): CSSProperties {
 	return { left, bottom: 16, transform: "translateX(-50%)" };
 }
 
+/** The dashboard's Capture button, in the app's theme colour, a size up. */
 function StartButton({ onStart }: { onStart: () => void }) {
 	return (
-		<button
-			type="button"
+		// Presses here mustn't reach the picker, which would pick or start drawing.
+		<span
+			className="pointer-events-auto mt-2"
 			onPointerDown={(event) => event.stopPropagation()}
 			onPointerUp={(event) => event.stopPropagation()}
-			className="pointer-events-auto mt-2 flex items-center gap-2 rounded-[10px] px-6 py-3 text-base font-medium text-white shadow-lg"
-			style={{ background: "#5a43f5", textShadow: "none" }}
-			onClick={onStart}
 		>
-			Start recording
-		</button>
+			<Button
+				variant="default"
+				className="h-11 px-6 text-[15px] shadow-lg"
+				style={{ textShadow: "none" }}
+				onClick={onStart}
+			>
+				Start recording
+			</Button>
+		</span>
 	);
 }
 
@@ -155,20 +161,28 @@ function SmallButton({
 	children,
 	onClick,
 	label,
+	glass = false,
 }: {
 	children: ReactNode;
 	onClick: (event: ReactMouseEvent<HTMLButtonElement>) => void;
 	label?: string;
+	/** Sits on Liquid Glass (macOS 26+), which the app places under it. */
+	glass?: boolean;
 }) {
 	return (
 		<button
 			type="button"
 			aria-label={label}
+			data-glass={glass || undefined}
 			onPointerDown={(event) => event.stopPropagation()}
 			onPointerUp={(event) => event.stopPropagation()}
-			// A dark fill keeps the label readable over any window content (a blur cannot see
-			// through these see-through windows, so there is none). One height for all of them.
-			className="pointer-events-auto inline-flex h-8 items-center rounded-lg border border-white/15 bg-neutral-900/80 px-2.5 text-sm leading-none text-white hover:bg-neutral-800/80"
+			// Without glass, a dark fill keeps the label readable over any window content (a
+			// page blur cannot see through these see-through windows). One height for all.
+			className={`pointer-events-auto inline-flex h-8 items-center rounded-lg px-2.5 text-sm leading-none text-white ${
+				glass
+					? "hover:bg-white/15"
+					: "border border-white/15 bg-neutral-900/80 hover:bg-neutral-800/80"
+			}`}
 			style={{ textShadow: "none" }}
 			onClick={onClick}
 		>
@@ -214,6 +228,31 @@ export function CapturePicker() {
 	const [, redraw] = useReducer((count: number) => count + 1, 0);
 	const completed = useRef(false);
 	const canDraw = mode === "area" || (mode === undefined && allowArea);
+	// Liquid Glass under buttons marked data-glass: the app places it by their on-screen
+	// boxes, re-sent whenever they move (once a card's entrance animation ends too).
+	const [onGlass] = useState(() => window.electronAPI?.capturePickerHasGlass?.() === true);
+	const rootRef = useRef<HTMLDivElement>(null);
+	const sentGlass = useRef("[]");
+	const syncGlass = useCallback(() => {
+		if (!onGlass) return;
+		const rects = [
+			...(rootRef.current?.querySelectorAll<HTMLElement>("[data-glass]") ?? []),
+		].map((element) => {
+			const box = element.getBoundingClientRect();
+			return {
+				x: Math.round(box.left),
+				y: Math.round(box.top),
+				width: Math.round(box.width),
+				height: Math.round(box.height),
+				radius: Number.parseFloat(getComputedStyle(element).borderTopLeftRadius) || 0,
+			};
+		});
+		const sent = JSON.stringify(rects);
+		if (sent === sentGlass.current) return;
+		sentGlass.current = sent;
+		window.electronAPI.capturePickerSetGlassRects(rects);
+	}, [onGlass]);
+	useLayoutEffect(syncGlass);
 
 	const toLocal = (area: CaptureArea): AreaRect =>
 		normalizeAreaRect(
@@ -400,13 +439,6 @@ export function CapturePicker() {
 		[],
 	);
 
-	// Tells the bar while a window is hovered, so its Window icon sways along.
-	const onWindow = target?.kind === "window";
-	useEffect(() => {
-		window.electronAPI.capturePickerSetWindowHover(onWindow);
-	}, [onWindow]);
-	useEffect(() => () => window.electronAPI.capturePickerSetWindowHover(false), []);
-
 	const editArea = (rect: AreaRect) => {
 		press.current = null;
 		editingArea.current = true;
@@ -521,8 +553,13 @@ export function CapturePicker() {
 		: "";
 	return (
 		<div
+			ref={rootRef}
+			onAnimationEnd={syncGlass}
 			className="picker-fade-in fixed inset-0 select-none overflow-hidden"
-			style={{ cursor: "crosshair", background: target ? "transparent" : DIM }}
+			style={{
+				cursor: canDraw ? "crosshair" : "default",
+				background: target ? "transparent" : DIM,
+			}}
 			onPointerMove={onMove}
 			onPointerDown={(event) => {
 				if (event.button !== 0) return;
@@ -701,6 +738,7 @@ export function CapturePicker() {
 									)}
 									{target.kind === "window" && target.window.pid && (
 										<SmallButton
+											glass={onGlass}
 											label="Resize"
 											onClick={(event) =>
 												void openResizeMenu(event, target.window)
@@ -761,7 +799,7 @@ export function CapturePicker() {
 					{showStartCard && target.kind === "window" && (
 						// Sits at the bottom edge of the hovered window, apart from Start recording.
 						<div className="pointer-events-none absolute inset-x-0 bottom-4 flex justify-center">
-							<SmallButton onClick={() => editArea(target.rect)}>
+							<SmallButton glass={onGlass} onClick={() => editArea(target.rect)}>
 								Adjust recording area
 							</SmallButton>
 						</div>

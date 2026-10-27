@@ -253,7 +253,8 @@
 	}
 }
 .hover-sway {
-	animation: hover-sway 1.6s ease-in-out infinite;
+	/* SWAY_PERIOD_MS in hoverSway.ts. */
+	animation: hover-sway 1.067s ease-in-out infinite;
 }
 @media (prefers-reduced-motion: reduce) {
 	.picker-fade-in,

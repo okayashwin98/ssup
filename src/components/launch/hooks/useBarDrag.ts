@@ -29,6 +29,12 @@ export function useBarDrag(
 		};
 		const onMove = (event: PointerEvent) => {
 			if (!press || event.pointerId !== press.id) return;
+			// The button is up but the release never arrived (e.g. it happened over
+			// another window): end here instead of following the pointer.
+			if (event.buttons === 0) {
+				onUp(event);
+				return;
+			}
 			if (!dragging) {
 				if (Math.hypot(event.screenX - press.x, event.screenY - press.y) < DRAG_THRESHOLD)
 					return;

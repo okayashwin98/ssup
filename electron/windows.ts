@@ -27,8 +27,10 @@ import {
 	closeRecordingControls,
 	createFloatingPanel,
 	getHudCompanionWindows,
+	liquidGlassAvailable,
 	registerHudCompactWindowIpc,
 	setWebcamBubble,
+	setWindowGlassRects,
 	showRecordingControls,
 } from "./hudCompactWindows";
 import { getHudOverlayTaskbarOptions } from "./hudOverlayWindowOptions";
@@ -446,6 +448,9 @@ ipcMain.on("hud-overlay-drag", (_event, phase: string, screenX: number, screenY:
 		return;
 	}
 
+	// The page's screen coordinates lag behind a window that is moving, which can feed
+	// back into the next move; the system's own cursor position can't.
+	if (phase !== "end") ({ x: screenX, y: screenY } = getScreen().getCursorScreenPoint());
 	if (phase === "start") {
 		const bounds = hudOverlayWindow.getBounds();
 		hudDragOffset = { x: screenX - bounds.x, y: screenY - bounds.y };
@@ -1223,14 +1228,19 @@ export function createSourceSelectorWindow(): BrowserWindow {
 	return win;
 }
 
+// The countdown card, centred in its window, sits on Liquid Glass on macOS 26+.
+const COUNTDOWN_WINDOW_SIZE = 200;
+const COUNTDOWN_CARD = { size: 176, radius: 40 };
+
 export function createCountdownWindow(): BrowserWindow {
 	const screen = getScreen();
+	const glass = liquidGlassAvailable();
 	const { x, y, width, height } = getCountdownWindowBounds(
 		screen.getAllDisplays(),
 		screen.getPrimaryDisplay(),
 		// Linux capture display ids can differ from Electron's, so only trust them elsewhere.
 		process.platform === "linux" ? undefined : selectedSource?.display_id,
-		200,
+		COUNTDOWN_WINDOW_SIZE,
 	);
 
 	const win = new BrowserWindow({
@@ -1243,7 +1253,8 @@ export function createCountdownWindow(): BrowserWindow {
 		resizable: false,
 		alwaysOnTop: true,
 		skipTaskbar: true,
-		hasShadow: false,
+		// Glass gets the macOS shadow, as the bars do.
+		hasShadow: glass,
 		focusable: true,
 		show: false,
 		webPreferences: {
@@ -1254,6 +1265,18 @@ export function createCountdownWindow(): BrowserWindow {
 	});
 
 	countdownWindow = win;
+	if (glass) {
+		const inset = (COUNTDOWN_WINDOW_SIZE - COUNTDOWN_CARD.size) / 2;
+		setWindowGlassRects(win, [
+			{
+				x: inset,
+				y: inset,
+				width: COUNTDOWN_CARD.size,
+				height: COUNTDOWN_CARD.size,
+				radius: COUNTDOWN_CARD.radius,
+			},
+		]);
+	}
 
 	win.setVisibleOnAllWorkspaces(true, {
 		visibleOnFullScreen: true,
@@ -1280,10 +1303,10 @@ export function createCountdownWindow(): BrowserWindow {
 	});
 
 	if (VITE_DEV_SERVER_URL) {
-		win.loadURL(VITE_DEV_SERVER_URL + "?windowType=countdown");
+		win.loadURL(VITE_DEV_SERVER_URL + `?windowType=countdown${glass ? "&glass=1" : ""}`);
 	} else {
 		win.loadFile(path.join(RENDERER_DIST, "index.html"), {
-			query: { windowType: "countdown" },
+			query: { windowType: "countdown", ...(glass ? { glass: "1" } : {}) },
 		});
 	}
 

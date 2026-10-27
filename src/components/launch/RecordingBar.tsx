@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { MinusIcon, PauseIcon, PlayIcon, XIcon } from "@/components/ui/icons";
+import { MinusIcon, XIcon } from "@/components/ui/icons";
 import { useScopedT } from "../../contexts/I18nContext";
+import { PauseBarIcon, PlayBarIcon } from "./BarIcons";
 import styles from "./HudBar.module.css";
 import { useBarDrag } from "./hooks/useBarDrag";
 import { useBarWindowSize } from "./hooks/useBarWindowSize";
 import { useWindowGlass } from "./hooks/useWindowGlass";
+import { SlidingHighlight } from "./SlidingHighlight";
 
 function formatElapsed(seconds: number) {
 	const minutes = Math.floor(seconds / 60)
@@ -37,6 +39,8 @@ export function RecordingBarControls({
 			<button
 				type="button"
 				className={styles.stop}
+				// Turns a brighter red on hover instead of taking the bar's hover fill.
+				data-own-hover=""
 				onClick={onStop}
 				title={t("recording.stop")}
 				aria-label={t("recording.stop")}
@@ -60,9 +64,9 @@ export function RecordingBarControls({
 				aria-label={paused ? t("recording.resume") : t("recording.pause")}
 			>
 				{paused ? (
-					<PlayIcon weight="fill" className={styles.icon} />
+					<PlayBarIcon className={styles.icon} />
 				) : (
-					<PauseIcon weight="fill" className={styles.icon} />
+					<PauseBarIcon className={styles.icon} />
 				)}
 			</button>
 			<button
@@ -120,6 +124,7 @@ export default function RecordingBarWindow() {
 				role="group"
 				aria-label="Recording controls"
 			>
+				<SlidingHighlight />
 				<RecordingBarControls
 					paused={status.paused}
 					elapsed={status.elapsed}

@@ -316,13 +316,15 @@ interface Window {
 		/** Closes an open picker, from the bar (Escape while the bar has the keyboard). */
 		cancelCapturePicker: () => void;
 		/** Switches an open picker to another mode, from the bar. */
+		capturePickerHasGlass: () => boolean;
+		capturePickerSetGlassRects: (
+			rects: { x: number; y: number; width: number; height: number; radius: number }[],
+		) => void;
 		setCapturePickerMode: (mode: CapturePickerMode) => void;
 		onCapturePickerModeChanged: (callback: (mode: CapturePickerMode) => void) => () => void;
 		/** App icons that arrive after the picker opened, by window id. */
 		onCapturePickerIcons: (callback: (icons: Record<string, string>) => void) => () => void;
 		/** The picker tells the bar while its pointer is over a window. */
-		capturePickerSetWindowHover: (hovering: boolean) => void;
-		onCapturePickerWindowHover: (callback: (hovering: boolean) => void) => () => void;
 		getSelectedSource: () => Promise<ProcessedDesktopSource | null>;
 		onSelectedSourceChanged: (
 			callback: (source: ProcessedDesktopSource | null) => void,

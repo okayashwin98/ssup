@@ -191,10 +191,11 @@ export async function installDesktopBridge(
 				hudWindowHasGlass: () =>
 					(window as unknown as { __testGlass?: boolean }).__testGlass === true,
 				onHudVisibilityChanged: subscribe,
-				capturePickerSetWindowHover: (hovering: boolean) => {
-					document.documentElement.dataset.windowHover = String(hovering);
+				capturePickerHasGlass: () =>
+					(window as unknown as { __testGlass?: boolean }).__testGlass === true,
+				capturePickerSetGlassRects: (rects: unknown[]) => {
+					document.documentElement.dataset.glassRects = JSON.stringify(rects);
 				},
-				onCapturePickerWindowHover: subscribe,
 				setCapturePickerMode: (mode: string) => {
 					document.documentElement.dataset.pickerMode = mode;
 				},

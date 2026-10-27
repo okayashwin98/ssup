@@ -203,9 +203,6 @@ export function LaunchWindow() {
 		cancelRecording,
 	});
 	commandHandlers.current = { toggleRecording, pauseRecording, resumeRecording, cancelRecording };
-	// The Window icon sways while the picker's pointer is over a window.
-	const [pickerOnWindow, setPickerOnWindow] = useState(false);
-	useEffect(() => window.electronAPI.onCapturePickerWindowHover(setPickerOnWindow), []);
 	const recordingRef = useRef(recording);
 	recordingRef.current = recording;
 	useEffect(
@@ -231,6 +228,11 @@ export function LaunchWindow() {
 	const handlePickOnScreen = useCallback(
 		async (mode: CapturePickerMode) => {
 			if (recording || finalizing) return;
+			// Clicking the selected mode again turns it off.
+			if (pickerPending.current && requestedMode.current === mode) {
+				window.electronAPI.cancelCapturePicker();
+				return;
+			}
 			// The picker is open or opening: switch it to this mode in place. Until it is
 			// open, the mode it opens with is read from requestedMode.
 			requestedMode.current = mode;
@@ -438,9 +440,10 @@ export function LaunchWindow() {
 						disabled={!sourceReady}
 						onClick={() => void handlePickOnScreen(mode)}
 					>
+						{/* Sways while the picker waits for a display, window or area. */}
 						<Icon
-							className={`${styles.largeIcon}${mode === "window" && pickerOnWindow ? " hover-sway" : ""}`}
-							style={mode === "window" && pickerOnWindow ? swayPhase() : undefined}
+							className={`${styles.largeIcon}${pickerMode === mode ? " hover-sway" : ""}`}
+							style={pickerMode === mode ? swayPhase() : undefined}
 						/>
 						<span>{label}</span>
 					</button>

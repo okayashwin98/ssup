@@ -87,7 +87,11 @@ function loadRendererWindow(win: BrowserWindow, windowType: string) {
 // itself is left square.
 const GLASS_CORNER_RADIUS = 16;
 
-type LiquidGlass = { addGlass: (handle: Buffer, cornerRadius: number) => boolean };
+export type GlassRect = { x: number; y: number; width: number; height: number; radius: number };
+type LiquidGlass = {
+	addGlass: (handle: Buffer, cornerRadius: number) => boolean;
+	setGlassRects: (handle: Buffer, rects: GlassRect[]) => boolean;
+};
 let liquidGlass: LiquidGlass | null | undefined;
 
 /** Apple's Liquid Glass add-on (macOS 26+), or null where it can't be used. */
@@ -104,6 +108,23 @@ function requireLiquidGlass(): LiquidGlass | null {
 	} catch (error) {
 		console.warn("[liquid-glass] Unavailable; the bars keep their frosted look:", error);
 		return null;
+	}
+}
+
+/** Whether Liquid Glass can be used on this Mac. */
+export function liquidGlassAvailable(): boolean {
+	return loadLiquidGlass() !== null;
+}
+
+/** Puts Liquid Glass under only these parts of a window (top-left points); [] removes it. */
+export function setWindowGlassRects(win: BrowserWindow, rects: GlassRect[]): boolean {
+	const glass = loadLiquidGlass();
+	if (!glass || win.isDestroyed()) return false;
+	try {
+		return glass.setGlassRects(win.getNativeWindowHandle(), rects);
+	} catch (error) {
+		console.warn("[liquid-glass] Could not place glass:", error);
+		return false;
 	}
 }
 
@@ -496,9 +517,9 @@ export function registerHudCompactWindowIpc(options: {
 		(event, phase: unknown, screenX: unknown, screenY: unknown) => {
 			const win = getRecordingControlsWindow();
 			if (!win || BrowserWindow.fromWebContents(event.sender) !== win) return;
-			const x = Number(screenX);
-			const y = Number(screenY);
-			if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+			if (!Number.isFinite(Number(screenX)) || !Number.isFinite(Number(screenY))) return;
+			// The system's cursor, not the page's coordinates, which lag behind a moving window.
+			const { x, y } = getScreen().getCursorScreenPoint();
 			if (phase === "start") {
 				const bounds = win.getBounds();
 				recordingBarDrag = { x: x - bounds.x, y: y - bounds.y };

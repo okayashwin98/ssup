@@ -41,6 +41,11 @@ export function SlidingHighlight() {
 			const button = (event.target as HTMLElement).closest("button");
 			if (!button || !bar.contains(button) || button.disabled) return;
 			cancelLeave();
+			// The selected mode, and a button with a hover look of its own, take no fill.
+			if (button.hasAttribute("data-active") || button.hasAttribute("data-own-hover")) {
+				hide();
+				return;
+			}
 			const box = bar.getBoundingClientRect();
 			const rect = button.getBoundingClientRect();
 			const transform = `translate(${rect.left - box.left}px, ${rect.top - box.top}px)`;

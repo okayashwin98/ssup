@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { type BrowserWindow, desktopCapturer, ipcMain } from "electron";
+import { BrowserWindow, desktopCapturer, ipcMain } from "electron";
+import { type GlassRect, liquidGlassAvailable, setWindowGlassRects } from "../../hudCompactWindows";
 import type { SourceListPickResult } from "../../sourceListPicker";
 import {
 	closeCapturePickerWindows,
@@ -164,21 +165,27 @@ export function registerCapturePickerHandlers({
 	const isHudSender = (sender: Electron.WebContents) =>
 		getHudOverlayWindow()?.webContents === sender;
 
-	// Picker windows whose pointer is over a window; the bar's Window icon moves while
-	// any of them is.
-	const hoveringWindow = new Set<number>();
-	let barHover = false;
-	const broadcastWindowHover = () => {
-		const hovering = hoveringWindow.size > 0;
-		if (hovering === barHover) return;
-		barHover = hovering;
-		getHudOverlayWindow()?.webContents.send("capture-picker-window-hover", hovering);
-	};
-	ipcMain.on("capture-picker-window-hover", (event, hovering: unknown) => {
-		if (!isCapturePickerWebContents(event.sender)) return;
-		if (hovering === true) hoveringWindow.add(event.sender.id);
-		else hoveringWindow.delete(event.sender.id);
-		broadcastWindowHover();
+	// Liquid Glass under the picker's own buttons, e.g. Resize and Adjust recording area.
+	ipcMain.on("capture-picker-has-glass", (event) => {
+		event.returnValue = isCapturePickerWebContents(event.sender) && liquidGlassAvailable();
+	});
+	ipcMain.on("capture-picker-glass-rects", (event, rects: unknown) => {
+		if (!isCapturePickerWebContents(event.sender) || !Array.isArray(rects)) return;
+		const win = BrowserWindow.fromWebContents(event.sender);
+		if (!win) return;
+		const clean: GlassRect[] = rects
+			.slice(0, 8)
+			.map((rect) => ({
+				x: Number(rect?.x),
+				y: Number(rect?.y),
+				width: Number(rect?.width),
+				height: Number(rect?.height),
+				radius: Number(rect?.radius) || 0,
+			}))
+			.filter((rect) =>
+				[rect.x, rect.y, rect.width, rect.height].every((value) => Number.isFinite(value)),
+			);
+		setWindowGlassRects(win, clean);
 	});
 
 	let activePick: Promise<unknown> | null = null;
@@ -223,8 +230,6 @@ export function registerCapturePickerHandlers({
 		});
 		closeCapturePickerWindows();
 		pickerWindows = [];
-		hoveringWindow.clear();
-		broadcastWindowHover();
 		if (!pick || isCursorCaptureActive) {
 			return { success: false, canceled: true };
 		}
@@ -284,8 +289,6 @@ export function registerCapturePickerHandlers({
 					finishPick(null);
 					closeCapturePickerWindows();
 					pickerWindows = [];
-					hoveringWindow.clear();
-					broadcastWindowHover();
 					return {
 						success: false,
 						message:
