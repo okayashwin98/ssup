@@ -126,7 +126,7 @@ test("header breadcrumb fits long names, native chrome and compact windows", asy
 	await expect(page.getByRole("button", { name: "Rename project" })).toBeVisible();
 });
 
-test("header name edits in place and saves on blur without a boxed input", async ({ page }) => {
+test("header name edits in place as a rounded field and saves on blur", async ({ page }) => {
 	await installDesktopBridge(page);
 	await page.addInitScript(() => {
 		window.electronAPI.saveProjectFileNamed = async (_data, name) => ({
@@ -140,8 +140,13 @@ test("header name edits in place and saves on blur without a boxed input", async
 	);
 	await page.getByRole("button", { name: "Rename project" }).click();
 	const input = page.getByRole("textbox", { name: "Project name" });
-	await expect(input).toHaveCSS("box-shadow", "none");
+	// A soft fill, the app's field corner and an accent ring, with no hard border.
 	await expect(input).toHaveCSS("border-top-width", "0px");
+	await expect(input).toHaveCSS("border-top-left-radius", "12px");
+	await expect(input).toHaveCSS("box-shadow", /2px/);
+	expect(await input.evaluate((element) => getComputedStyle(element).backgroundColor)).not.toBe(
+		"rgba(0, 0, 0, 0)",
+	);
 	await input.fill("Launch demo");
 	await input.press("Tab");
 	await expect(page.getByRole("button", { name: "Rename project" })).toContainText("Launch demo");

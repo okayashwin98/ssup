@@ -56,7 +56,7 @@ test("seeking on the timeline keeps playing, a paused preview stays paused, and 
 	const clipRow = page.locator('[data-timeline-row="row-clip"]');
 	const box = (await clipRow.boundingBox())!;
 	const seekTo = async (fraction: number) =>
-		page.mouse.click(box.x + 40 + (box.width - 50) * fraction, box.y - 8);
+		page.mouse.click(box.x + 4 + (box.width - 8) * fraction, box.y - 8);
 
 	await play.click();
 	await expect(pause).toBeVisible();

@@ -1,7 +1,8 @@
 import { type RefObject, useCallback, useEffect, useRef } from "react";
 
-// A seek during playback pauses, and playing resumes once seeks stop for this long, so
-// dragging the playhead scrubs smoothly instead of restarting the video on every move.
+// A single seek during playback just carries on from the new spot. Seeks closer together
+// than this (dragging the playhead) pause, and playing resumes once they stop, so a drag
+// scrubs smoothly instead of restarting the video on every move.
 const RESUME_AFTER_SEEK_MS = 150;
 import type { TimelineEditorHandle } from "../timeline/TimelineEditor";
 import type { VideoPlaybackRef } from "../VideoPlayback";
@@ -23,6 +24,7 @@ export function useEditorPlaybackControls({
 }: UseEditorPlaybackControlsParams) {
 	const getActivePlayback = useCallback(() => videoPlaybackRef.current, [videoPlaybackRef]);
 	const resumeTimer = useRef<number | null>(null);
+	const lastSeekAt = useRef(Number.NEGATIVE_INFINITY);
 	const cancelResume = useCallback(() => {
 		if (resumeTimer.current !== null) window.clearTimeout(resumeTimer.current);
 		resumeTimer.current = null;
@@ -42,9 +44,10 @@ export function useEditorPlaybackControls({
 		const video = playback?.video;
 		if (!playback || !video) return;
 
-		// Waiting to resume after a seek counts as playing.
+		// Paused mid-drag, the button shows Play: pressing it plays now.
 		if (resumeTimer.current !== null) {
 			cancelResume();
+			startPlayback();
 			return;
 		}
 		if (playback.isPlaying) playback.pause();
@@ -67,9 +70,15 @@ export function useEditorPlaybackControls({
 	const handleTimelineSeek = useCallback(
 		(time: number) => {
 			const playback = getActivePlayback();
-			const wasPlaying = Boolean(playback?.isPlaying) || resumeTimer.current !== null;
-			handleSeek(time, { pause: wasPlaying });
-			if (!wasPlaying) return;
+			const playing = Boolean(playback?.isPlaying) || resumeTimer.current !== null;
+			const now = performance.now();
+			const dragging = now - lastSeekAt.current < RESUME_AFTER_SEEK_MS;
+			lastSeekAt.current = now;
+			if (!playing || (!dragging && resumeTimer.current === null)) {
+				handleSeek(time);
+				return;
+			}
+			handleSeek(time, { pause: true });
 			cancelResume();
 			resumeTimer.current = window.setTimeout(() => {
 				resumeTimer.current = null;

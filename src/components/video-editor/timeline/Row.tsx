@@ -55,8 +55,6 @@ export default function Row({
 
 	return (
 		<div
-			data-timeline-row={id}
-			data-layer-off={on ? undefined : ""}
 			className="bg-transparent relative"
 			style={{
 				...rowWrapperStyle,
@@ -115,6 +113,9 @@ export default function Row({
 			</div>
 			<div
 				ref={setNodeRef}
+				// The row's blocks; the icon column sits before it.
+				data-timeline-row={id}
+				data-layer-off={on ? undefined : ""}
 				// Items set their own pointer-events, so inert is what stops drags and resizes.
 				// Only the blocks: the row's icon stays clickable to turn it back on.
 				inert={disabled}
