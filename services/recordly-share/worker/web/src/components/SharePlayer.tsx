@@ -23,8 +23,11 @@ import {
   FastForwardIcon,
   RewindIcon,
   ChatCircleIcon,
+  GearSixIcon,
+  ClockCounterClockwiseIcon,
+  ClockClockwiseIcon,
 } from '@phosphor-icons/react';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import type { Comment, Reaction, ShareData } from '../scripts/api';
 import { formatDate, formatTimestamp } from '../scripts/api';
 
@@ -48,6 +51,42 @@ interface Props {
   onTime: (time: number) => void;
   onDuration: (duration: number) => void;
   seek: (time: number) => void;
+}
+
+const SPEEDS = [0.5, 1, 1.25, 1.5, 2];
+
+/** The playback speed menu: the "1.5×" button on desktop, a gear on phones. */
+function SpeedMenu({
+  speed,
+  onSpeed,
+  onOpenChange,
+  trigger,
+}: {
+  speed: number;
+  onSpeed: (rate: number) => void;
+  onOpenChange: (open: boolean) => void;
+  trigger: ReactNode;
+}) {
+  return (
+    <Dropdown onOpenChange={onOpenChange}>
+      {trigger}
+      <Dropdown.Popover className="speed-menu">
+        <Dropdown.Menu
+          aria-label="Playback speed"
+          selectionMode="single"
+          selectedKeys={new Set([String(speed)])}
+          onAction={(key) => onSpeed(Number(key))}
+        >
+          {SPEEDS.map((rate) => (
+            <Dropdown.Item key={rate} id={String(rate)} textValue={`${rate}×`}>
+              <Label>{rate}×</Label>
+              <Dropdown.ItemIndicator />
+            </Dropdown.Item>
+          ))}
+        </Dropdown.Menu>
+      </Dropdown.Popover>
+    </Dropdown>
+  );
 }
 
 export default function SharePlayer({
@@ -151,6 +190,12 @@ export default function SharePlayer({
         toast.danger('Playback could not start. Try again.');
       }
   }, [videoRef]);
+  const setRate = useCallback(
+    (rate: number) => {
+      if (videoRef.current) videoRef.current.playbackRate = rate;
+    },
+    [videoRef],
+  );
   const toggleMute = useCallback(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -300,15 +345,24 @@ export default function SharePlayer({
             <track kind="captions" src={`/vtt/${data.shareCode}`} srcLang="en" label="English" />
           )}
         </video>
-        {!started && !error && (
+        {/* The title cover shows before the first play, and again at the end with a replay
+            button in place of play. */}
+        {((!started && !error) || (ended && !error && !cta)) && (
           <button
             type="button"
             className="video-cover"
-            aria-label={`Play ${data.video.title}`}
-            onClick={() => void togglePlay()}
+            aria-label={`${ended ? 'Replay' : 'Play'} ${data.video.title}`}
+            onClick={() => {
+              if (ended) seek(0);
+              void togglePlay();
+            }}
           >
             <span className="video-cover-play" aria-hidden="true">
-              <PlayIcon size={44} weight="fill" />
+              {ended ? (
+                <ArrowCounterClockwiseIcon size={40} weight="bold" />
+              ) : (
+                <PlayIcon size={44} weight="fill" />
+              )}
             </span>
             <span className="video-cover-text">
               <span className="video-cover-title">{data.video.title}</span>
@@ -339,19 +393,6 @@ export default function SharePlayer({
           </button>
         )}
         </div>
-        {/* Pausing draws nothing over the video; only the end offers a replay. */}
-        {ended && !error && !cta && (
-          <div className="video-play-overlay">
-            <Button
-              isIconOnly
-              size="lg"
-              aria-label="Replay recording"
-              onPress={() => void togglePlay()}
-            >
-              <ArrowCounterClockwiseIcon size={24} />
-            </Button>
-          </div>
-        )}
         {waiting && playing && (
           <div className="video-play-overlay">
             <Spinner aria-label="Buffering video" />
@@ -407,6 +448,44 @@ export default function SharePlayer({
           </div>
         )}
       </div>
+      {/* Phones: big controls in the middle of the video, like a phone's own player. */}
+      {started && !ended && !error && (
+        <div className="touch-controls">
+          <div className="touch-controls-row">
+            <SpeedMenu
+              speed={speed}
+              onSpeed={setRate}
+              onOpenChange={setMenuOpen}
+              trigger={
+                <Button isIconOnly variant="ghost" aria-label={`Playback speed: ${speed}×`}>
+                  <GearSixIcon size={26} />
+                </Button>
+              }
+            />
+            <Button isIconOnly variant="ghost" aria-label="Back 5 seconds" onPress={() => seek(time - 5)}>
+              <ClockCounterClockwiseIcon size={28} />
+            </Button>
+            <Button
+              isIconOnly
+              variant="ghost"
+              className="touch-play"
+              aria-label={playing ? 'Pause' : 'Play'}
+              onPress={() => void togglePlay()}
+            >
+              {playing ? <PauseIcon size={34} weight="fill" /> : <PlayIcon size={34} weight="fill" />}
+            </Button>
+            <Button isIconOnly variant="ghost" aria-label="Forward 5 seconds" onPress={() => seek(time + 5)}>
+              <ClockClockwiseIcon size={28} />
+            </Button>
+            <Button isIconOnly variant="ghost" aria-label="Fullscreen" onPress={() => void fullscreen()}>
+              <ArrowsOutIcon size={26} />
+            </Button>
+          </div>
+          <span className="touch-time">
+            {formatTimestamp(time)} / {formatTimestamp(duration)}
+          </span>
+        </div>
+      )}
       <div className="video-toolbar">
         <div ref={markers} className="timeline-markers" aria-label="Comments and reactions on the timeline">
           {clusterTimeline([
@@ -520,28 +599,16 @@ export default function SharePlayer({
               <ClosedCaptioningIcon size={18} />
             </Button>
           )}
-          <Dropdown onOpenChange={setMenuOpen}>
-            <Button size="sm" variant="ghost" aria-label={`Playback speed: ${speed}×`}>
-              {speed}×
-            </Button>
-            <Dropdown.Popover className="speed-menu">
-              <Dropdown.Menu
-                aria-label="Playback speed"
-                selectionMode="single"
-                selectedKeys={new Set([String(speed)])}
-                onAction={(key) => {
-                  if (videoRef.current) videoRef.current.playbackRate = Number(key);
-                }}
-              >
-                {[0.5, 1, 1.25, 1.5, 2].map((rate) => (
-                  <Dropdown.Item key={rate} id={String(rate)} textValue={`${rate}×`}>
-                    <Label>{rate}×</Label>
-                    <Dropdown.ItemIndicator />
-                  </Dropdown.Item>
-                ))}
-              </Dropdown.Menu>
-            </Dropdown.Popover>
-          </Dropdown>
+          <SpeedMenu
+            speed={speed}
+            onSpeed={setRate}
+            onOpenChange={setMenuOpen}
+            trigger={
+              <Button size="sm" variant="ghost" aria-label={`Playback speed: ${speed}×`}>
+                {speed}×
+              </Button>
+            }
+          />
           {pip && (
             <Button
               isIconOnly

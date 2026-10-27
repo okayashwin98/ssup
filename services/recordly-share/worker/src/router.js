@@ -3,7 +3,7 @@
 
 import { handleHostedRecording, limitedJson } from "./hostedUploads.js";
 import { ensureSchema } from "./schema.js";
-import { handleProfileAvatar, handleProfileUpdate } from "./profile.js";
+import { handleFavicon, handleProfileAvatar, handleProfileUpdate } from "./profile.js";
 import {
 	commentViewer,
 	handleCommentLogin,
@@ -134,6 +134,9 @@ export async function handleRequest(request, env) {
 	// Owner photo shown on share pages (public)
 	if (path === "/profile/avatar" && request.method === "GET") {
 		return handleProfileAvatar(env);
+	}
+	if (path === "/favicon" && request.method === "GET") {
+		return handleFavicon(request, env);
 	}
 
 	// Library login page (public)

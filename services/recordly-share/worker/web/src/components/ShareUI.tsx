@@ -50,9 +50,15 @@ export async function copyLink(time = 0, code?: string) {
 
 export function CopyButton({ time = 0, code }: { time?: number; code?: string }) {
 	return (
-		<Button size="sm" variant="secondary" onPress={() => void copyLink(time, code)}>
+		<Button
+			size="sm"
+			variant="secondary"
+			aria-label="Copy link"
+			onPress={() => void copyLink(time, code)}
+		>
 			<LinkSimpleIcon size={16} />
-			Copy link
+			{/* Phones show the icon alone. */}
+			<span className="copy-link-label">Copy link</span>
 		</Button>
 	);
 }

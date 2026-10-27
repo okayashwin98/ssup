@@ -197,6 +197,10 @@ describe('owner profile', () => {
     const avatar = await SELF.fetch(`${BASE}/profile/avatar`);
     expect(avatar.status).toBe(200);
     expect(avatar.headers.get('content-type')).toBe('image/png');
+    // The browser-tab icon is the owner's photo while one is set.
+    const favicon = await SELF.fetch(`${BASE}/favicon`);
+    expect(favicon.status).toBe(200);
+    expect(favicon.headers.get('content-type')).toBe('image/png');
     const code = await createAndCompleteShare({ title: 'Profile Test' });
     const data = await (await SELF.fetch(`${BASE}/s/${code}/data`)).json();
     expect(data.creator.name).toBe('Jane Doe');
@@ -207,5 +211,9 @@ describe('owner profile', () => {
       body: JSON.stringify({ name: 'Jane Doe', avatarDataUrl: null }),
     });
     expect((await SELF.fetch(`${BASE}/profile/avatar`)).status).toBe(404);
+    // Without a photo the tab icon falls back to the app icon.
+    const fallback = await SELF.fetch(`${BASE}/favicon`);
+    expect(fallback.status).toBe(200);
+    expect(fallback.headers.get('content-type')).toContain('image/png');
   });
 });

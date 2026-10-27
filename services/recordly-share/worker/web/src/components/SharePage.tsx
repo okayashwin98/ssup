@@ -28,6 +28,25 @@ const reactions = [
 	{ emoji: "👏", label: "Applause" },
 ];
 
+/** The owner's photo, or their initials until one is set. */
+function CreatorAvatar({ creator }: { creator: ShareData["creator"] }) {
+	if (creator?.avatarUrl)
+		return <img className="viewer-avatar" src={creator.avatarUrl} alt="" />;
+	if (!creator?.name) return null;
+	const initials = creator.name
+		.split(/\s+/)
+		.filter(Boolean)
+		.slice(0, 2)
+		.map((part) => part[0])
+		.join("")
+		.toUpperCase();
+	return (
+		<span className="viewer-avatar viewer-avatar-initials" aria-hidden="true">
+			{initials}
+		</span>
+	);
+}
+
 function Recording({ data }: { data: ShareData }) {
 	const videoRef = useRef<HTMLVideoElement>(null);
 	const composerRef = useRef<HTMLTextAreaElement>(null);
@@ -95,6 +114,7 @@ function Recording({ data }: { data: ShareData }) {
 			<div className="share-workspace">
 				<main className="recording-column">
 					<div className="recording-heading viewer-heading">
+						<CreatorAvatar creator={data.creator} />
 						<h1 className="viewer-crumb" title={video.title}>
 							{data.creator?.name && (
 								<span className="viewer-crumb-owner">{data.creator.name} / </span>

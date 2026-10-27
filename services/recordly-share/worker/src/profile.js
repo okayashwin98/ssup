@@ -46,6 +46,19 @@ export async function handleProfileUpdate(request, env) {
 	return jsonResponse({ ok: true, avatarUpdatedAt });
 }
 
+/** The browser-tab icon: the owner's photo, or the app icon until one is set. */
+export async function handleFavicon(request, env) {
+	const avatar = await env.VIDEOS_BUCKET.get(AVATAR_KEY);
+	if (!avatar) return env.ASSETS.fetch(new Request(new URL("/icon-64.png", request.url), request));
+	return new Response(avatar.body, {
+		headers: {
+			"Content-Type": avatar.httpMetadata?.contentType || "image/jpeg",
+			// One address for every photo, so browsers check back within the hour.
+			"Cache-Control": "public, max-age=3600",
+		},
+	});
+}
+
 export async function handleProfileAvatar(env) {
 	const avatar = await env.VIDEOS_BUCKET.get(AVATAR_KEY);
 	if (!avatar) return new Response("Not found", { status: 404 });
