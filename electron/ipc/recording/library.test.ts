@@ -335,3 +335,23 @@ it("Raw includes camera and audio sources without including metadata or symlinks
  expect((await listRecordings(true)).map(entry => entry.name).sort()).toEqual(files.sort());
  expect((await listRecordings()).map(entry => entry.name)).toEqual(["screen.mp4"]);
 });
+
+it("Raw lists only the media in a project folder, never its project file, backups or preview", async () => {
+	const folder = path.join(state.root, "Demo");
+	await fs.mkdir(folder);
+	const media = ["recording-1.mp4", "recording-1.mic.m4a", "recording-1-webcam.mp4"];
+	for (const name of [
+		...media,
+		"recording-1.mp4.cursor.json",
+		"recording-1.recordly-session.json",
+		"Demo.ssup",
+		"Demo.ssup.bak",
+		"Demo.ssup.bak.bak",
+		"Demo.ssup.preview.png",
+		".recordly-project-1-x.tmp",
+	])
+		await fs.writeFile(path.join(folder, name), "fixture");
+	const listed = await listRecordings(true);
+	expect(listed.map((entry) => entry.name).sort()).toEqual(media.sort());
+	expect(new Set(listed.map((entry) => entry.folder))).toEqual(new Set(["Demo"]));
+});

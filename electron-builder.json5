@@ -85,7 +85,7 @@
         {
           "CFBundleTypeName": "SuperShare Project",
           "CFBundleTypeRole": "Editor",
-          "CFBundleTypeExtensions": ["recordly"],
+          "CFBundleTypeExtensions": ["ssup", "recordly"],
           "CFBundleTypeIconFile": "icon.icns",
           "LSHandlerRank": "Owner",
           "LSItemContentTypes": ["com.supershare.app.project"]
@@ -97,7 +97,7 @@
           "UTTypeDescription": "SuperShare Project",
           "UTTypeConformsTo": ["public.json"],
           "UTTypeTagSpecification": {
-            "public.filename-extension": ["recordly"],
+            "public.filename-extension": ["ssup", "recordly"],
             "public.mime-type": "application/x-recordly-project"
           }
         }

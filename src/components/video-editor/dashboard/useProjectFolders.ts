@@ -5,7 +5,8 @@ export type ProjectFolder = { id: string; name: string; color: string; paths: st
 const KEY = "recordly.project-folders.v1";
 export function moveProjectFolderReferences(previous: string, next: string) {
 	const folders = JSON.parse(localStorage.getItem(KEY) || "[]") as ProjectFolder[];
-	if (!Array.isArray(folders)) return;
+	if (!Array.isArray(folders) || !folders.some((folder) => folder.paths?.includes(previous)))
+		return;
 	const updated = folders.map((folder) => ({
 		...folder,
 		paths: folder.paths.map((path) => (path === previous ? next : path)),

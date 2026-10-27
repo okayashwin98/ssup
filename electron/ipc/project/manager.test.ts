@@ -59,8 +59,9 @@ describe("local media path policy", () => {
 		const state = await import("../state");
 		const source = path.join(tempRoot, "video.mp4");
 		await fs.writeFile(source, "video");
-		const projectsDir = await manager.getProjectsDir();
-		const projectPath = path.join(projectsDir, "preview.recordly");
+		const { getRecordingsDir } = await import("../utils");
+		const projectPath = path.join(await getRecordingsDir(), "preview", "preview.ssup");
+		await fs.mkdir(path.dirname(projectPath), { recursive: true });
 		await fs.writeFile(
 			projectPath,
 			JSON.stringify({ version: 1, videoPath: source, editor: {} }),
@@ -75,6 +76,49 @@ describe("local media path policy", () => {
 		await expect(
 			manager.readProjectPreview(path.join(tempRoot, "unknown.recordly")),
 		).rejects.toThrow("not in the library");
+	});
+
+	it("lists projects in their own folders, ones left in Projects, and recent files elsewhere", async () => {
+		vi.doMock("./firstFrameThumbnail", () => ({
+			createProjectFirstFrameThumbnail: vi.fn().mockResolvedValue(Buffer.from("poster")),
+		}));
+		const manager = await import("./manager");
+		const { getRecordingsDir } = await import("../utils");
+		const recordings = await getRecordingsDir();
+		const source = path.join(tempRoot, "video.mp4");
+		await fs.writeFile(source, "video");
+		const project = JSON.stringify({ version: 2, videoPath: source, editor: {} });
+		const inFolder = path.join(recordings, "Demo", "Demo.ssup");
+		const legacy = path.join(recordings, "Projects", "Old.recordly");
+		const elsewhere = path.join(tempRoot, "Desktop", "Loose.recordly");
+		for (const file of [inFolder, legacy, elsewhere]) {
+			await fs.mkdir(path.dirname(file), { recursive: true });
+			await fs.writeFile(file, project);
+		}
+		// Backups and recordings beside a project are not projects.
+		await fs.writeFile(`${inFolder}.bak`, project);
+		await fs.writeFile(path.join(recordings, "Demo", "recording-1.mp4"), "video");
+		await fs.writeFile(path.join(recordings, "Loose.ssup"), project);
+		await fs.mkdir(path.join(recordings, ".hidden"));
+		await fs.writeFile(path.join(recordings, ".hidden", "Hidden.ssup"), project);
+		await manager.saveRecentProjectPaths([elsewhere]);
+
+		const ready = vi.fn();
+		const { entries } = await manager.listProjectLibraryEntries(ready);
+		// Let the background previews finish before the folder is removed.
+		await vi.waitFor(() => expect(ready).toHaveBeenCalledTimes(3));
+
+		expect(
+			entries
+				.map((entry) => [entry.path, entry.name, entry.isInProjectsDirectory])
+				.sort((a, b) => String(a[0]).localeCompare(String(b[0]))),
+		).toEqual(
+			[
+				[inFolder, "Demo", true],
+				[legacy, "Old", true],
+				[elsewhere, "Loose", false],
+			].sort((a, b) => String(a[0]).localeCompare(String(b[0]))),
+		);
 	});
 
 	it("rejects existing media files outside allowed directories until they are approved", async () => {

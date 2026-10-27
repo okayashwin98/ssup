@@ -100,7 +100,7 @@ export function EditorDialogs({
 							<DialogDescription className="text-muted-foreground">
 								{t(
 									"editor.project.saveDescription",
-									"Name this project. It will be saved in your SuperShare Projects folder.",
+									"Name this project. It will be saved in its own folder in your recordings folder.",
 								)}
 							</DialogDescription>
 						</DialogHeader>
@@ -120,7 +120,7 @@ export function EditorDialogs({
 									aria-label={t("editor.project.saveNameLabel", "Project name")}
 								/>
 								<span className="shrink-0 px-3 text-xs font-medium text-muted-foreground/70">
-									.recordly
+									.ssup
 								</span>
 							</Card>
 						</div>

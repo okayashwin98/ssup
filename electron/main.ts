@@ -65,12 +65,18 @@ import {
 } from "./windows";
 import { getWebcamBubbleWindow, revealRecordingControls } from "./hudCompactWindows";
 import { writeProjectFileAtomically } from "./ipc/project/atomicSave";
-import { getProjectsDir, loadRecentProjectPaths } from "./ipc/project/manager";
-import { reconcileProjectFolder } from "./ipc/project/projectMedia";
+import { loadRecentProjectPaths } from "./ipc/project/manager";
+import { listLibraryProjectFiles, reconcileProjectFolder } from "./ipc/project/projectMedia";
 import {
 	migrateRecordingsIntoProjectFolders,
 	trashOrphanRecordings,
 } from "./ipc/project/migrateProjectFolders";
+import { migrateProjectFilesIntoFolders } from "./ipc/project/migrateProjectFiles";
+import {
+	PROJECT_PATH_MOVES_FILE,
+	PROJECTS_DIRECTORY_NAME,
+	RECENT_PROJECTS_FILE,
+} from "./ipc/constants";
 import { getRecordingsDir } from "./ipc/utils";
 
 const electronMainDir = path.dirname(fileURLToPath(import.meta.url));
@@ -932,9 +938,9 @@ app.on("second-instance", (_event, commandLine) => {
 // Register all IPC handlers when app is ready
 async function migrateProjectFolders() {
 	const recordingsDir = await getRecordingsDir();
-	const projectsDir = await getProjectsDir();
+	const projectsDir = path.join(recordingsDir, PROJECTS_DIRECTORY_NAME);
 	const trash = (filePath: string) => shell.trashItem(filePath);
-	const recent = await loadRecentProjectPaths().catch(() => [] as string[]);
+	const folderHash = createHash("sha1").update(recordingsDir).digest("hex").slice(0, 8);
 	const result = await migrateRecordingsIntoProjectFolders({
 		recordingsDir,
 		projectsDir,
@@ -942,16 +948,28 @@ async function migrateProjectFolders() {
 		backupDir: path.join(
 			app.getPath("userData"),
 			"backups",
-			`recordings-before-folders-${createHash("sha1").update(recordingsDir).digest("hex").slice(0, 8)}`,
+			`recordings-before-folders-${folderHash}`,
 		),
 		trash,
 		write: writeProjectFileAtomically,
-		extraProjectFiles: recent,
+		extraProjectFiles: await loadRecentProjectPaths().catch(() => [] as string[]),
 	});
 	if (result) console.log("[project-folders] Migration:", JSON.stringify(result));
-	const projects = (await fs.readdir(projectsDir))
-		.filter((name) => name.endsWith(".recordly"))
-		.map((name) => path.join(projectsDir, name));
+	// One-time: project files move out of Projects/ into their own folders as .ssup.
+	const files = await migrateProjectFilesIntoFolders({
+		recordingsDir,
+		backupDir: path.join(
+			app.getPath("userData"),
+			"backups",
+			`projects-before-ssup-${folderHash}`,
+		),
+		recentProjectsFile: RECENT_PROJECTS_FILE,
+		movesFile: PROJECT_PATH_MOVES_FILE,
+		write: writeProjectFileAtomically,
+	});
+	if (files) console.log("[project-files] Migration:", JSON.stringify(files));
+	const recent = await loadRecentProjectPaths().catch(() => [] as string[]);
+	const projects = await listLibraryProjectFiles(recordingsDir);
 	// Nothing is open yet: file new recordings and folders renamed while their project was open.
 	for (const project of projects) {
 		await reconcileProjectFolder(
