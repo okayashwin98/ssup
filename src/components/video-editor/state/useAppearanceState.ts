@@ -63,6 +63,8 @@ export function useAppearanceState(preferences: EditorPreferences) {
 	const [loopCursor, setLoopCursor] = useState(preferences.loopCursor);
 	// Per project: off keeps the zoom regions but leaves them out of preview and export.
 	const [zoomsEnabled, setZoomsEnabled] = useState(true);
+	// Per project: timeline rows turned off from their icon.
+	const [hiddenTimelineLayers, setHiddenTimelineLayers] = useState<string[]>([]);
 	const [cursorStyle, setCursorStyle] = useState<CursorStyle>(
 		preferences.cursorStyle ?? DEFAULT_CURSOR_STYLE,
 	);
@@ -154,6 +156,8 @@ export function useAppearanceState(preferences: EditorPreferences) {
 		setLoopCursor,
 		zoomsEnabled,
 		setZoomsEnabled,
+		hiddenTimelineLayers,
+		setHiddenTimelineLayers,
 		cursorStyle,
 		setCursorStyle,
 		cursorSize,

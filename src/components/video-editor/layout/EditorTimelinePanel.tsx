@@ -1,7 +1,8 @@
-import type { RefObject } from "react";
-import { Switch } from "@/components/ui/switch";
+import { type RefObject, useMemo } from "react";
 import type { useVideoEditorAudio } from "../audio/useVideoEditorAudio";
 import { retimeCaptionFragment } from "../captionTimeline";
+import { TimelineLayerProvider, type TimelineRowLayer } from "../timeline/timelineLayerContext";
+import { isTimelineLayerOn, toggleTimelineLayer } from "../timeline/timelineLayers";
 import type { useAnnotationRegionCommands } from "../hooks/useAnnotationRegionCommands";
 import type { useAudioRegionCommands } from "../hooks/useAudioRegionCommands";
 import type { useCaptionCommands } from "../hooks/useCaptionCommands";
@@ -35,6 +36,8 @@ type Props = {
 	handleSelectAnnotation: (id: string | null) => void;
 	zoomsEnabled: boolean;
 	onZoomsEnabledChange: (enabled: boolean) => void;
+	hiddenTimelineLayers: string[];
+	onHiddenTimelineLayersChange: (layers: string[]) => void;
 };
 
 // While zooms are off the zoom track is read-only.
@@ -63,115 +66,131 @@ export function EditorTimelinePanel(props: Props) {
 		handleSelectAnnotation,
 		zoomsEnabled,
 		onZoomsEnabledChange,
+		hiddenTimelineLayers,
+		onHiddenTimelineLayersChange,
 	} = props;
+	// Each row's icon turns it on or off; zooms keep their project-wide switch.
+	const layers = useMemo(
+		() => ({
+			isOn: (id: TimelineRowLayer["id"]) =>
+				id === "zoom" ? zoomsEnabled : isTimelineLayerOn(hiddenTimelineLayers, id),
+			toggle: (id: TimelineRowLayer["id"]) => {
+				if (id === "zoom") {
+					if (zoomsEnabled) timeline.setSelectedZoomId(null);
+					onZoomsEnabledChange(!zoomsEnabled);
+				} else onHiddenTimelineLayersChange(toggleTimelineLayer(hiddenTimelineLayers, id));
+			},
+		}),
+		[
+			zoomsEnabled,
+			hiddenTimelineLayers,
+			onZoomsEnabledChange,
+			onHiddenTimelineLayersChange,
+			timeline.setSelectedZoomId,
+		],
+	);
 
 	return (
-		<div
-			ref={props.panelRef}
-			tabIndex={-1}
-			data-timeline-panel
-			className="outline-none flex flex-shrink-0 flex-col bg-transparent px-4 pb-4 pt-2"
-			style={{ height: "22%", minHeight: 180, maxHeight: 280 }}
-		>
-			<TimelineEditor
-				ref={timelineRef}
-				videoDuration={projection.timelineDuration}
-				currentTime={currentTime}
-				playheadTime={projection.timelinePlayheadTime}
-				onSeek={playback.handleTimelineSeek}
-				videoPath={videoPath}
-				videoSourcePath={videoSourcePath}
-				cursorTelemetrySourcePath={cursorTelemetrySourcePath}
-				cursorTelemetry={normalizedCursorTelemetry}
-				autoSuggestZoomsTrigger={autoSuggestZoomsTrigger}
-				onAutoSuggestZoomsConsumed={handleAutoSuggestZoomsConsumed}
-				disableSuggestedZooms={disableSuggestedZooms}
-				zoomRegions={timeline.zoomRegions}
-				zoomsDisabled={!zoomsEnabled}
-				onZoomAdded={zoomsEnabled ? zoomCommands.handleZoomAdded : ignoreZoomEdit}
-				onZoomSuggested={zoomsEnabled ? zoomCommands.handleZoomSuggested : ignoreZoomEdit}
-				onZoomSpanChange={zoomsEnabled ? zoomCommands.handleZoomSpanChange : ignoreZoomEdit}
-				onZoomDelete={zoomsEnabled ? zoomCommands.handleZoomDelete : ignoreZoomEdit}
-				selectedZoomId={zoomsEnabled ? timeline.selectedZoomId : null}
-				onSelectZoom={zoomsEnabled ? zoomCommands.handleSelectZoom : ignoreZoomEdit}
-				trimRegions={timeline.trimRegions}
-				clipRegions={timeline.clipRegions}
-				onClipSplit={clipCommands.handleClipSplit}
-				onClipDelete={clipCommands.handleClipDelete}
-				onClipSpanChange={clipCommands.handleClipSpanChange}
-				selectedClipId={timeline.selectedClipId}
-				onSelectClip={clipCommands.handleSelectClip}
-				audioRegions={timeline.audioRegions}
-				onAudioAdded={audioCommands.handleAudioAdded}
-				onAudioSpanChange={audioCommands.handleAudioSpanChange}
-				onAudioDelete={audioCommands.handleAudioDelete}
-				selectedAudioId={timeline.selectedAudioId}
-				onSelectAudio={audioCommands.handleSelectAudio}
-				captionRegions={projection.effectiveCaptionRegions}
-				onCaptionSpanChange={(id, span) => {
-					const fragment = projection.effectiveCaptionRegions.find(
-						(cue) => cue.id === id,
-					);
-					if (!fragment) return;
-					captionCommands.handleCaptionRetime(
-						fragment.sourceCueId,
-						retimeCaptionFragment(fragment, span),
-					);
-				}}
-				selectedCaptionId={
-					projection.effectiveCaptionRegions.find(
-						(cue) =>
-							cue.sourceCueId === timeline.selectedCaptionId &&
-							currentTime * 1000 >= cue.startMs &&
-							currentTime * 1000 < cue.endMs,
-					)?.id ??
-					projection.effectiveCaptionRegions.find(
-						(cue) => cue.sourceCueId === timeline.selectedCaptionId,
-					)?.id ??
-					null
-				}
-				onSelectCaption={(id) => {
-					const fragment = projection.effectiveCaptionRegions.find(
-						(cue) => cue.id === id,
-					);
-					captionCommands.handleSelectCaption(fragment?.sourceCueId ?? null);
-					if (fragment) playback.handleTimelineSeek(fragment.startMs / 1000);
-				}}
-				onCaptionDelete={(id) => {
-					const fragment = projection.effectiveCaptionRegions.find(
-						(cue) => cue.id === id,
-					);
-					if (fragment) captionCommands.handleCaptionDelete(fragment.sourceCueId);
-				}}
-				onCaptionAdded={captionCommands.handleCaptionAdded}
-				captionsEnabled={timeline.autoCaptionSettings.enabled}
-				captionQuickAddEnabled={timeline.autoCaptionSettings.timelineQuickAdd}
-				annotationRegions={timeline.annotationRegions}
-				onAnnotationAdded={annotationCommands.handleAnnotationAdded}
-				onAnnotationSpanChange={annotationCommands.handleAnnotationSpanChange}
-				onAnnotationDelete={annotationCommands.handleAnnotationDelete}
-				selectedAnnotationId={timeline.selectedAnnotationId}
-				onSelectAnnotation={handleSelectAnnotation}
-				showSourceAudioTrack={timeline.clipRegions.some((clip) => clip.showSourceAudio)}
-				sourceAudioResourceVersion={timeline.sourceAudioFallbackRefreshKey}
-				sourceAudioTrackSettings={audio.activeSourceAudioTrackSettings}
-				getSourceAudioTrackSettingsForClip={audio.getSourceAudioTrackSettingsForClip}
-				onSourceAudioAvailabilityChange={timeline.setHasClipSourceAudio}
-				onSourceAudioTracksMetaChange={audio.onSourceAudioTracksMetaChange}
-			/>
-			<div className="flex shrink-0 items-center pt-2">
-				<Switch
-					size="sm"
-					aria-label="Zooms"
-					checked={zoomsEnabled}
-					onCheckedChange={(enabled) => {
-						if (!enabled) timeline.setSelectedZoomId(null);
-						onZoomsEnabledChange(enabled);
+		<TimelineLayerProvider value={layers}>
+			<div
+				ref={props.panelRef}
+				tabIndex={-1}
+				data-timeline-panel
+				className="outline-none flex flex-shrink-0 flex-col bg-transparent px-4 pb-4 pt-2"
+				style={{ height: "22%", minHeight: 180, maxHeight: 280 }}
+			>
+				<TimelineEditor
+					ref={timelineRef}
+					videoDuration={projection.timelineDuration}
+					currentTime={currentTime}
+					playheadTime={projection.timelinePlayheadTime}
+					onSeek={playback.handleTimelineSeek}
+					videoPath={videoPath}
+					videoSourcePath={videoSourcePath}
+					cursorTelemetrySourcePath={cursorTelemetrySourcePath}
+					cursorTelemetry={normalizedCursorTelemetry}
+					autoSuggestZoomsTrigger={autoSuggestZoomsTrigger}
+					onAutoSuggestZoomsConsumed={handleAutoSuggestZoomsConsumed}
+					disableSuggestedZooms={disableSuggestedZooms}
+					zoomRegions={timeline.zoomRegions}
+					zoomsDisabled={!zoomsEnabled}
+					onZoomAdded={zoomsEnabled ? zoomCommands.handleZoomAdded : ignoreZoomEdit}
+					onZoomSuggested={
+						zoomsEnabled ? zoomCommands.handleZoomSuggested : ignoreZoomEdit
+					}
+					onZoomSpanChange={
+						zoomsEnabled ? zoomCommands.handleZoomSpanChange : ignoreZoomEdit
+					}
+					onZoomDelete={zoomsEnabled ? zoomCommands.handleZoomDelete : ignoreZoomEdit}
+					selectedZoomId={zoomsEnabled ? timeline.selectedZoomId : null}
+					onSelectZoom={zoomsEnabled ? zoomCommands.handleSelectZoom : ignoreZoomEdit}
+					trimRegions={timeline.trimRegions}
+					clipRegions={timeline.clipRegions}
+					onClipSplit={clipCommands.handleClipSplit}
+					onClipDelete={clipCommands.handleClipDelete}
+					onClipSpanChange={clipCommands.handleClipSpanChange}
+					selectedClipId={timeline.selectedClipId}
+					onSelectClip={clipCommands.handleSelectClip}
+					audioRegions={timeline.audioRegions}
+					onAudioAdded={audioCommands.handleAudioAdded}
+					onAudioSpanChange={audioCommands.handleAudioSpanChange}
+					onAudioDelete={audioCommands.handleAudioDelete}
+					selectedAudioId={timeline.selectedAudioId}
+					onSelectAudio={audioCommands.handleSelectAudio}
+					captionRegions={projection.effectiveCaptionRegions}
+					onCaptionSpanChange={(id, span) => {
+						const fragment = projection.effectiveCaptionRegions.find(
+							(cue) => cue.id === id,
+						);
+						if (!fragment) return;
+						captionCommands.handleCaptionRetime(
+							fragment.sourceCueId,
+							retimeCaptionFragment(fragment, span),
+						);
 					}}
-				>
-					<span className="text-xs text-muted-foreground">Zooms</span>
-				</Switch>
+					selectedCaptionId={
+						projection.effectiveCaptionRegions.find(
+							(cue) =>
+								cue.sourceCueId === timeline.selectedCaptionId &&
+								currentTime * 1000 >= cue.startMs &&
+								currentTime * 1000 < cue.endMs,
+						)?.id ??
+						projection.effectiveCaptionRegions.find(
+							(cue) => cue.sourceCueId === timeline.selectedCaptionId,
+						)?.id ??
+						null
+					}
+					onSelectCaption={(id) => {
+						const fragment = projection.effectiveCaptionRegions.find(
+							(cue) => cue.id === id,
+						);
+						captionCommands.handleSelectCaption(fragment?.sourceCueId ?? null);
+						if (fragment) playback.handleTimelineSeek(fragment.startMs / 1000);
+					}}
+					onCaptionDelete={(id) => {
+						const fragment = projection.effectiveCaptionRegions.find(
+							(cue) => cue.id === id,
+						);
+						if (fragment) captionCommands.handleCaptionDelete(fragment.sourceCueId);
+					}}
+					onCaptionAdded={captionCommands.handleCaptionAdded}
+					captionsEnabled={timeline.autoCaptionSettings.enabled}
+					captionQuickAddEnabled={timeline.autoCaptionSettings.timelineQuickAdd}
+					annotationRegions={timeline.annotationRegions}
+					onAnnotationAdded={annotationCommands.handleAnnotationAdded}
+					onAnnotationSpanChange={annotationCommands.handleAnnotationSpanChange}
+					onAnnotationDelete={annotationCommands.handleAnnotationDelete}
+					selectedAnnotationId={timeline.selectedAnnotationId}
+					onSelectAnnotation={handleSelectAnnotation}
+					// Recorded sound always has its rows on the timeline.
+					showSourceAudioTrack
+					sourceAudioResourceVersion={timeline.sourceAudioFallbackRefreshKey}
+					sourceAudioTrackSettings={audio.activeSourceAudioTrackSettings}
+					getSourceAudioTrackSettingsForClip={audio.getSourceAudioTrackSettingsForClip}
+					onSourceAudioAvailabilityChange={timeline.setHasClipSourceAudio}
+					onSourceAudioTracksMetaChange={audio.onSourceAudioTracksMetaChange}
+				/>
 			</div>
-		</div>
+		</TimelineLayerProvider>
 	);
 }

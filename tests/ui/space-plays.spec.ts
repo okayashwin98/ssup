@@ -28,11 +28,12 @@ test("Space plays and pauses even after using a slider or switch", async ({ page
 	await expect(play).toBeVisible();
 	await expect(blur).toHaveValue(blurValue);
 
-	const zooms = page.getByRole("switch", { name: "Zooms" });
-	await zooms.focus();
+	// A timeline row's on/off icon keeps focus but Space still plays.
+	const video = page.getByRole("button", { name: "Video", exact: true });
+	await video.focus();
 	await page.keyboard.press("Space");
 	await expect(pause).toBeVisible();
-	await expect(zooms).toBeChecked();
+	await expect(video).toHaveAttribute("aria-pressed", "true");
 	await page.keyboard.press("Space");
 	await expect(play).toBeVisible();
 });

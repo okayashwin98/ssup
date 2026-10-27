@@ -1,3 +1,4 @@
+import { normalizeHiddenTimelineLayers } from "./timeline/timelineLayers";
 import { getLocalMediaServerPath } from "@/lib/localMediaUrl";
 import type { SourceAudioTrackSettings } from "@/components/video-editor/audio/audioTypes";
 import { DEFAULT_WALLPAPER_PATH } from "@/lib/wallpapers";
@@ -99,6 +100,8 @@ export interface ProjectEditorState {
 	showCursor: boolean;
 	loopCursor: boolean;
 	zoomsEnabled: boolean;
+	/** Timeline rows turned off (see timeline/timelineLayers.ts). */
+	hiddenTimelineLayers: string[];
 	cursorStyle: CursorStyle;
 	cursorClickEffect: CursorClickEffectStyle;
 	cursorClickEffectColor: string;
@@ -852,6 +855,9 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 		showCursor: typeof editor.showCursor === "boolean" ? editor.showCursor : true,
 		loopCursor: typeof editor.loopCursor === "boolean" ? editor.loopCursor : false,
 		zoomsEnabled: typeof editor.zoomsEnabled === "boolean" ? editor.zoomsEnabled : true,
+		hiddenTimelineLayers: normalizeHiddenTimelineLayers(
+			(editor as Partial<ProjectEditorState>).hiddenTimelineLayers,
+		),
 		cursorStyle: normalizedCursorStyle,
 		cursorClickEffect: normalizeCursorClickEffectStyle(
 			(editor as Partial<ProjectEditorState>).cursorClickEffect,

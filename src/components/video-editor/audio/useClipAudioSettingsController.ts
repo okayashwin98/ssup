@@ -4,6 +4,7 @@ import {
 	type SourceAudioTrackSettings,
 } from "@/components/video-editor/audio/audioTypes";
 import { useSourceAudioTrackSettings } from "./useSourceAudioTrackSettings";
+import { withHiddenSourceTracksSilent } from "../timeline/timelineLayers";
 import { getSourceTrackIdFromPath } from "@/lib/exporter/audioRoutingEngine";
 
 interface UseClipAudioSettingsControllerParams {
@@ -17,7 +18,11 @@ interface UseClipAudioSettingsControllerParams {
 	setDefaultSourceAudioTrackSettings: React.Dispatch<
 		React.SetStateAction<SourceAudioTrackSettings>
 	>;
+	/** Timeline rows turned off; their source audio tracks play and export silent. */
+	hiddenTimelineLayers?: readonly string[];
 }
+
+const NO_HIDDEN_LAYERS: readonly string[] = [];
 
 export function useClipAudioSettingsController({
 	selectedClipId,
@@ -26,12 +31,13 @@ export function useClipAudioSettingsController({
 	setSourceAudioTrackSettingsByClip,
 	defaultSourceAudioTrackSettings,
 	setDefaultSourceAudioTrackSettings,
+	hiddenTimelineLayers = NO_HIDDEN_LAYERS,
 }: UseClipAudioSettingsControllerParams) {
 	const {
 		sourceAudioTrackMeta,
-		activeSourceAudioTrackSettings,
-		selectedClipSourceAudioTrackSettings,
-		getSourceAudioTrackSettingsForClip,
+		activeSourceAudioTrackSettings: savedActiveSettings,
+		selectedClipSourceAudioTrackSettings: savedSelectedSettings,
+		getSourceAudioTrackSettingsForClip: getSavedSettingsForClip,
 		onSourceAudioTracksMetaChange,
 		onSelectedClipSourceAudioTrackVolumeChange,
 		onSelectedClipSourceAudioTrackNormalizeChange,
@@ -43,6 +49,20 @@ export function useClipAudioSettingsController({
 		defaultSourceAudioTrackSettings,
 		setDefaultSourceAudioTrackSettings,
 	});
+
+	const activeSourceAudioTrackSettings = useMemo(
+		() => withHiddenSourceTracksSilent(savedActiveSettings, hiddenTimelineLayers),
+		[savedActiveSettings, hiddenTimelineLayers],
+	);
+	const selectedClipSourceAudioTrackSettings = useMemo(
+		() => withHiddenSourceTracksSilent(savedSelectedSettings, hiddenTimelineLayers),
+		[savedSelectedSettings, hiddenTimelineLayers],
+	);
+	const getSourceAudioTrackSettingsForClip = useCallback(
+		(clipId: string | null) =>
+			withHiddenSourceTracksSilent(getSavedSettingsForClip(clipId), hiddenTimelineLayers),
+		[getSavedSettingsForClip, hiddenTimelineLayers],
+	);
 
 	const previewSourceAudioTrackSettings = useMemo(
 		() =>

@@ -44,6 +44,7 @@ interface UseVideoEditorAudioParams {
 	sourceAudioFallbackRefreshKey?: number;
 	summarizeErrorMessage: (message: string) => string;
 	onSourceFallbackLoadError: (error: unknown) => void;
+	hiddenTimelineLayers?: readonly string[];
 }
 
 export function useVideoEditorAudio({
@@ -63,6 +64,7 @@ export function useVideoEditorAudio({
 	sourceAudioFallbackRefreshKey = 0,
 	summarizeErrorMessage,
 	onSourceFallbackLoadError,
+	hiddenTimelineLayers,
 }: UseVideoEditorAudioParams) {
 	const fallbackLookupSourcePath = useMemo(
 		() => extractLocalPathFromMediaServerUrl(currentSourcePath) ?? currentSourcePath,
@@ -111,6 +113,7 @@ export function useVideoEditorAudio({
 		setSourceAudioTrackSettingsByClip,
 		defaultSourceAudioTrackSettings,
 		setDefaultSourceAudioTrackSettings,
+		hiddenTimelineLayers,
 	});
 
 	const { playSourceAudioPreview } = useAudioPreviewSync({

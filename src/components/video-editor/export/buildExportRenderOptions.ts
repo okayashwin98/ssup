@@ -1,3 +1,4 @@
+import { isTimelineLayerOn, visibleTrackRegions } from "../timeline/timelineLayers";
 import type { ExportProgress } from "@/lib/exporter";
 import { toFileUrl } from "../projectPersistence";
 import type { useAppearanceState } from "../state/useAppearanceState";
@@ -37,7 +38,9 @@ export function buildExportRenderOptions({
 		wallpaper: appearance.wallpaper,
 		trimRegions: timeline.trimRegions,
 		speedRegions: effectiveSpeedRegions,
-		showShadow: shadowIntensity > 0,
+		// A video row turned off takes the recording and its shadow out of the picture.
+		showVideo: isTimelineLayerOn(appearance.hiddenTimelineLayers, "video"),
+		showShadow: shadowIntensity > 0 && isTimelineLayerOn(appearance.hiddenTimelineLayers, "video"),
 		shadowIntensity,
 		backgroundBlur: appearance.backgroundBlur,
 		zoomMotionBlur: appearance.zoomMotionBlur,
@@ -58,7 +61,11 @@ export function buildExportRenderOptions({
 		webcamUrl:
 			appearance.resolvedWebcamVideoUrl ??
 			(appearance.webcam.sourcePath ? toFileUrl(appearance.webcam.sourcePath) : null),
-		annotationRegions: timeline.annotationRegions,
+		annotationRegions: visibleTrackRegions(
+			timeline.annotationRegions,
+			appearance.hiddenTimelineLayers,
+			"annotation",
+		),
 		// Captions are never drawn into the picture: MP4s carry them as a
 		// subtitle track and share links as CC, so viewers can turn them off.
 		autoCaptions: [],

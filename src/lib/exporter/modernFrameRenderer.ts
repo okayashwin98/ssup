@@ -104,6 +104,8 @@ interface FrameRenderConfig {
 	wallpaper: string;
 	zoomRegions: ZoomRegion[];
 	showShadow: boolean;
+	/** False when the timeline's video row is off: the recording isn't drawn. */
+	showVideo?: boolean;
 	shadowIntensity: number;
 	backgroundBlur: number;
 	zoomMotionBlur?: number;
@@ -2986,6 +2988,7 @@ export class FrameRenderer {
 
 	private updateLayout(): void {
 		if (!this.app || !this.videoSprite || !this.videoMaskGraphics) return;
+		if (this.videoContainer) this.videoContainer.visible = this.config.showVideo !== false;
 
 		const {
 			width,

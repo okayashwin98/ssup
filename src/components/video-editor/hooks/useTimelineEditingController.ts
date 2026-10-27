@@ -1,5 +1,6 @@
+import { visibleTrackRegions } from "../timeline/timelineLayers";
 import type { Dispatch, MutableRefObject, RefObject, SetStateAction } from "react";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { toast } from "@/components/ui/toast";
 import type { useI18n } from "@/contexts/I18nContext";
 import type { useShortcuts } from "@/contexts/ShortcutsContext";
@@ -84,11 +85,18 @@ export function useTimelineEditingController(input: Input) {
 		autoFullTrackEndRef: input.autoFullTrackClipEndMsRef,
 		zoomsEnabled: input.appearance.zoomsEnabled,
 	});
+	const visibleAudioRegions = useMemo(
+		() =>
+			visibleTrackRegions(timeline.audioRegions, input.appearance.hiddenTimelineLayers, "audio"),
+		[timeline.audioRegions, input.appearance.hiddenTimelineLayers],
+	);
 	const audio = useVideoEditorAudio({
 		currentSourcePath: input.currentSourcePath,
 		selectedClipId: timeline.selectedClipId,
 		clipRegions: timeline.clipRegions,
-		audioRegions: timeline.audioRegions,
+		// Added audio on rows turned off doesn't play.
+		audioRegions: visibleAudioRegions,
+		hiddenTimelineLayers: input.appearance.hiddenTimelineLayers,
 		sourceAudioTrackSettingsByClip: timeline.sourceAudioTrackSettingsByClip,
 		setSourceAudioTrackSettingsByClip: timeline.setSourceAudioTrackSettingsByClip,
 		defaultSourceAudioTrackSettings: timeline.defaultSourceAudioTrackSettings,

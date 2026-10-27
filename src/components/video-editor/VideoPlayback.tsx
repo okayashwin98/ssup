@@ -242,6 +242,8 @@ interface VideoPlaybackProps {
 	onSelectZoom: (id: string | null) => void;
 	onZoomFocusChange: (id: string, focus: ZoomFocus) => void;
 	isPlaying: boolean;
+	/** False when the timeline's video row is off: the recording isn't drawn. */
+	showVideo?: boolean;
 	showShadow?: boolean;
 	shadowIntensity?: number;
 	backgroundBlur?: number;
@@ -331,6 +333,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			onSelectZoom,
 			onZoomFocusChange,
 			isPlaying,
+			showVideo = true,
 			showShadow,
 			shadowIntensity = 0,
 			backgroundBlur = 0,
@@ -1257,6 +1260,13 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				}
 			}
 		}, [isPlaying]);
+
+		useEffect(() => {
+			const container = videoContainerRef.current;
+			if (!pixiReady || !container) return;
+			container.visible = showVideo;
+			requestAnimationFrame(() => appRef.current?.render());
+		}, [pixiReady, showVideo]);
 
 		useEffect(() => {
 			suspendRenderingRef.current = suspendRendering;

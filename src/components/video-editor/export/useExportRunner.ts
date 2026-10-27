@@ -1,3 +1,4 @@
+import { visibleTrackRegions } from "../timeline/timelineLayers";
 import { useCallback, useRef } from "react";
 import { toast } from "@/components/ui/toast";
 import { getMp4ExportBitrate } from "@/lib/exporter/exportBitrate";
@@ -51,7 +52,13 @@ export function useExportRunner(input: ExportRunnerInput) {
 				remountPreview,
 			} = inputRef.current;
 			const { shadowIntensity, padding } = appearance;
-			const { audioRegions, clipRegions, selectedClipId } = timeline;
+			const { clipRegions, selectedClipId } = timeline;
+			// Added audio on rows turned off stays out of the export.
+			const audioRegions = visibleTrackRegions(
+				timeline.audioRegions,
+				appearance.hiddenTimelineLayers,
+				"audio",
+			);
 			const {
 				exportQuality,
 				exportEncodingMode,

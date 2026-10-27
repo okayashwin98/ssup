@@ -1,5 +1,13 @@
 import { useTimelinePresentation } from "../../core/TimelinePresentation";
-import { Plus } from "@/components/ui/icons";
+import {
+	MagnifyingGlassPlus,
+	MicrophoneIcon,
+	MusicNotes,
+	Plus,
+	SpeakerHigh,
+	TextT,
+	VideoCamera,
+} from "@/components/ui/icons";
 import { useTimelineContext } from "dnd-timeline";
 import {
 	type MouseEvent,
@@ -36,6 +44,10 @@ import { useTimelineAudioPeaks } from "../../hooks/useTimelineAudioPeaks";
 import Item from "../../Item";
 import glassStyles from "../../ItemGlass.module.css";
 import Row from "../../Row";
+import type { TimelineRowLayer } from "../../timelineLayerContext";
+
+const VIDEO_LAYER: TimelineRowLayer = { id: "video", label: "Video", icon: VideoCamera };
+const ZOOM_LAYER: TimelineRowLayer = { id: "zoom", label: "Zooms", icon: MagnifyingGlassPlus };
 import {
 	type ClipPresentation,
 	getEmbeddedCaptionSpan,
@@ -706,7 +718,13 @@ const TimelineCanvasRows = memo(function TimelineCanvasRows({
 					})}
 				</Row>
 			)}
-			<Row filmstrip id={CLIP_ROW_ID} isEmpty={clipItems.length === 0} hint={HINT_CLIP}>
+			<Row
+				filmstrip
+				id={CLIP_ROW_ID}
+				isEmpty={clipItems.length === 0}
+				hint={HINT_CLIP}
+				layer={VIDEO_LAYER}
+			>
 				{clipPresentation.map((item) => (
 					<Item
 						id={item.id}
@@ -754,10 +772,16 @@ const TimelineCanvasRows = memo(function TimelineCanvasRows({
 			</Row>
 			{showSourceAudioTrack &&
 				sourceAudioTracks.map((track) => (
-					<Row key={track.id} id={`${SOURCE_AUDIO_ROW_ID}-${track.id}`}>
-						{clipItems
-							.filter((item) => item.showSourceAudio)
-							.map((item) => {
+					<Row
+						key={track.id}
+						id={`${SOURCE_AUDIO_ROW_ID}-${track.id}`}
+						layer={{
+							id: `source:${track.id}`,
+							label: track.label,
+							icon: track.id === "mic" ? MicrophoneIcon : SpeakerHigh,
+						}}
+					>
+						{clipItems.map((item) => {
 								const settings = getSourceAudioTrackSettingsForClip?.(item.id)?.[
 									track.id
 								] ?? { volume: 1, normalize: false };
@@ -794,6 +818,7 @@ const TimelineCanvasRows = memo(function TimelineCanvasRows({
 				}
 				isEmpty={zoomItems.length === 0}
 				disabled={zoomsDisabled}
+				layer={ZOOM_LAYER}
 				onMouseEnter={onZoomRowMouseEnter}
 				onMouseMove={onZoomRowMouseMove}
 				onMouseLeave={onZoomRowMouseLeave}
@@ -859,6 +884,11 @@ const TimelineCanvasRows = memo(function TimelineCanvasRows({
 					id={rowId}
 					isEmpty={rowItems.length === 0}
 					hint={index === 0 ? HINT_ANNOTATION : undefined}
+					layer={{
+						id: `annotation:${getAnnotationTrackIndex(rowId)}`,
+						label: "Annotations",
+						icon: TextT,
+					}}
 				>
 					{rowItems.map((item) => (
 						<Item
@@ -882,6 +912,11 @@ const TimelineCanvasRows = memo(function TimelineCanvasRows({
 					id={rowId}
 					isEmpty={rowItems.length === 0}
 					hint={index === 0 ? HINT_AUDIO : undefined}
+					layer={{
+						id: `audio:${getAudioTrackIndex(rowId)}`,
+						label: "Added audio",
+						icon: MusicNotes,
+					}}
 				>
 					{rowItems.map((item) => (
 						<AudioItemWithWaveform

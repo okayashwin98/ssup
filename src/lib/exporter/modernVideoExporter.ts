@@ -101,6 +101,7 @@ interface VideoExporterConfig extends ExportConfig {
 	trimRegions?: TrimRegion[];
 	speedRegions?: SpeedRegion[];
 	showShadow: boolean;
+	showVideo?: boolean;
 	shadowIntensity: number;
 	backgroundBlur: number;
 	zoomMotionBlur?: number;
@@ -610,6 +611,7 @@ export class ModernVideoExporter {
 					wallpaper: this.config.wallpaper,
 					zoomRegions: this.config.zoomRegions,
 					showShadow: this.config.showShadow,
+					showVideo: this.config.showVideo,
 					shadowIntensity: this.config.shadowIntensity,
 					backgroundBlur: this.config.backgroundBlur,
 					zoomMotionBlur: this.config.zoomMotionBlur,
@@ -1703,6 +1705,7 @@ export class ModernVideoExporter {
 		const reasons: string[] = [];
 		if (requiresClipTimelineRendering(this.config.clipRegions))
 			reasons.push("explicit-clip-timeline");
+		if (this.config.showVideo === false) reasons.push("video-row-off");
 		if (
 			typeof window === "undefined" ||
 			!window.electronAPI?.nativeStaticLayoutExport ||

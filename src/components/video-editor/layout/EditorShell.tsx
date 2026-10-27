@@ -430,6 +430,8 @@ export function EditorShell(props: Props) {
 					handleSelectAnnotation={handleSelectAnnotation}
 					zoomsEnabled={appearance.zoomsEnabled}
 					onZoomsEnabledChange={appearance.setZoomsEnabled}
+					hiddenTimelineLayers={appearance.hiddenTimelineLayers}
+					onHiddenTimelineLayersChange={appearance.setHiddenTimelineLayers}
 				/>
 			</div>
 			{library.importing && (

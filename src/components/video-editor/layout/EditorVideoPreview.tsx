@@ -1,4 +1,5 @@
-import type { ComponentProps, Dispatch, RefObject, SetStateAction } from "react";
+import { isTimelineLayerOn, visibleTrackRegions } from "../timeline/timelineLayers";
+import { type ComponentProps, type Dispatch, type RefObject, type SetStateAction, useMemo } from "react";
 import type { AspectRatio } from "@/utils/aspectRatioUtils";
 import type { useVideoEditorAudio } from "../audio/useVideoEditorAudio";
 import type { useAppearanceState } from "../state/useAppearanceState";
@@ -62,6 +63,17 @@ export function EditorVideoPreview({
 	setError,
 	handlers,
 }: Props) {
+	// Rows turned off on the timeline leave the preview too.
+	const videoOn = isTimelineLayerOn(appearance.hiddenTimelineLayers, "video");
+	const annotationRegions = useMemo(
+		() =>
+			visibleTrackRegions(
+				timeline.annotationRegions,
+				appearance.hiddenTimelineLayers,
+				"annotation",
+			),
+		[timeline.annotationRegions, appearance.hiddenTimelineLayers],
+	);
 	return (
 		<VideoPlayback
 			clipRegions={timeline.clipRegions}
@@ -79,7 +91,8 @@ export function EditorVideoPreview({
 			zoomRegions={effectiveZoomRegions}
 			selectedZoomId={timeline.selectedZoomId}
 			isPlaying={isPlaying}
-			showShadow={appearance.shadowIntensity > 0}
+			showVideo={videoOn}
+			showShadow={appearance.shadowIntensity > 0 && videoOn}
 			shadowIntensity={appearance.shadowIntensity}
 			backgroundBlur={appearance.backgroundBlur}
 			connectZooms={appearance.connectZooms}
@@ -98,7 +111,7 @@ export function EditorVideoPreview({
 			webcamVideoPath={
 				appearance.webcam.sourcePath ? appearance.resolvedWebcamVideoUrl : null
 			}
-			annotationRegions={timeline.annotationRegions}
+			annotationRegions={annotationRegions}
 			autoCaptions={timeline.autoCaptions}
 			autoCaptionSettings={timeline.autoCaptionSettings}
 			selectedAnnotationId={timeline.selectedAnnotationId}

@@ -145,6 +145,7 @@ export function useProjectLifecycle(input: Input) {
 		appearance.setShowCursor(editor.showCursor);
 		appearance.setLoopCursor(editor.loopCursor);
 		appearance.setZoomsEnabled(editor.zoomsEnabled);
+		appearance.setHiddenTimelineLayers(editor.hiddenTimelineLayers);
 		appearance.setCursorStyle(editor.cursorStyle);
 		appearance.setCursorSize(editor.cursorSize);
 		appearance.setCursorSmoothing(editor.cursorSmoothing);
@@ -325,6 +326,7 @@ export function useProjectLifecycle(input: Input) {
 		timeline.setZoomRegions([]);
 		// Zooms on/off belongs to a project; a new recording starts with zooms on.
 		current.appearance.setZoomsEnabled(true);
+		current.appearance.setHiddenTimelineLayers([]);
 		timeline.setTrimRegions([]);
 		timeline.setClipRegions([]);
 		refs.clipInitializedRef.current = false;
