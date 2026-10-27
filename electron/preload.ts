@@ -643,9 +643,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	capturePickerHasGlass: () => ipcRenderer.sendSync("capture-picker-has-glass") === true,
 	capturePickerSetGlassRects: (
 		rects: { x: number; y: number; width: number; height: number; radius: number }[],
-	) => {
-		ipcRenderer.send("capture-picker-glass-rects", rects);
-	},
+	) => ipcRenderer.sendSync("capture-picker-glass-rects", rects) === true,
 	setCapturePickerMode: (mode: "display" | "window" | "area") => {
 		ipcRenderer.send("capture-picker-set-mode", mode);
 	},

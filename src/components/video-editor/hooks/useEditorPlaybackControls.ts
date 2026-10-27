@@ -1,4 +1,8 @@
-import { type RefObject, useCallback } from "react";
+import { type RefObject, useCallback, useEffect, useRef } from "react";
+
+// A seek during playback pauses, and playing resumes once seeks stop for this long, so
+// dragging the playhead scrubs smoothly instead of restarting the video on every move.
+const RESUME_AFTER_SEEK_MS = 150;
 import type { TimelineEditorHandle } from "../timeline/TimelineEditor";
 import type { VideoPlaybackRef } from "../VideoPlayback";
 
@@ -18,6 +22,12 @@ export function useEditorPlaybackControls({
 	timelineDuration,
 }: UseEditorPlaybackControlsParams) {
 	const getActivePlayback = useCallback(() => videoPlaybackRef.current, [videoPlaybackRef]);
+	const resumeTimer = useRef<number | null>(null);
+	const cancelResume = useCallback(() => {
+		if (resumeTimer.current !== null) window.clearTimeout(resumeTimer.current);
+		resumeTimer.current = null;
+	}, []);
+	useEffect(() => cancelResume, [cancelResume]);
 
 	const startPlayback = useCallback(() => {
 		const playback = getActivePlayback();
@@ -32,9 +42,14 @@ export function useEditorPlaybackControls({
 		const video = playback?.video;
 		if (!playback || !video) return;
 
+		// Waiting to resume after a seek counts as playing.
+		if (resumeTimer.current !== null) {
+			cancelResume();
+			return;
+		}
 		if (playback.isPlaying) playback.pause();
 		else startPlayback();
-	}, [getActivePlayback, startPlayback]);
+	}, [getActivePlayback, startPlayback, cancelResume]);
 
 	const handleSeek = useCallback(
 		(time: number, options: { pause?: boolean } = {}) => {
@@ -49,7 +64,20 @@ export function useEditorPlaybackControls({
 	);
 
 	// Playing keeps playing from the new position; paused stays paused.
-	const handleTimelineSeek = useCallback((time: number) => handleSeek(time), [handleSeek]);
+	const handleTimelineSeek = useCallback(
+		(time: number) => {
+			const playback = getActivePlayback();
+			const wasPlaying = Boolean(playback?.isPlaying) || resumeTimer.current !== null;
+			handleSeek(time, { pause: wasPlaying });
+			if (!wasPlaying) return;
+			cancelResume();
+			resumeTimer.current = window.setTimeout(() => {
+				resumeTimer.current = null;
+				startPlayback();
+			}, RESUME_AFTER_SEEK_MS);
+		},
+		[getActivePlayback, handleSeek, cancelResume, startPlayback],
+	);
 
 	const handlePreviewSkipBack = useCallback(() => {
 		const currentMs = timelinePlayheadTime * 1000;

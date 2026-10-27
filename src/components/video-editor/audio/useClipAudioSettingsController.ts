@@ -54,7 +54,9 @@ export function useClipAudioSettingsController({
 		() => withHiddenSourceTracksSilent(savedActiveSettings, hiddenTimelineLayers),
 		[savedActiveSettings, hiddenTimelineLayers],
 	);
-	const selectedClipSourceAudioTrackSettings = useMemo(
+	// The clip panel shows the saved volumes; only what's heard is silenced.
+	const selectedClipSourceAudioTrackSettings = savedSelectedSettings;
+	const heardSelectedSettings = useMemo(
 		() => withHiddenSourceTracksSilent(savedSelectedSettings, hiddenTimelineLayers),
 		[savedSelectedSettings, hiddenTimelineLayers],
 	);
@@ -66,8 +68,8 @@ export function useClipAudioSettingsController({
 
 	const previewSourceAudioTrackSettings = useMemo(
 		() =>
-			activeClipId ? activeSourceAudioTrackSettings : selectedClipSourceAudioTrackSettings,
-		[activeClipId, activeSourceAudioTrackSettings, selectedClipSourceAudioTrackSettings],
+			activeClipId ? activeSourceAudioTrackSettings : heardSelectedSettings,
+		[activeClipId, activeSourceAudioTrackSettings, heardSelectedSettings],
 	);
 
 	const embeddedTrackId = useMemo<"mixed" | "system">(() => {

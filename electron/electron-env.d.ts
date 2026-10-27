@@ -319,7 +319,7 @@ interface Window {
 		capturePickerHasGlass: () => boolean;
 		capturePickerSetGlassRects: (
 			rects: { x: number; y: number; width: number; height: number; radius: number }[],
-		) => void;
+		) => boolean;
 		setCapturePickerMode: (mode: CapturePickerMode) => void;
 		onCapturePickerModeChanged: (callback: (mode: CapturePickerMode) => void) => () => void;
 		/** App icons that arrive after the picker opened, by window id. */

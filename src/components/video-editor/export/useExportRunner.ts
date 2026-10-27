@@ -1,4 +1,4 @@
-import { visibleTrackRegions } from "../timeline/timelineLayers";
+import { visibleTrackRegions, withHiddenSourceTracksSilent } from "../timeline/timelineLayers";
 import { useCallback, useRef } from "react";
 import { toast } from "@/components/ui/toast";
 import { getMp4ExportBitrate } from "@/lib/exporter/exportBitrate";
@@ -288,12 +288,7 @@ export function useExportRunner(input: ExportRunnerInput) {
 						experimentalNvidiaCudaExport,
 						nvidiaCudaExportAvailable,
 					});
-					const supportedSourceDimensions = await ensureSupportedMp4SourceDimensions(
-						selectedMp4FrameRate,
-						{
-							capTo1080p: options?.destination === "share",
-						},
-					);
+					const supportedSourceDimensions = await ensureSupportedMp4SourceDimensions(selectedMp4FrameRate);
 					if (exportWasCancelled()) return;
 					const requestedDimensions = calculateMp4ExportDimensions(
 						supportedSourceDimensions.width,
@@ -316,10 +311,13 @@ export function useExportRunner(input: ExportRunnerInput) {
 						encodingMode,
 						useModernNativeStaticLayout: useExperimentalNativeExport,
 					});
-					const sourceAudioTrackSettingsForExport =
+					// Recorded-sound rows turned off on the timeline export silent.
+					const sourceAudioTrackSettingsForExport = withHiddenSourceTracksSilent(
 						selectedClipId !== null
 							? audio.selectedClipSourceAudioTrackSettings
-							: audio.activeSourceAudioTrackSettings;
+							: audio.activeSourceAudioTrackSettings,
+						appearance.hiddenTimelineLayers,
+					);
 
 					const exporterConfig = {
 						videoUrl: videoPath,

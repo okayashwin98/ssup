@@ -1234,7 +1234,7 @@ const COUNTDOWN_CARD = { size: 176, radius: 40 };
 
 export function createCountdownWindow(): BrowserWindow {
 	const screen = getScreen();
-	const glass = liquidGlassAvailable();
+	let glass = liquidGlassAvailable();
 	const { x, y, width, height } = getCountdownWindowBounds(
 		screen.getAllDisplays(),
 		screen.getPrimaryDisplay(),
@@ -1267,7 +1267,8 @@ export function createCountdownWindow(): BrowserWindow {
 	countdownWindow = win;
 	if (glass) {
 		const inset = (COUNTDOWN_WINDOW_SIZE - COUNTDOWN_CARD.size) / 2;
-		setWindowGlassRects(win, [
+		// If the glass can't be placed, the card keeps its own fill and no shadow.
+		glass = setWindowGlassRects(win, [
 			{
 				x: inset,
 				y: inset,
@@ -1276,6 +1277,7 @@ export function createCountdownWindow(): BrowserWindow {
 				radius: COUNTDOWN_CARD.radius,
 			},
 		]);
+		if (!glass) win.setHasShadow(false);
 	}
 
 	win.setVisibleOnAllWorkspaces(true, {

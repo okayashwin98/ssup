@@ -77,7 +77,9 @@ export function useEditorUiState(
 	useEffect(() => {
 		const handleOpenEditorSection = (event: Event) => {
 			const section = (event as CustomEvent<AnnouncementEditorSection>).detail;
-			if (isAnnouncementEditorSection(section)) setActiveEffectSection(section);
+			// The editor's Settings tab became Motion; the rest of Settings is in the dashboard.
+			if (isAnnouncementEditorSection(section))
+				setActiveEffectSection(section === "settings" ? "motion" : section);
 		};
 		window.addEventListener(OPEN_EDITOR_SECTION_EVENT, handleOpenEditorSection);
 		return () => window.removeEventListener(OPEN_EDITOR_SECTION_EVENT, handleOpenEditorSection);

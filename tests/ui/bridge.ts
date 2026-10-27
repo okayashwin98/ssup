@@ -195,6 +195,7 @@ export async function installDesktopBridge(
 					(window as unknown as { __testGlass?: boolean }).__testGlass === true,
 				capturePickerSetGlassRects: (rects: unknown[]) => {
 					document.documentElement.dataset.glassRects = JSON.stringify(rects);
+					return true;
 				},
 				setCapturePickerMode: (mode: string) => {
 					document.documentElement.dataset.pickerMode = mode;

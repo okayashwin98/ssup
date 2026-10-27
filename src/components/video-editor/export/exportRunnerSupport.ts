@@ -29,7 +29,6 @@ export type ExportRunnerInput = {
 	effectiveShowCursor: boolean;
 	ensureSupportedMp4SourceDimensions: (
 		frameRate: ReturnType<typeof useExportSettings>["mp4FrameRate"],
-		options?: { capTo1080p?: boolean },
 	) => Promise<SupportedMp4Dimensions>;
 	captionSidecarPayload?: PendingExportSave["captionSidecar"];
 	experimentalNvidiaCudaExport: boolean;

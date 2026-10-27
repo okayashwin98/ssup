@@ -158,7 +158,7 @@
  background: color-mix(in srgb, var(--accent) 38%, transparent);
  color: inherit;
 }
-input,
+input:not([type="checkbox"], [type="radio"], [type="range"], [type="button"], [type="submit"], [type="color"], [type="file"]),
 textarea {
  caret-color: var(--accent);
  cursor: text;

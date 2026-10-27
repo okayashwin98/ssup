@@ -169,7 +169,9 @@ export function registerCapturePickerHandlers({
 	ipcMain.on("capture-picker-has-glass", (event) => {
 		event.returnValue = isCapturePickerWebContents(event.sender) && liquidGlassAvailable();
 	});
+	// Answers whether the glass was placed, so the page can keep its own fill if not.
 	ipcMain.on("capture-picker-glass-rects", (event, rects: unknown) => {
+		event.returnValue = false;
 		if (!isCapturePickerWebContents(event.sender) || !Array.isArray(rects)) return;
 		const win = BrowserWindow.fromWebContents(event.sender);
 		if (!win) return;
@@ -185,7 +187,7 @@ export function registerCapturePickerHandlers({
 			.filter((rect) =>
 				[rect.x, rect.y, rect.width, rect.height].every((value) => Number.isFinite(value)),
 			);
-		setWindowGlassRects(win, clean);
+		event.returnValue = setWindowGlassRects(win, clean);
 	});
 
 	let activePick: Promise<unknown> | null = null;

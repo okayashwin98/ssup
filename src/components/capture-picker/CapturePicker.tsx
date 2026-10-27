@@ -230,7 +230,10 @@ export function CapturePicker() {
 	const canDraw = mode === "area" || (mode === undefined && allowArea);
 	// Liquid Glass under buttons marked data-glass: the app places it by their on-screen
 	// boxes, re-sent whenever they move (once a card's entrance animation ends too).
-	const [onGlass] = useState(() => window.electronAPI?.capturePickerHasGlass?.() === true);
+	// Off for good if placing the glass ever fails, so the buttons get their fill back.
+	const [onGlass, setOnGlass] = useState(
+		() => window.electronAPI?.capturePickerHasGlass?.() === true,
+	);
 	const rootRef = useRef<HTMLDivElement>(null);
 	const sentGlass = useRef("[]");
 	const syncGlass = useCallback(() => {
@@ -250,7 +253,7 @@ export function CapturePicker() {
 		const sent = JSON.stringify(rects);
 		if (sent === sentGlass.current) return;
 		sentGlass.current = sent;
-		window.electronAPI.capturePickerSetGlassRects(rects);
+		if (!window.electronAPI.capturePickerSetGlassRects(rects) && rects.length) setOnGlass(false);
 	}, [onGlass]);
 	useLayoutEffect(syncGlass);
 
