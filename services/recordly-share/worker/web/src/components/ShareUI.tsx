@@ -52,7 +52,7 @@ export function CopyButton({ time = 0, code }: { time?: number; code?: string })
 	return (
 		<Button
 			size="sm"
-			variant="secondary"
+			variant="ghost"
 			aria-label="Copy link"
 			onPress={() => void copyLink(time, code)}
 		>
