@@ -197,10 +197,13 @@ describe('owner profile', () => {
     const avatar = await SELF.fetch(`${BASE}/profile/avatar`);
     expect(avatar.status).toBe(200);
     expect(avatar.headers.get('content-type')).toBe('image/png');
-    // The browser-tab icon is the owner's photo while one is set.
+    // The browser-tab icon is the owner's photo, cut to a circle, while one is set.
     const favicon = await SELF.fetch(`${BASE}/favicon`);
     expect(favicon.status).toBe(200);
-    expect(favicon.headers.get('content-type')).toBe('image/png');
+    expect(favicon.headers.get('content-type')).toBe('image/svg+xml');
+    const svg = await favicon.text();
+    expect(svg).toContain('<circle');
+    expect(svg).toContain(png);
     const code = await createAndCompleteShare({ title: 'Profile Test' });
     const data = await (await SELF.fetch(`${BASE}/s/${code}/data`)).json();
     expect(data.creator.name).toBe('Jane Doe');
