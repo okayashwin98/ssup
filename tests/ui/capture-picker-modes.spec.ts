@@ -137,7 +137,7 @@ test("A hovered window's icon sways, and only Area mode has the crosshair", asyn
 			getComputedStyle(element).animationName,
 			getComputedStyle(element).animationDuration,
 		]);
-	expect(sway).toEqual(["hover-sway", "1.067s"]);
+	expect(sway).toEqual(["hover-sway", "0.889s"]);
 	const cursor = () =>
 		page
 			.locator("div.fixed")

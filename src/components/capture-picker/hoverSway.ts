@@ -1,5 +1,5 @@
 /** One sway, left and right; `.hover-sway` in index.css uses the same length. */
-export const SWAY_PERIOD_MS = 1067;
+export const SWAY_PERIOD_MS = 889;
 
 /**
  * Starts the hover sway (the `hover-sway` class) in step with every other window's,

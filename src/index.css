@@ -273,21 +273,19 @@ textarea {
 }
 /* A gentle sway on the hovered window's icon, and on the bar's Window icon meanwhile.
    Both start at a delay from the wall clock (swayPhase) so they move in step. */
+/* Left to right and back, easing only at the ends, so the loop never pauses. */
 @keyframes hover-sway {
 	0%,
 	100% {
-		transform: translateX(0);
-	}
-	25% {
 		transform: translateX(-2px);
 	}
-	75% {
+	50% {
 		transform: translateX(2px);
 	}
 }
 .hover-sway {
 	/* SWAY_PERIOD_MS in hoverSway.ts. */
-	animation: hover-sway 1.067s ease-in-out infinite;
+	animation: hover-sway 0.889s ease-in-out infinite;
 }
 @media (prefers-reduced-motion: reduce) {
 	.picker-fade-in,
