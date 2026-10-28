@@ -434,25 +434,6 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.video-cover-byline {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.video-cover-avatar {
-  width: clamp(32px, 3.5cqw, 48px);
-  aspect-ratio: 1;
-  border-radius: 999px;
-  object-fit: cover;
-  flex-shrink: 0;
-}
-.video-cover-initials {
-  display: grid;
-  place-items: center;
-  background: rgba(255, 255, 255, 0.2);
-  font-size: 13px;
-  font-weight: 600;
-}
 .video-cover-meta {
   display: grid;
   gap: 2px;
@@ -1010,9 +991,13 @@
   .touch-controls .button { color: white; width: 48px; height: 48px; }
   .touch-controls .touch-play { width: 64px; height: 64px; border-radius: 999px; background: rgb(0 0 0 / 0.45); }
   .touch-time { font-size: 14px; font-variant-numeric: tabular-nums; color: rgb(255 255 255 / 0.9); }
-  /* The cover, as on phone players: who and when at the top, the title at the bottom. */
-  .video-cover-text { top: 14px; bottom: 14px; left: 14px; right: 14px; display: flex; flex-direction: column; justify-content: space-between; }
-  .video-cover-byline { order: -1; }
-  .video-cover-title { font-size: clamp(18px, 6cqw, 26px); }
-  .video-cover-avatar { width: 32px; }
+  /* The cover keeps the desktop layout, smaller so the text clears the play button. */
+  .video-cover-text { left: 14px; right: 14px; bottom: 12px; gap: 6px; }
+  .video-cover-title { font-size: clamp(16px, 4.6cqw, 22px); }
+  .video-cover-play { width: 52px; }
+  /* Name and details share one line under the title. */
+  .video-cover-meta { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 6px; }
+  .video-cover-name { font-size: 13px; }
+  .video-cover-details { font-size: 12px; }
+  .video-cover-name + .video-cover-details::before { content: "·"; margin-right: 6px; }
 }

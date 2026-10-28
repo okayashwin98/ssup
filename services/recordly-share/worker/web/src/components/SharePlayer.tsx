@@ -366,27 +366,12 @@ export default function SharePlayer({
             </span>
             <span className="video-cover-text">
               <span className="video-cover-title">{data.video.title}</span>
-              <span className="video-cover-byline">
-                {data.creator?.avatarUrl ? (
-                  <img className="video-cover-avatar" src={data.creator.avatarUrl} alt="" />
-                ) : data.creator?.name ? (
-                  <span className="video-cover-avatar video-cover-initials">
-                    {data.creator.name
-                      .split(/\s+/)
-                      .filter(Boolean)
-                      .slice(0, 2)
-                      .map((part) => part[0])
-                      .join('')
-                      .toUpperCase()}
-                  </span>
-                ) : null}
-                <span className="video-cover-meta">
-                  {data.creator?.name && <span className="video-cover-name">{data.creator.name}</span>}
-                  <span className="video-cover-details">
-                    {[formatCoverDuration(duration || data.video.duration), formatDate(data.video.created_at)]
-                      .filter(Boolean)
-                      .join(' / ')}
-                  </span>
+              <span className="video-cover-meta">
+                {data.creator?.name && <span className="video-cover-name">{data.creator.name}</span>}
+                <span className="video-cover-details">
+                  {[formatCoverDuration(duration || data.video.duration), formatDate(data.video.created_at)]
+                    .filter(Boolean)
+                    .join(' / ')}
                 </span>
               </span>
             </span>
