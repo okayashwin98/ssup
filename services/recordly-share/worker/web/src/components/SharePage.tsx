@@ -1,6 +1,6 @@
 import ThemeToggle from "./ThemeToggle";
 import { Button, Input, Label, Skeleton, TextField, toast } from "@heroui/react";
-import { ChatCircleIcon, LockKeyIcon, ArrowClockwiseIcon } from "@phosphor-icons/react";
+import { LockKeyIcon, ArrowClockwiseIcon } from "@phosphor-icons/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	fetchShareData,
@@ -60,7 +60,6 @@ function Recording({ data }: { data: ShareData }) {
 	}, {});
 	const [reacting, setReacting] = useState<string | null>(null);
 	const [selectedTab, setSelectedTab] = useState("comments");
-	const [mobileView, setMobileView] = useState("watch");
 	const seek = useCallback((value: number) => {
 		const video = videoRef.current;
 		if (video && Number.isFinite(video.duration)) {
@@ -103,14 +102,7 @@ function Recording({ data }: { data: ShareData }) {
 
 	const { video } = data;
 	return (
-		<div className="recording-app" data-mobile-view={mobileView}>
-			{mobileView === "feedback" && (
-				<div className="mobile-feedback-back">
-					<Button size="sm" variant="secondary" onPress={() => setMobileView("watch")}>
-						Back to video
-					</Button>
-				</div>
-			)}
+		<div className="recording-app">
 			<div className="share-workspace">
 				<main className="recording-column">
 					<div className="recording-heading viewer-heading">
@@ -153,21 +145,6 @@ function Recording({ data }: { data: ShareData }) {
 								</Button>
 							))}
 						</div>
-						<Button
-							className="mobile-comment-button"
-							size="sm"
-							variant="primary"
-							onPress={() => {
-								setSelectedTab("comments");
-								setMobileView("feedback");
-								requestAnimationFrame(() =>
-									composerRef.current?.focus({ preventScroll: true }),
-								);
-							}}
-						>
-							<ChatCircleIcon size={17} />
-							Comment
-						</Button>
 					</div>
 				</main>
 				<aside aria-label="Recording feedback">
