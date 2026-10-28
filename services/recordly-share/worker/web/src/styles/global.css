@@ -402,13 +402,17 @@
   top: 50%;
   display: grid;
   place-items: center;
-  width: clamp(56px, 14cqmin, 104px);
+  width: clamp(40px, 14cqmin, 104px);
   aspect-ratio: 1;
   border-radius: 999px;
   transform: translate(-50%, -50%);
   background: rgba(40, 40, 40, 0.62);
   backdrop-filter: blur(6px);
   transition: transform 160ms ease, background 160ms ease;
+}
+.video-cover-play svg {
+  width: 42%;
+  height: 42%;
 }
 .video-cover:hover .video-cover-play {
   transform: translate(-50%, -50%) scale(1.05);
@@ -435,8 +439,10 @@
   overflow: hidden;
 }
 .video-cover-meta {
-  display: grid;
-  gap: 2px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: clamp(8px, 1.2cqw, 14px);
   min-width: 0;
 }
 .video-cover-name {
@@ -994,10 +1000,6 @@
   /* The cover keeps the desktop layout, smaller so the text clears the play button. */
   .video-cover-text { left: 14px; right: 14px; bottom: 12px; gap: 6px; }
   .video-cover-title { font-size: clamp(16px, 4.6cqw, 22px); }
-  .video-cover-play { width: 52px; }
-  /* Name and details share one line under the title. */
-  .video-cover-meta { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 6px; }
   .video-cover-name { font-size: 13px; }
   .video-cover-details { font-size: 12px; }
-  .video-cover-name + .video-cover-details::before { content: "·"; margin-right: 6px; }
 }
