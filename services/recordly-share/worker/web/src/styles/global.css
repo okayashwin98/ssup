@@ -176,15 +176,10 @@
   width: 100%;
   gap: 12px;
 }
-.feedback-tabs .tabs__list {
-  width: 100%;
-}
+/* Icon-only switcher, centred and only as wide as its icons. */
 .feedback-tabs .tabs__tab {
-  flex: 1;
-  min-width: 0;
-  padding-inline: 8px;
-  gap: 5px;
-  font-size: 12px;
+  width: 52px;
+  padding-inline: 0;
 }
 .empty-feedback {
   display: flex;
@@ -218,16 +213,42 @@
   padding-top: 12px;
   margin-top: 12px;
 }
-.composer textarea {
-  min-height: 56px;
-  height: 64px;
-  resize: none;
-}
-.composer-footer {
+/* Looks like one field; the textarea inside it drops its own fill and ring. */
+.comment-box {
+  @apply rounded-field bg-field shadow-field;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
+  align-items: flex-end;
+  gap: 4px;
+  padding: 4px;
+  border: var(--border-width-field) solid var(--field-border);
+  transition:
+    background-color 150ms var(--ease-smooth),
+    box-shadow 150ms var(--ease-out);
+}
+.comment-box:focus-within {
+  @apply status-focused-field;
+  background-color: var(--field-focus);
+}
+.comment-box .textfield {
+  flex: 1;
+  min-width: 0;
+}
+.comment-box .textarea,
+.comment-box .textarea:is(:hover, :focus, [data-hovered="true"], [data-focused="true"]) {
+  background: transparent;
+  box-shadow: none;
+  border-color: transparent;
+  padding: 6px 8px;
+}
+.comment-box .button .timestamp {
+  color: inherit;
+}
+/* Starts at one line and grows with the comment. */
+.comment-box textarea {
+  field-sizing: content;
+  min-height: 32px;
+  max-height: 140px;
+  resize: none;
 }
 .comment-item {
   padding: 14px 8px;
@@ -540,6 +561,11 @@
 .video-toolbar .button[data-hovered='true'] {
   background: rgb(255 255 255 / 0.14);
 }
+/* Pressed, open or switched on: a stronger tint of the same white, so the white label stays readable. */
+.video-toolbar .button:is([data-pressed='true'], [aria-expanded='true'], [aria-pressed='true']) {
+  color: white;
+  background: rgb(255 255 255 / 0.24);
+}
 .video-controls {
   position: relative;
   display: flex;
@@ -706,6 +732,7 @@
 }
 .feedback-tabs .tabs__list-container {
   flex-shrink: 0;
+  align-self: center;
 }
 .feedback-tabs .tabs__panel {
   flex: 1;
@@ -874,18 +901,6 @@
     gap: 6px;
     padding-top: 8px;
     margin-top: 8px;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-  .composer textarea {
-    height: 40px;
-    min-height: 40px;
-  }
-  .composer-footer {
-    grid-column: 1 / -1;
-  }
-  .composer .alert {
-    grid-column: 1 / -1;
   }
   .empty-feedback {
     padding: 4px;
@@ -987,9 +1002,12 @@
   }
   .video-shell.controls-shown .touch-controls { opacity: 1; }
   .video-shell.controls-shown .touch-controls .button { pointer-events: auto; }
-  .touch-controls-row { display: flex; align-items: center; gap: clamp(8px, 4cqw, 28px); }
-  .touch-controls .button { color: white; width: 48px; height: 48px; }
-  .touch-controls .touch-play { width: 64px; height: 64px; border-radius: 999px; background: rgb(0 0 0 / 0.45); }
+  /* Sized to the video so all six buttons fit on the narrowest phones. */
+  .touch-controls-row { display: flex; align-items: center; gap: clamp(2px, 2.5cqw, 28px); }
+  .touch-controls .button { color: white; width: clamp(40px, 12cqw, 48px); height: clamp(40px, 12cqw, 48px); min-width: 0; border-radius: 999px; }
+  .touch-controls .touch-play { width: clamp(52px, 16cqw, 64px); height: clamp(52px, 16cqw, 64px); background: rgb(0 0 0 / 0.45); }
+  /* Hover and press darken to black, so the white icons stay readable. */
+  .touch-controls .button:is(:hover, [data-hovered="true"], [data-pressed="true"]) { color: white; background: rgb(0 0 0 / 0.75); }
   .touch-time { font-size: 14px; font-variant-numeric: tabular-nums; color: rgb(255 255 255 / 0.9); }
   /* The cover keeps the desktop layout, smaller so the text clears the play button. */
   .video-cover-text { left: 14px; right: 14px; bottom: 12px; gap: 6px; }

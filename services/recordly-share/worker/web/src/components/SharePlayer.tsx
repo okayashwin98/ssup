@@ -20,8 +20,6 @@ import {
   PlayIcon,
   SpeakerHighIcon,
   SpeakerSlashIcon,
-  FastForwardIcon,
-  RewindIcon,
   ChatCircleIcon,
   GearSixIcon,
   ClockCounterClockwiseIcon,
@@ -462,6 +460,17 @@ export default function SharePlayer({
             <Button isIconOnly variant="ghost" aria-label="Forward 5 seconds" onPress={() => seek(time + 5)}>
               <ClockClockwiseIcon size={28} />
             </Button>
+            {data.segments.length > 0 && (
+              <Button
+                isIconOnly
+                variant="ghost"
+                aria-label="Captions"
+                aria-pressed={captions}
+                onPress={() => setCaptions(!captions)}
+              >
+                <ClosedCaptioningIcon size={26} weight={captions ? 'fill' : 'regular'} />
+              </Button>
+            )}
             <Button isIconOnly variant="ghost" aria-label="Fullscreen" onPress={() => void fullscreen()}>
               <ArrowsOutIcon size={26} />
             </Button>
@@ -524,7 +533,7 @@ export default function SharePlayer({
             aria-label="Back 5 seconds"
             onPress={() => seek(time - 5)}
           >
-            <RewindIcon size={18} />
+            <ClockCounterClockwiseIcon size={18} />
           </Button>
           <Button
             isIconOnly
@@ -534,7 +543,7 @@ export default function SharePlayer({
             aria-label="Forward 5 seconds"
             onPress={() => seek(time + 5)}
           >
-            <FastForwardIcon size={18} />
+            <ClockClockwiseIcon size={18} />
           </Button>
           {/* The volume bar slides out while the speaker button or bar is hovered. */}
           <div className="volume-group">
@@ -576,7 +585,7 @@ export default function SharePlayer({
             <Button
               isIconOnly
               size="sm"
-              variant={captions ? 'secondary' : 'ghost'}
+              variant="ghost"
               aria-label="Captions"
               aria-pressed={captions}
               onPress={() => setCaptions(!captions)}

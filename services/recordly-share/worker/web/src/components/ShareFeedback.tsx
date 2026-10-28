@@ -2,9 +2,7 @@ import {
   Avatar,
   Button,
   Card,
-  Chip,
   Input,
-  Label,
   Spinner,
   Tabs,
   TextArea,
@@ -12,10 +10,12 @@ import {
   toast,
 } from '@heroui/react';
 import {
+  ChatCenteredIcon,
   ChatCircleIcon,
-  ClockIcon,
+  InfoIcon,
   LinkSimpleIcon,
   PaperPlaneTiltIcon,
+  TextAlignLeftIcon,
 } from '@phosphor-icons/react';
 import { useEffect, useState, type Dispatch, type SetStateAction, type RefObject } from 'react';
 import {
@@ -150,24 +150,19 @@ export default function ShareFeedback({
       >
         <Tabs.ListContainer>
           <Tabs.List aria-label="Recording feedback">
-            <Tabs.Tab id="comments">
-              Comments
-              {total > 0 && (
-                <Chip size="sm" variant="soft">
-                  {total}
-                </Chip>
-              )}
+            <Tabs.Tab id="comments" aria-label={total > 0 ? `Comments, ${total}` : 'Comments'}>
+              <ChatCenteredIcon size={18} />
               <Tabs.Indicator />
             </Tabs.Tab>
             {data.segments.length > 0 && (
-              <Tabs.Tab id="transcript">
-                Transcript
+              <Tabs.Tab id="transcript" aria-label="Transcript">
+                <TextAlignLeftIcon size={18} />
                 <Tabs.Indicator />
               </Tabs.Tab>
             )}
             {(data.video.summary || data.chapters.length > 0) && (
-              <Tabs.Tab id="details">
-                Details
+              <Tabs.Tab id="details" aria-label="Details">
+                <InfoIcon size={18} />
                 <Tabs.Indicator />
               </Tabs.Tab>
             )}
@@ -322,52 +317,50 @@ export default function ShareFeedback({
         }}
       >
         {error && <Notice>{error}</Notice>}
-        <TextField name="author" value={name} onChange={setName} isRequired isDisabled={posting}>
-          <Label>Name</Label>
-          <Input maxLength={100} autoComplete="name" placeholder="Name" />
-        </TextField>
         <TextField
-          name="comment"
-          value={text}
-          onChange={(value) => {
-            setText(value);
-            setLockedTime(value.trim() ? (lockedTime ?? time) : null);
-          }}
+          name="author"
+          aria-label="Name"
+          value={name}
+          onChange={setName}
           isRequired
           isDisabled={posting}
         >
-          <Label>Comment</Label>
-          <TextArea
-            ref={composerRef}
-            maxLength={2000}
-            placeholder="Share your thoughts…"
-            onKeyDown={(e) => {
-              if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-                e.preventDefault();
-                void submit();
-              }
-            }}
-          />
+          <Input maxLength={100} autoComplete="name" placeholder="Name" />
         </TextField>
-        <div className="composer-footer">
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            aria-label={`Comment timestamp ${formatTimestamp(lockedTime ?? time)}. Use current video time`}
-            onPress={() => setLockedTime(time)}
+        {/* The send button sits inside the comment field and shows the time the comment is pinned to. */}
+        <div className="comment-box">
+          <TextField
+            name="comment"
+            aria-label="Comment"
+            value={text}
+            onChange={(value) => {
+              setText(value);
+              setLockedTime(value.trim() ? (lockedTime ?? time) : null);
+            }}
+            isRequired
+            isDisabled={posting}
           >
-            <ClockIcon size={14} />
-            <span className="timestamp">{formatTimestamp(lockedTime ?? time)}</span>
-          </Button>
+            <TextArea
+              ref={composerRef}
+              maxLength={2000}
+              placeholder="Share your thoughts…"
+              onKeyDown={(e) => {
+                if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                  e.preventDefault();
+                  void submit();
+                }
+              }}
+            />
+          </TextField>
           <Button
             type="submit"
             size="sm"
+            aria-label={`Post comment at ${formatTimestamp(lockedTime ?? time)}`}
             isPending={posting}
             isDisabled={!name.trim() || !text.trim() || posting}
           >
+            <span className="timestamp">{formatTimestamp(lockedTime ?? time)}</span>
             <PaperPlaneTiltIcon size={15} />
-            {posting ? 'Posting…' : 'Post'}
           </Button>
         </div>
       </form>
