@@ -53,7 +53,7 @@ export function CountdownOverlay() {
 				// 176 × 176 with a 40 pt corner: the glass the app draws under it is that shape.
 				className={
 					onGlass
-						? "size-44 items-center justify-center gap-1 rounded-[40px] bg-transparent text-white shadow-none"
+						? "size-44 items-center justify-center gap-1 rounded-[40px] bg-transparent text-white shadow-[0_6px_16px_rgba(0,0,0,0.28)]"
 						: "size-44 items-center justify-center gap-1"
 				}
 				aria-live="assertive"

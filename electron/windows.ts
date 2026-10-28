@@ -1228,8 +1228,9 @@ export function createSourceSelectorWindow(): BrowserWindow {
 	return win;
 }
 
-// The countdown card, centred in its window, sits on Liquid Glass on macOS 26+.
-const COUNTDOWN_WINDOW_SIZE = 200;
+// The countdown card, centred in its window, sits on Liquid Glass on macOS 26+. The window
+// leaves room for the shadow the page draws; the macOS shadow would trace a dark line round it.
+const COUNTDOWN_WINDOW_SIZE = 240;
 const COUNTDOWN_CARD = { size: 176, radius: 40 };
 
 export function createCountdownWindow(): BrowserWindow {
@@ -1253,8 +1254,7 @@ export function createCountdownWindow(): BrowserWindow {
 		resizable: false,
 		alwaysOnTop: true,
 		skipTaskbar: true,
-		// Glass gets the macOS shadow, as the bars do.
-		hasShadow: glass,
+		hasShadow: false,
 		focusable: true,
 		show: false,
 		webPreferences: {
@@ -1267,7 +1267,7 @@ export function createCountdownWindow(): BrowserWindow {
 	countdownWindow = win;
 	if (glass) {
 		const inset = (COUNTDOWN_WINDOW_SIZE - COUNTDOWN_CARD.size) / 2;
-		// If the glass can't be placed, the card keeps its own fill and no shadow.
+		// If the glass can't be placed, the card keeps its own fill.
 		glass = setWindowGlassRects(win, [
 			{
 				x: inset,
@@ -1277,7 +1277,6 @@ export function createCountdownWindow(): BrowserWindow {
 				radius: COUNTDOWN_CARD.radius,
 			},
 		]);
-		if (!glass) win.setHasShadow(false);
 	}
 
 	win.setVisibleOnAllWorkspaces(true, {
