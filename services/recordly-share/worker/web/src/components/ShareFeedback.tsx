@@ -17,7 +17,14 @@ import {
   PaperPlaneTiltIcon,
   TextAlignLeftIcon,
 } from '@phosphor-icons/react';
-import { useEffect, useState, type Dispatch, type SetStateAction, type RefObject } from 'react';
+import {
+  useEffect,
+  useState,
+  useSyncExternalStore,
+  type Dispatch,
+  type SetStateAction,
+  type RefObject,
+} from 'react';
 import {
   fetchComments,
   formatDate,
@@ -42,6 +49,21 @@ interface Props {
   setSelectedTab: (tab: string) => void;
 }
 
+const phoneQuery = '(max-width: 760px)';
+
+/** True on phone-width screens, matching the page's phone layout. */
+function usePhoneWidth() {
+  return useSyncExternalStore(
+    (onChange) => {
+      const media = window.matchMedia(phoneQuery);
+      media.addEventListener('change', onChange);
+      return () => media.removeEventListener('change', onChange);
+    },
+    () => window.matchMedia(phoneQuery).matches,
+    () => false,
+  );
+}
+
 export default function ShareFeedback({
   data,
   time,
@@ -62,6 +84,11 @@ export default function ShareFeedback({
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [moreLoading, setMoreLoading] = useState(false);
+  // Phones show comments only.
+  const phone = usePhoneWidth();
+  const showTranscript = !phone && data.segments.length > 0;
+  const showDetails = !phone && Boolean(data.video.summary || data.chapters.length > 0);
+  const tabbed = showTranscript || showDetails;
   const activeIndex = comments.reduce(
     (found, comment, i) => (comment.timestamp <= time + 0.3 ? i : found),
     -1,
@@ -143,24 +170,26 @@ export default function ShareFeedback({
 
   return (
     <Card className="feedback-card">
+      {!tabbed && <h2 className="feedback-title">Comments</h2>}
       <Tabs
-        selectedKey={selectedTab}
+        selectedKey={tabbed ? selectedTab : 'comments'}
         onSelectionChange={(key) => setSelectedTab(String(key))}
         className="feedback-tabs"
       >
-        <Tabs.ListContainer>
+        {/* With comments alone, the title above stands in for the switcher. */}
+        <Tabs.ListContainer className={tabbed ? undefined : 'hidden'}>
           <Tabs.List aria-label="Recording feedback">
             <Tabs.Tab id="comments" aria-label={total > 0 ? `Comments, ${total}` : 'Comments'}>
               <ChatCenteredIcon size={18} />
               <Tabs.Indicator />
             </Tabs.Tab>
-            {data.segments.length > 0 && (
+            {showTranscript && (
               <Tabs.Tab id="transcript" aria-label="Transcript">
                 <TextAlignLeftIcon size={18} />
                 <Tabs.Indicator />
               </Tabs.Tab>
             )}
-            {(data.video.summary || data.chapters.length > 0) && (
+            {showDetails && (
               <Tabs.Tab id="details" aria-label="Details">
                 <InfoIcon size={18} />
                 <Tabs.Indicator />
@@ -236,7 +265,7 @@ export default function ShareFeedback({
             )}
           </PagedPanel>
         </Tabs.Panel>
-        {data.segments.length > 0 && (
+        {showTranscript && (
           <Tabs.Panel id="transcript">
             <PagedPanel label="Transcript">
               {data.segments.map((segment, i) => (
@@ -273,7 +302,7 @@ export default function ShareFeedback({
             </PagedPanel>
           </Tabs.Panel>
         )}
-        {(data.video.summary || data.chapters.length > 0) && (
+        {showDetails && (
           <Tabs.Panel id="details">
             <PagedPanel label="Details">
               <section className="recording-details">
@@ -310,7 +339,7 @@ export default function ShareFeedback({
       </Tabs>
       <form
         className="composer"
-        hidden={selectedTab !== 'comments'}
+        hidden={tabbed && selectedTab !== 'comments'}
         onSubmit={(e) => {
           e.preventDefault();
           void submit();
