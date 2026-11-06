@@ -1,11 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { hasNoiseFilter, normalizeNoiseFilterStrength } from "@/lib/noiseFilterStrength";
+import {
+	getClipVoiceCleanup,
+	parseVoiceCleanupKey,
+	voiceCleanupKey,
+} from "@/lib/noiseFilterStrength";
 import type { ClipRegion } from "../types";
 
-const strengthKey = (strength: number) => String(normalizeNoiseFilterStrength(strength));
+const clipCleanupKey = (clip: ClipRegion) => {
+	const cleanup = getClipVoiceCleanup(clip);
+	return cleanup ? voiceCleanupKey(cleanup) : null;
+};
 
 /**
- * The cleaned voice for clips with Filter noise on. The voice is the microphone file when
+ * The cleaned voice for clips with Filter noise or Remove fillers on. The voice is the microphone file when
  * the recording has one, else the recording's own sound (a microphone-only recording).
  * Cleaned copies are made in the background; until one is ready the clip plays as recorded.
  */
@@ -28,44 +35,42 @@ export function useNoiseFilterAudio({
 			(shouldMutePreviewVideo ? null : videoPath),
 		[previewSourceAudioFallbackPaths, shouldMutePreviewVideo, videoPath],
 	);
-	const strengthsInUse = useMemo(
+	const cleanupsInUse = useMemo(
 		() => [
 			...new Set(
-				clipRegions.filter(hasNoiseFilter).map((clip) => strengthKey(clip.noiseFilter)),
+				clipRegions.map(clipCleanupKey).filter((key): key is string => key !== null),
 			),
 		],
 		[clipRegions],
 	);
 	const [cleaned, setCleaned] = useState<{
 		sourcePath: string | null;
-		pathByStrength: Record<string, string>;
-	}>({ sourcePath: null, pathByStrength: {} });
+		pathByCleanup: Record<string, string>;
+	}>({ sourcePath: null, pathByCleanup: {} });
 
 	useEffect(() => {
 		if (!sourcePath) return;
-		const missing = strengthsInUse.filter(
-			(key) => !(cleaned.sourcePath === sourcePath && cleaned.pathByStrength[key]),
+		const missing = cleanupsInUse.filter(
+			(key) => !(cleaned.sourcePath === sourcePath && cleaned.pathByCleanup[key]),
 		);
 		if (missing.length === 0) return;
 		let cancelled = false;
-		// Wait for the Strength slider to settle, so a drag makes one copy rather than one per step.
+		// Wait for the settings to settle, so quick toggling makes one copy rather than several.
 		const timer = window.setTimeout(() => {
 			for (const key of missing) {
 				void window.electronAPI
-					?.createCleanedAudio(sourcePath, Number(key))
+					?.createCleanedAudio(sourcePath, parseVoiceCleanupKey(key))
 					.then((result) => {
 						if (cancelled) return;
 						if (!result.success || !result.path) {
-							console.warn("Noise filter unavailable:", result.error);
+							console.warn("Voice cleanup unavailable:", result.error);
 							return;
 						}
 						const cleanedPath = result.path;
 						setCleaned((current) => ({
 							sourcePath,
-							pathByStrength: {
-								...(current.sourcePath === sourcePath
-									? current.pathByStrength
-									: {}),
+							pathByCleanup: {
+								...(current.sourcePath === sourcePath ? current.pathByCleanup : {}),
 								[key]: cleanedPath,
 							},
 						}));
@@ -76,25 +81,23 @@ export function useNoiseFilterAudio({
 			cancelled = true;
 			window.clearTimeout(timer);
 		};
-	}, [sourcePath, strengthsInUse, cleaned]);
+	}, [sourcePath, cleanupsInUse, cleaned]);
 
-	const pathByStrength = useMemo(
+	const pathByCleanup = useMemo(
 		() =>
 			cleaned.sourcePath === sourcePath
 				? Object.fromEntries(
-						strengthsInUse
-							.filter((key) => cleaned.pathByStrength[key])
-							.map((key) => [key, cleaned.pathByStrength[key]]),
+						cleanupsInUse
+							.filter((key) => cleaned.pathByCleanup[key])
+							.map((key) => [key, cleaned.pathByCleanup[key]]),
 					)
 				: {},
-		[cleaned, sourcePath, strengthsInUse],
+		[cleaned, sourcePath, cleanupsInUse],
 	);
-	const alternatePaths = useMemo(() => Object.values(pathByStrength), [pathByStrength]);
+	const alternatePaths = useMemo(() => Object.values(pathByCleanup), [pathByCleanup]);
 	const activeClip = clipRegions.find((clip) => clip.id === activeClipId);
-	const activeCleanedPath =
-		activeClip && hasNoiseFilter(activeClip)
-			? (pathByStrength[strengthKey(activeClip.noiseFilter)] ?? null)
-			: null;
+	const activeKey = activeClip ? clipCleanupKey(activeClip) : null;
+	const activeCleanedPath = activeKey ? (pathByCleanup[activeKey] ?? null) : null;
 
 	/** 1 for the copy of the voice that should be heard now, 0 for the others. */
 	const getNoiseFilterGate = useCallback(
@@ -108,7 +111,6 @@ export function useNoiseFilterAudio({
 
 	return {
 		noiseFilterSourcePath: sourcePath,
-		cleanedAudioPathByStrength: pathByStrength,
 		alternatePaths,
 		getNoiseFilterGate,
 		/** The video's own sound is the voice and the cleaned copy is playing instead. */

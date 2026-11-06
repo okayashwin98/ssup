@@ -165,7 +165,6 @@ export function useVideoEditorAudio({
 		embeddedSourcePreviewGain,
 		getSourceTrackPreviewGain,
 		noiseFilterSourcePath: noiseFilter.noiseFilterSourcePath,
-		cleanedAudioPathByStrength: noiseFilter.cleanedAudioPathByStrength,
 		replacesVideoAudio: noiseFilter.replacesVideoAudio,
 	};
 }

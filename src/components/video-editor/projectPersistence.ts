@@ -474,6 +474,7 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 						...(isFiniteNumber(region.noiseFilter) && region.noiseFilter > 0
 							? { noiseFilter: Math.min(1, region.noiseFilter) }
 							: {}),
+						...(region.removeFillers === true ? { removeFillers: true } : {}),
 						showSourceAudio:
 							typeof region.showSourceAudio === "boolean"
 								? region.showSourceAudio

@@ -188,6 +188,19 @@ export function useClipRegionCommands({
 		},
 		[selectedClipId, setClipRegions],
 	);
+	const handleClipRemoveFillersChange = useCallback(
+		(remove: boolean) => {
+			if (!selectedClipId) return;
+			setClipRegions((current) =>
+				current.map((clip) => {
+					if (clip.id !== selectedClipId) return clip;
+					const { removeFillers: _previous, ...rest } = clip;
+					return remove ? { ...rest, removeFillers: true } : rest;
+				}),
+			);
+		},
+		[selectedClipId, setClipRegions],
+	);
 	const handleClipShowSourceAudioChange = useCallback(
 		(showSourceAudio: boolean) => {
 			if (!selectedClipId) return;
@@ -215,6 +228,7 @@ export function useClipRegionCommands({
 		handleClipSpeedChange,
 		handleClipMutedChange,
 		handleClipNoiseFilterChange,
+		handleClipRemoveFillersChange,
 		handleClipShowSourceAudioChange,
 		handleClipDelete,
 	};

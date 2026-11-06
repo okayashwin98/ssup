@@ -50,6 +50,10 @@ const helpers = [
 		source: "AppIcons.swift",
 		output: "recordly-app-icons",
 	},
+	{
+		source: "FillerDetector.swift",
+		output: "recordly-filler-detector",
+	},
 ];
 
 const swiftcCheck = spawnSync("swiftc", ["--version"], { encoding: "utf8" });

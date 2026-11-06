@@ -27,7 +27,7 @@
 		"title": "Clip",
 		"mute": "Mute clip",
 		"filterNoise": "Filter noise",
-		"filterNoiseStrength": "Strength",
+		"removeFillers": "Remove fillers",
 		"resetAudioSettings": "Reset audio settings",
 		"mutedState": "Audio is muted",
 		"unmutedState": "Audio is playing",

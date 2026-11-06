@@ -247,6 +247,8 @@ export interface ClipRegion {
 	muted?: boolean;
 	/** Background noise removed from the voice, at this strength (0.1–1); absent when off. */
 	noiseFilter?: number;
+	/** "Um"s and "uh"s in the voice replaced with the room's background sound. */
+	removeFillers?: boolean;
 	/** Export only, never saved: the cleaned copy of `sourcePath` this clip plays instead. */
 	cleanedAudio?: { sourcePath: string; path: string };
 	showSourceAudio?: boolean;

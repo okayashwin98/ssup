@@ -448,6 +448,8 @@ interface SettingsPanelProps {
 	/** 0 when the filter is off. */
 	selectedClipNoiseFilter?: number | null;
 	onClipNoiseFilterChange?: (strength: number) => void;
+	selectedClipRemoveFillers?: boolean | null;
+	onClipRemoveFillersChange?: (remove: boolean) => void;
 	onClipDelete?: (id: string) => void;
 	selectedAudioId?: string | null;
 	selectedAudioVolume?: number | null;
@@ -912,6 +914,8 @@ export function SettingsPanel({
 	onClipMutedChange,
 	selectedClipNoiseFilter,
 	onClipNoiseFilterChange,
+	selectedClipRemoveFillers,
+	onClipRemoveFillersChange,
 	onClipDelete,
 	selectedAudioId,
 	selectedAudioVolume,
@@ -2815,17 +2819,16 @@ export function SettingsPanel({
 						aria-label={tSettings("clip.filterNoise", "Filter noise")}
 					/>
 				</label>
-				{(selectedClipNoiseFilter ?? 0) > 0 && (
-					<SliderControl
-						label={tSettings("clip.filterNoiseStrength", "Strength")}
-						value={selectedClipNoiseFilter ?? 1}
-						min={0.1}
-						max={1}
-						step={0.1}
-						onChange={(value) => onClipNoiseFilterChange?.(value)}
-						formatValue={(value) => `${Math.round(value * 100)}%`}
+				<label className="flex items-center justify-between py-2">
+					<span className="text-xs font-medium text-foreground">
+						{tSettings("clip.removeFillers", "Remove fillers")}
+					</span>
+					<Switch
+						checked={selectedClipRemoveFillers ?? false}
+						onCheckedChange={(remove) => onClipRemoveFillersChange?.(remove)}
+						aria-label={tSettings("clip.removeFillers", "Remove fillers")}
 					/>
-				)}
+				</label>
 				{hasClipAudioOverrides && onResetClipAudio && (
 					<Button type="button" variant="ghost" onClick={onResetClipAudio}>
 						{tSettings("clip.resetAudioSettings", "Reset audio settings")}
