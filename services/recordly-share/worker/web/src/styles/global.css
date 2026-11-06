@@ -26,6 +26,8 @@
     background: var(--background);
     color: var(--foreground);
     color-scheme: light dark;
+    /* Buttons show their own pressed state; no grey flash from iOS on top of it. */
+    -webkit-tap-highlight-color: transparent;
   }
   body {
     margin: 0;
@@ -435,9 +437,12 @@
   width: 42%;
   height: 42%;
 }
-.video-cover:hover .video-cover-play {
-  transform: translate(-50%, -50%) scale(1.05);
-  background: rgba(40, 40, 40, 0.78);
+/* Hover styles only where there is a pointer; on touch screens :hover sticks after a tap. */
+@media (hover: hover) {
+  .video-cover:hover .video-cover-play {
+    transform: translate(-50%, -50%) scale(1.05);
+    background: rgba(40, 40, 40, 0.78);
+  }
 }
 .video-cover-text {
   position: absolute;
@@ -533,7 +538,6 @@
   transition: opacity 200ms ease;
 }
 .video-shell.controls-shown .video-toolbar,
-.video-toolbar:hover,
 .video-toolbar:focus-within {
   opacity: 1;
 }
@@ -542,19 +546,33 @@
   pointer-events: none;
 }
 .video-shell.controls-shown .video-toolbar :is(.video-progress, .video-controls, .timeline-marker),
-.video-toolbar:hover :is(.video-progress, .video-controls, .timeline-marker),
 .video-toolbar:focus-within :is(.video-progress, .video-controls, .timeline-marker) {
   pointer-events: auto;
+}
+@media (hover: hover) {
+  .video-toolbar:hover {
+    opacity: 1;
+  }
+  .video-toolbar:hover :is(.video-progress, .video-controls, .timeline-marker) {
+    pointer-events: auto;
+  }
+  .video-toolbar .button:hover,
+  .video-toolbar .button[data-hovered='true'] {
+    background: rgb(255 255 255 / 0.14);
+  }
+  .volume-group:hover .volume-control {
+    width: 88px;
+    margin: 0 10px 0 6px;
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 120ms ease, visibility 0s;
+  }
 }
 .video-shell.controls-hidden .video-stage {
   cursor: none;
 }
 .video-toolbar .button {
   color: white;
-}
-.video-toolbar .button:hover,
-.video-toolbar .button[data-hovered='true'] {
-  background: rgb(255 255 255 / 0.14);
 }
 /* Pressed, open or switched on: a stronger tint of the same white, so the white label stays readable. */
 .video-toolbar .button:is([data-pressed='true'], [aria-expanded='true'], [aria-pressed='true']) {
@@ -589,7 +607,6 @@
   /* Fade only: the width snaps open and stays until the fade-out ends. */
   transition: opacity 120ms ease, width 0s 120ms, margin 0s 120ms, visibility 0s 120ms;
 }
-.volume-group:hover .volume-control,
 .volume-group:focus-within .volume-control {
   width: 88px;
   margin: 0 10px 0 6px;
@@ -868,8 +885,10 @@
   .reaction-buttons {
     gap: 0;
   }
+  /* Finger-sized: Apple asks for at least 44 points. */
   .reaction-buttons .button {
-    min-width: 32px;
+    min-width: 44px;
+    height: 44px;
     padding-inline: 6px;
   }
   .reaction-rail {
@@ -1017,9 +1036,16 @@
   .touch-controls-row { display: flex; align-items: center; gap: clamp(2px, 2.5cqw, 28px); }
   .touch-controls .button { color: white; width: clamp(40px, 12cqw, 48px); height: clamp(40px, 12cqw, 48px); min-width: 0; border-radius: 999px; }
   .touch-controls .touch-play { width: clamp(52px, 16cqw, 64px); height: clamp(52px, 16cqw, 64px); background: rgb(0 0 0 / 0.45); }
-  /* Hover and press darken to black, so the white icons stay readable. */
-  .touch-controls .button:is(:hover, [data-hovered="true"], [data-pressed="true"]) { color: white; background: rgb(0 0 0 / 0.75); }
+  /* A press darkens to black, so the white icons stay readable; it clears when the finger lifts. */
+  .touch-controls .button[data-pressed="true"] { color: white; background: rgb(0 0 0 / 0.75); }
+  @media (hover: hover) { .touch-controls .button:hover { color: white; background: rgb(0 0 0 / 0.75); } }
   .touch-time { font-size: 14px; font-variant-numeric: tabular-nums; color: rgb(255 255 255 / 0.9); }
+  /* Finger-sized taps in the header and on comments. */
+  .viewer-heading-actions .button { width: 44px; height: 44px; min-width: 44px; }
+  .comment-heading .button { min-height: 40px; }
+  .comment-box .button { min-height: 40px; }
+  /* A larger tap area round a time inside a comment, without moving the text. */
+  .inline-timestamp { padding: 8px 4px; margin: -8px -2px; }
   /* The cover keeps the desktop layout, smaller so the text clears the play button. */
   .video-cover-text { left: 14px; right: 14px; bottom: 12px; gap: 6px; }
   .video-cover-title { font-size: clamp(16px, 4.6cqw, 22px); }
