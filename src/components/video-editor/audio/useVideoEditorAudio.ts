@@ -6,6 +6,7 @@ import { findClipAtTimelineTime } from "../types";
 import { isClipMutedById } from "./clipAudio";
 import { useAudioPreviewSync } from "./useAudioPreviewSync";
 import { useClipAudioSettingsController } from "./useClipAudioSettingsController";
+import { useNoiseFilterAudio } from "./useNoiseFilterAudio";
 import { useSourceAudioFallback } from "./useSourceAudioFallback";
 
 function extractLocalPathFromMediaServerUrl(input: string | null | undefined): string | null {
@@ -116,6 +117,19 @@ export function useVideoEditorAudio({
 		hiddenTimelineLayers,
 	});
 
+	const noiseFilter = useNoiseFilterAudio({
+		clipRegions,
+		activeClipId: activeClipIdAtCurrentTime,
+		previewSourceAudioFallbackPaths,
+		shouldMutePreviewVideo,
+		videoPath: fallbackLookupSourcePath,
+	});
+	const { getNoiseFilterGate } = noiseFilter;
+	const getFilteredSourceTrackPreviewGain = React.useCallback(
+		(audioPath: string) => getSourceTrackPreviewGain(audioPath) * getNoiseFilterGate(audioPath),
+		[getSourceTrackPreviewGain, getNoiseFilterGate],
+	);
+
 	const { playSourceAudioPreview } = useAudioPreviewSync({
 		audioRegions,
 		previewVolume,
@@ -125,10 +139,11 @@ export function useVideoEditorAudio({
 		duration,
 		sourcePlaybackRate: findClipAtTimelineTime(timelineTime * 1000, clipRegions)?.speed ?? 1,
 		previewSourceAudioFallbackPaths,
+		alternateSourceAudioPaths: noiseFilter.alternatePaths,
 		sourceAudioFallbackStartDelayMsByPath,
 		sourceAudioResourceVersion: sourceAudioFallbackRefreshKey,
 		isCurrentClipMuted,
-		getSourceTrackPreviewGain,
+		getSourceTrackPreviewGain: getFilteredSourceTrackPreviewGain,
 		onSourceFallbackLoadError,
 	});
 
@@ -149,5 +164,8 @@ export function useVideoEditorAudio({
 		onSelectedClipSourceAudioTrackNormalizeChange,
 		embeddedSourcePreviewGain,
 		getSourceTrackPreviewGain,
+		noiseFilterSourcePath: noiseFilter.noiseFilterSourcePath,
+		cleanedAudioPathByStrength: noiseFilter.cleanedAudioPathByStrength,
+		replacesVideoAudio: noiseFilter.replacesVideoAudio,
 	};
 }

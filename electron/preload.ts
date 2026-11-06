@@ -594,6 +594,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	getVideoAudioFallbackPaths: (videoPath: string) => {
 		return ipcRenderer.invoke("get-video-audio-fallback-paths", videoPath);
 	},
+	createCleanedAudio: (sourcePath: string, strength: number) => {
+		return ipcRenderer.invoke("create-cleaned-audio", sourcePath, strength);
+	},
 	getSources: async (opts: Electron.SourcesOptions) => {
 		return await ipcRenderer.invoke("get-sources", opts);
 	},

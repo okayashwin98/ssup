@@ -28,6 +28,8 @@ interface UseAudioPreviewSyncParams {
 	duration: number;
 	sourcePlaybackRate: number;
 	previewSourceAudioFallbackPaths: string[];
+	/** Further copies of the source audio (the cleaned voice) kept playing in step; their gain decides which is heard. */
+	alternateSourceAudioPaths?: string[];
 	sourceAudioFallbackStartDelayMsByPath: Record<string, number>;
 	sourceAudioResourceVersion: number;
 	isCurrentClipMuted: boolean;
@@ -44,6 +46,7 @@ export function useAudioPreviewSync({
 	duration,
 	sourcePlaybackRate,
 	previewSourceAudioFallbackPaths,
+	alternateSourceAudioPaths,
 	sourceAudioFallbackStartDelayMsByPath,
 	sourceAudioResourceVersion,
 	isCurrentClipMuted,
@@ -63,9 +66,14 @@ export function useAudioPreviewSync({
 		() => resolvedPlan.tracks.filter((track) => track.kind === "user"),
 		[resolvedPlan],
 	);
-	const resolvedSourceTracks = useMemo(
-		() => resolvedPlan.tracks.filter((track) => track.kind !== "user"),
-		[resolvedPlan],
+	const sourceAudioPaths = useMemo(
+		() => [
+			...resolvedPlan.tracks
+				.filter((track) => track.kind !== "user")
+				.map((track) => track.sourceRef.path),
+			...(alternateSourceAudioPaths ?? []),
+		],
+		[resolvedPlan, alternateSourceAudioPaths],
 	);
 
 	const audioElementsRef = useRef<Map<string, HTMLAudioElement>>(new Map());
@@ -173,7 +181,7 @@ export function useAudioPreviewSync({
 
 	useEffect(() => {
 		const existing = sourceAudioElementsRef.current;
-		const currentIds = new Set(resolvedSourceTracks.map((track) => track.sourceRef.path));
+		const currentIds = new Set(sourceAudioPaths);
 
 		for (const [id, audio] of existing) {
 			if (!currentIds.has(id)) {
@@ -190,8 +198,7 @@ export function useAudioPreviewSync({
 			}
 		}
 
-		for (const track of resolvedSourceTracks) {
-			const audioPath = track.sourceRef.path;
+		for (const audioPath of sourceAudioPaths) {
 			const resourceKey = getAudioResourceVersionKey(audioPath, sourceAudioResourceVersion);
 			let audio = existing.get(audioPath);
 			if (!audio) {
@@ -281,14 +288,14 @@ export function useAudioPreviewSync({
 				: Math.max(0, Math.min(1, previewVolume));
 		}
 
-		if (resolvedSourceTracks.length === 0) {
+		if (sourceAudioPaths.length === 0) {
 			lastSourceAudioSyncTimeRef.current = null;
 		}
 	}, [
 		getSourceTrackPreviewGain,
 		isCurrentClipMuted,
 		onSourceFallbackLoadError,
-		resolvedSourceTracks,
+		sourceAudioPaths,
 		sourceAudioResourceVersion,
 		previewVolume,
 	]);
@@ -372,7 +379,7 @@ export function useAudioPreviewSync({
 	}, [isPlaying, resolvedUserTracks, timelineTime]);
 
 	useEffect(() => {
-		if (resolvedSourceTracks.length === 0) {
+		if (sourceAudioPaths.length === 0) {
 			lastSourceAudioSyncTimeRef.current = null;
 			return;
 		}
@@ -446,8 +453,16 @@ export function useAudioPreviewSync({
 			}
 
 			// KISS for companion source tracks: fixed playback rate avoids audible flutter/stutter
-			// from continuous micro-corrections on system audio.
-			const syncedPlaybackRate = sourcePlaybackRate;
+			// from continuous micro-corrections on system audio. A cleaned voice can stand in for
+			// the video's own sound, so it is eased onto the picture instead.
+			const syncedPlaybackRate =
+				isPlaying && alternateSourceAudioPaths?.includes(sourceAudioPath)
+					? getMediaSyncPlaybackRate({
+							basePlaybackRate: sourcePlaybackRate,
+							currentTime: audio.currentTime,
+							targetTime,
+						})
+					: sourcePlaybackRate;
 			if (Math.abs(audio.playbackRate - syncedPlaybackRate) > 0.001) {
 				audio.playbackRate = syncedPlaybackRate;
 			}
@@ -484,7 +499,8 @@ export function useAudioPreviewSync({
 		isCurrentClipMuted,
 		isPlaying,
 		previewVolume,
-		resolvedSourceTracks,
+		sourceAudioPaths,
+		alternateSourceAudioPaths,
 		sourceAudioFallbackStartDelayMsByPath,
 		ensureSourceAudioRunning,
 	]);

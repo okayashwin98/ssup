@@ -1,5 +1,11 @@
 import { isTimelineLayerOn, visibleTrackRegions } from "../timeline/timelineLayers";
-import { type ComponentProps, type Dispatch, type RefObject, type SetStateAction, useMemo } from "react";
+import {
+	type ComponentProps,
+	type Dispatch,
+	type RefObject,
+	type SetStateAction,
+	useMemo,
+} from "react";
 import type { AspectRatio } from "@/utils/aspectRatioUtils";
 import type { useVideoEditorAudio } from "../audio/useVideoEditorAudio";
 import type { useAppearanceState } from "../state/useAppearanceState";
@@ -140,7 +146,7 @@ export function EditorVideoPreview({
 			cursorClickBounceDuration={appearance.cursorClickBounceDuration}
 			cursorSway={appearance.cursorSway}
 			volume={
-				audio.shouldMutePreviewVideo || audio.isCurrentClipMuted
+				audio.shouldMutePreviewVideo || audio.isCurrentClipMuted || audio.replacesVideoAudio
 					? 0
 					: Math.max(0, Math.min(1, previewVolume * audio.embeddedSourcePreviewGain))
 			}

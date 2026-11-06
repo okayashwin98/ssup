@@ -37,6 +37,7 @@ import {
 	writeCursorTelemetry,
 } from "../cursor/telemetry";
 import { getFfmpegBinaryPath } from "../ffmpeg/binary";
+import { createCleanedAudio } from "../recording/noiseFilter";
 import { getMonitorHandles } from "../monitorResolver";
 import {
 	ensureNativeCaptureHelperBinary,
@@ -46,7 +47,7 @@ import {
 	getSystemCursorHelperSourcePath,
 	getWindowsCaptureExePath,
 } from "../paths/binaries";
-import { rememberApprovedLocalReadPath } from "../project/manager";
+import { isAllowedLocalReadPath, rememberApprovedLocalReadPath } from "../project/manager";
 import {
 	getBrowserMicSidecarFilters,
 	shouldKeepRecordingAudioSidecars,
@@ -1478,6 +1479,24 @@ export function registerRecordingHandlers(
 			return { success: false, paths: [], startDelayMsByPath: {}, error: String(error) };
 		}
 	});
+
+	ipcMain.handle(
+		"create-cleaned-audio",
+		async (_event, sourcePath: unknown, strength: unknown) => {
+			if (typeof sourcePath !== "string" || typeof strength !== "number" || !(strength > 0))
+				return { success: false, error: "Invalid noise filter request" };
+			if (!isAllowedLocalReadPath(sourcePath))
+				return { success: false, error: "That recording can't be read" };
+			try {
+				const path = await createCleanedAudio(sourcePath, strength);
+				await rememberApprovedLocalReadPath(path);
+				return { success: true, path };
+			} catch (error) {
+				console.error("Noise filter failed:", error);
+				return { success: false, error: String(error) };
+			}
+		},
+	);
 
 	ipcMain.handle("mux-native-windows-recording", async (_event, expectedDurationMs?: number) => {
 		const start = Date.now();

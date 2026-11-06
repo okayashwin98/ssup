@@ -1,3 +1,4 @@
+import { clipNeedsRenderedAudio } from "@/lib/noiseFilterStrength";
 import type { WebDemuxer } from "web-demuxer";
 import type {
 	AudioRegion,
@@ -162,7 +163,7 @@ export class AudioProcessor extends AudioTranscodeProcessor {
 			sortedAudioRegions.length > 0 ||
 			needsSourceAudioMixing ||
 			hasNonDefaultSourceTrackSettings(sourceAudioTrackSettings) ||
-			(clipRegions ?? []).some((clip) => Boolean(clip.muted))
+			(clipRegions ?? []).some(clipNeedsRenderedAudio)
 		) {
 			await this.renderAndMuxOfflineAudio(
 				videoUrl,

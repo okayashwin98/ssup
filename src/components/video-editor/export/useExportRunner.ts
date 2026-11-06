@@ -1,3 +1,4 @@
+import { withCleanedAudio } from "../audio/noiseFilterExport";
 import { visibleTrackRegions, withHiddenSourceTracksSilent } from "../timeline/timelineLayers";
 import { useCallback, useRef } from "react";
 import { toast } from "@/components/ui/toast";
@@ -288,7 +289,8 @@ export function useExportRunner(input: ExportRunnerInput) {
 						experimentalNvidiaCudaExport,
 						nvidiaCudaExportAvailable,
 					});
-					const supportedSourceDimensions = await ensureSupportedMp4SourceDimensions(selectedMp4FrameRate);
+					const supportedSourceDimensions =
+						await ensureSupportedMp4SourceDimensions(selectedMp4FrameRate);
 					if (exportWasCancelled()) return;
 					const requestedDimensions = calculateMp4ExportDimensions(
 						supportedSourceDimensions.width,
@@ -317,6 +319,12 @@ export function useExportRunner(input: ExportRunnerInput) {
 							? audio.selectedClipSourceAudioTrackSettings
 							: audio.activeSourceAudioTrackSettings,
 						appearance.hiddenTimelineLayers,
+					);
+
+					// Noise-filtered clips export with their cleaned voice.
+					const clipRegionsForExport = await withCleanedAudio(
+						clipRegions,
+						audio.noiseFilterSourcePath,
 					);
 
 					const exporterConfig = {
@@ -351,7 +359,7 @@ export function useExportRunner(input: ExportRunnerInput) {
 							},
 						}),
 						audioRegions,
-						clipRegions,
+						clipRegions: clipRegionsForExport,
 						sourceAudioFallbackPaths: audio.sourceAudioFallbackPaths,
 						sourceAudioFallbackStartDelayMsByPath:
 							audio.sourceAudioFallbackStartDelayMsByPath,

@@ -1,3 +1,4 @@
+import { clipNeedsRenderedAudio } from "@/lib/noiseFilterStrength";
 import type {
 	AnnotationRegion,
 	AudioRegion,
@@ -1501,7 +1502,7 @@ export class ModernVideoExporter {
 			sourceAudioFallbackPaths.length > 1 ||
 			hasTimedSourceAudioFallback ||
 			hasNonDefaultSourceTrackSettings(this.config.sourceAudioTrackSettings) ||
-			(this.config.clipRegions ?? []).some((clip) => Boolean(clip.muted))
+			(this.config.clipRegions ?? []).some(clipNeedsRenderedAudio)
 		) {
 			const sourceDurationMs = Math.max(
 				0,
@@ -1524,7 +1525,7 @@ export class ModernVideoExporter {
 			const requiresRenderedEditedTrack =
 				requiresClipTimelineRendering(this.config.clipRegions) ||
 				hasNonDefaultSourceTrackSettings(this.config.sourceAudioTrackSettings) ||
-				(this.config.clipRegions ?? []).some((clip) => Boolean(clip.muted));
+				(this.config.clipRegions ?? []).some(clipNeedsRenderedAudio);
 			const strategy =
 				canUsePrimaryAudioFiltergraph && !requiresRenderedEditedTrack
 					? classifyEditedTrackStrategy({

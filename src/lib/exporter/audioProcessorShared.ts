@@ -148,8 +148,18 @@ export interface TimelineSlice {
 
 export interface PreparedOfflineRender {
 	usesClipTimeline?: boolean;
-	mainBufferEntry: { buffer: AudioBuffer; gain: number } | null;
-	companionEntries: Array<{ buffer: AudioBuffer; startDelaySec: number; gain: number }>;
+	/** An entry's own muted ranges replace `mutedSourceOutputRangesSec` (noise-filtered clips). */
+	mainBufferEntry: {
+		buffer: AudioBuffer;
+		gain: number;
+		mutedOutputRangesSec?: Array<{ startSec: number; endSec: number }>;
+	} | null;
+	companionEntries: Array<{
+		buffer: AudioBuffer;
+		startDelaySec: number;
+		gain: number;
+		mutedOutputRangesSec?: Array<{ startSec: number; endSec: number }>;
+	}>;
 	regionEntries: Array<{ buffer: AudioBuffer; region: AudioRegion }>;
 	mutedSourceOutputRangesSec: Array<{ startSec: number; endSec: number }>;
 	slices: TimelineSlice[];

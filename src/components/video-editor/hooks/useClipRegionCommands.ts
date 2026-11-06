@@ -174,6 +174,20 @@ export function useClipRegionCommands({
 		},
 		[selectedClipId, setClipRegions],
 	);
+	/** Strength 0 turns the filter off. */
+	const handleClipNoiseFilterChange = useCallback(
+		(strength: number) => {
+			if (!selectedClipId) return;
+			setClipRegions((current) =>
+				current.map((clip) => {
+					if (clip.id !== selectedClipId) return clip;
+					const { noiseFilter: _previous, ...rest } = clip;
+					return strength > 0 ? { ...rest, noiseFilter: strength } : rest;
+				}),
+			);
+		},
+		[selectedClipId, setClipRegions],
+	);
 	const handleClipShowSourceAudioChange = useCallback(
 		(showSourceAudio: boolean) => {
 			if (!selectedClipId) return;
@@ -200,6 +214,7 @@ export function useClipRegionCommands({
 		handleClipSpanChange,
 		handleClipSpeedChange,
 		handleClipMutedChange,
+		handleClipNoiseFilterChange,
 		handleClipShowSourceAudioChange,
 		handleClipDelete,
 	};

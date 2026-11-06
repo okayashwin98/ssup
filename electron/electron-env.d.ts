@@ -692,6 +692,11 @@ interface Window {
 			startDelayMsByPath?: Record<string, number>;
 			error?: string;
 		}>;
+		/** The recording's voice with background noise removed, made once per strength. */
+		createCleanedAudio: (
+			sourcePath: string,
+			strength: number,
+		) => Promise<{ success: boolean; path?: string; error?: string }>;
 		setRecordingState: (recording: boolean) => Promise<void>;
 		getCursorTelemetry: (videoPath?: string) => Promise<{
 			success: boolean;

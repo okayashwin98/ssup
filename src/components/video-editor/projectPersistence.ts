@@ -471,6 +471,9 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 						sourceMaxMs,
 						speed: isFiniteNumber(region.speed) && region.speed > 0 ? region.speed : 1,
 						muted: typeof region.muted === "boolean" ? region.muted : false,
+						...(isFiniteNumber(region.noiseFilter) && region.noiseFilter > 0
+							? { noiseFilter: Math.min(1, region.noiseFilter) }
+							: {}),
 						showSourceAudio:
 							typeof region.showSourceAudio === "boolean"
 								? region.showSourceAudio

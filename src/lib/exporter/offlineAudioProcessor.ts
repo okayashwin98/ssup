@@ -30,6 +30,11 @@ import {
 } from "./audioProcessorShared";
 import type { VideoMuxer } from "./muxer";
 
+const toOutputRangeSec = (clip: ClipRegion) => ({
+	startSec: Math.max(0, clip.startMs / 1000),
+	endSec: Math.max(0, clip.endMs / 1000),
+});
+
 export class OfflineAudioProcessor extends AudioMediaProcessor {
 	protected async renderAndMuxOfflineAudio(
 		videoUrl: string,
@@ -96,15 +101,17 @@ export class OfflineAudioProcessor extends AudioMediaProcessor {
 			? await this.decodeAudioFromUrl(videoUrl)
 			: null;
 		const mainBufferGain = resolveSourceTrackGain(sourceAudioTrackSettings, "mixed");
-		const mainBufferEntry = mainBuffer ? { buffer: mainBuffer, gain: mainBufferGain } : null;
+		const mainBufferEntry: PreparedOfflineRender["mainBufferEntry"] = mainBuffer
+			? { buffer: mainBuffer, gain: mainBufferGain }
+			: null;
 		if (this.cancelled) throw new Error("Export cancelled");
 
 		// Decode companion / sidecar audio files
-		const companionEntries: Array<{
-			buffer: AudioBuffer;
-			startDelaySec: number;
-			gain: number;
-		}> = [];
+		const companionEntries: PreparedOfflineRender["companionEntries"] = [];
+		const companionEntryByPath = new Map<
+			string,
+			PreparedOfflineRender["companionEntries"][number]
+		>();
 		const refDuration =
 			mainBuffer?.duration ??
 			(resolvedPlan.playbackPaths.length > 0 ? await this.getMediaDurationSec(videoUrl) : 0);
@@ -113,7 +120,7 @@ export class OfflineAudioProcessor extends AudioMediaProcessor {
 			const buffer = await this.decodeAudioFromUrl(audioPath);
 			if (!buffer) continue;
 
-			companionEntries.push({
+			const entry = {
 				buffer,
 				gain: resolveSourceTrackGain(
 					sourceAudioTrackSettings,
@@ -124,7 +131,9 @@ export class OfflineAudioProcessor extends AudioMediaProcessor {
 					buffer.duration,
 					sourceAudioFallbackStartDelayMsByPath?.[audioPath],
 				),
-			});
+			};
+			companionEntries.push(entry);
+			companionEntryByPath.set(audioPath, entry);
 		}
 		if (this.cancelled) throw new Error("Export cancelled");
 
@@ -187,10 +196,49 @@ export class OfflineAudioProcessor extends AudioMediaProcessor {
 					Number.isFinite(clip.endMs) &&
 					clip.endMs > clip.startMs,
 			)
-			.map((clip) => ({
-				startSec: Math.max(0, clip.startMs / 1000),
-				endSec: Math.max(0, clip.endMs / 1000),
-			}));
+			.map(toOutputRangeSec);
+
+		// Noise-filtered clips play a cleaned copy of their voice: the original is silenced on
+		// those clips and the copy is heard on them alone, both kept on the same timeline.
+		const filteredClipsByCleanedPath = new Map<
+			string,
+			{ sourcePath: string; clips: ClipRegion[] }
+		>();
+		for (const clip of clipRegions ?? []) {
+			if (!clip.cleanedAudio || clip.muted || !(clip.endMs > clip.startMs)) continue;
+			const group = filteredClipsByCleanedPath.get(clip.cleanedAudio.path) ?? {
+				sourcePath: clip.cleanedAudio.sourcePath,
+				clips: [],
+			};
+			group.clips.push(clip);
+			filteredClipsByCleanedPath.set(clip.cleanedAudio.path, group);
+		}
+		for (const [cleanedPath, group] of filteredClipsByCleanedPath) {
+			if (this.cancelled) throw new Error("Export cancelled");
+			// The voice is its microphone file, or else the recording's own sound.
+			const companion = companionEntryByPath.get(group.sourcePath);
+			const base =
+				companion ??
+				(resolvedPlan.playbackPaths.includes(group.sourcePath) ? null : mainBufferEntry);
+			if (!base) continue;
+			const buffer = await this.decodeAudioFromUrl(cleanedPath);
+			if (!buffer) throw new Error("The noise-filtered audio could not be read");
+			base.mutedOutputRangesSec = [
+				...(base.mutedOutputRangesSec ?? mutedSourceOutputRangesSec),
+				...group.clips.map(toOutputRangeSec),
+			];
+			companionEntries.push({
+				buffer,
+				gain: base.gain,
+				startDelaySec: companion?.startDelaySec ?? 0,
+				mutedOutputRangesSec: [
+					...mutedSourceOutputRangesSec,
+					...(clipRegions ?? [])
+						.filter((clip) => !group.clips.includes(clip) && clip.endMs > clip.startMs)
+						.map(toOutputRangeSec),
+				],
+			});
+		}
 
 		return {
 			usesClipTimeline: clipRegions !== undefined,
@@ -337,7 +385,8 @@ export class OfflineAudioProcessor extends AudioMediaProcessor {
 					prepared.mainBufferEntry.gain,
 					outputOffsetSec,
 					chunkSec,
-					prepared.mutedSourceOutputRangesSec,
+					prepared.mainBufferEntry.mutedOutputRangesSec ??
+						prepared.mutedSourceOutputRangesSec,
 				);
 			}
 
@@ -351,7 +400,7 @@ export class OfflineAudioProcessor extends AudioMediaProcessor {
 					entry.gain,
 					outputOffsetSec,
 					chunkSec,
-					prepared.mutedSourceOutputRangesSec,
+					entry.mutedOutputRangesSec ?? prepared.mutedSourceOutputRangesSec,
 				);
 			}
 
