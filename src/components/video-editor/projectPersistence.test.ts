@@ -45,6 +45,12 @@ describe("normalizeProjectEditor", () => {
 		expect(normalizeProjectEditor({ zoomsEnabled: false }).zoomsEnabled).toBe(false);
 	});
 
+	it("opens projects saved with the Snap cursor's earlier name as Snap", () => {
+		expect(normalizeProjectEditor({ cursorStyle: "snap-legacy" }).cursorStyle).toBe("snap");
+		expect(normalizeProjectEditor({ cursorStyle: "snap" }).cursorStyle).toBe("snap");
+		expect(normalizeProjectEditor({ cursorStyle: "tahoe" }).cursorStyle).toBe("tahoe");
+	});
+
 	it("ignores retired temporal blur fields when opening an older project", () => {
 		const savedEditor = {
 			zoomMotionBlur: 0.6,

@@ -782,7 +782,10 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 		typeof editor.cursorStyle === "string" && editor.cursorStyle.trim().length > 0
 			? editor.cursorStyle === "mono"
 				? "tahoe-inverted"
-				: editor.cursorStyle
+				: // The Snap cursor's earlier, longer name.
+					/^snap./.test(editor.cursorStyle)
+					? "snap"
+					: editor.cursorStyle
 			: DEFAULT_CURSOR_STYLE;
 	const normalizedMotionValues = {
 		zoomInDurationMs: normalizedZoomInDurationMs,
