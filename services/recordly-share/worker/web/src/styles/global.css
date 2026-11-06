@@ -990,7 +990,9 @@
   /* The controls sit in the middle on phones, so subtitles stay low either way. */
   .video-caption,
   .video-shell.controls-shown .video-caption { bottom: 14px; }
-  .video-caption span { font-size: 9px; line-height: 1.7; padding: 3px 6px; border-radius: 4px; }
+  /* Size and spacing go on the line box itself, or the larger page text keeps lines 24px apart. */
+  .video-caption { font-size: 9px; line-height: 20px; }
+  .video-caption span { line-height: inherit; padding: 3px 6px; border-radius: 4px; }
   .video-toolbar .video-controls,
   .video-toolbar .timeline-markers { display: none; }
   .video-progress { margin: 0; }
