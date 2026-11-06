@@ -402,7 +402,6 @@ export default function SharePlayer({
             <span className="video-cover-text">
               <span className="video-cover-title">{data.video.title}</span>
               <span className="video-cover-meta">
-                {data.creator?.name && <span className="video-cover-name">{data.creator.name}</span>}
                 <span className="video-cover-details">
                   {[formatCoverDuration(duration || data.video.duration), formatDate(data.video.created_at)]
                     .filter(Boolean)

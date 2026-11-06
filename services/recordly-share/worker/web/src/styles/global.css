@@ -466,11 +466,6 @@
   column-gap: clamp(8px, 1.2cqw, 14px);
   min-width: 0;
 }
-.video-cover-name {
-  font-family: 'Inter Display', 'DM Sans', sans-serif;
-  font-size: clamp(14px, 1.7cqw, 18px);
-  font-weight: 500;
-}
 .video-cover-details {
   font-family: 'Inter Display', 'DM Sans', sans-serif;
   font-size: clamp(12px, 1.5cqw, 16px);
@@ -1022,6 +1017,5 @@
   /* The cover keeps the desktop layout, smaller so the text clears the play button. */
   .video-cover-text { left: 14px; right: 14px; bottom: 12px; gap: 6px; }
   .video-cover-title { font-size: clamp(16px, 4.6cqw, 22px); }
-  .video-cover-name { font-size: 13px; }
   .video-cover-details { font-size: 12px; }
 }
