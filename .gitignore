@@ -45,3 +45,11 @@ tmp-*.ps1
 test-results/
 playwright-report/
 electron/native/liquid-glass/build/
+
+# Private settings: never commit these.
+.env
+.env.*
+!.env.example
+*.personal.jsonc
+.dev.vars
+.claude/

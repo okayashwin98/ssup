@@ -6,7 +6,8 @@
       "xcode_settings": {
         "CLANG_ENABLE_OBJC_ARC": "YES",
         "MACOSX_DEPLOYMENT_TARGET": "14.0",
-        "OTHER_LDFLAGS": ["-framework AppKit"]
+        "OTHER_CPLUSPLUSFLAGS": ["-ffile-prefix-map=<(module_root_dir)=."],
+        "OTHER_LDFLAGS": ["-framework AppKit", "-Wl,-S"]
       }
     }
   ]

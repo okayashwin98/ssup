@@ -474,6 +474,12 @@ function sendEditorMenuAction(
 function setupApplicationMenu() {
 	const isMac = process.platform === "darwin";
 	const template: Electron.MenuItemConstructorOptions[] = [];
+	// Recordly's licence asks for credit in the app; About SuperShare shows it.
+	app.setAboutPanelOptions({
+		applicationName: "SuperShare",
+		credits:
+			"Based on Recordly by webadderall (github.com/webadderallorg/Recordly).\nFree software under the GNU AGPL v3. Source: github.com/okayashwin98/supershare",
+	});
 	if (isMac) {
 		template.push({
 			label: app.name,

@@ -1,15 +1,15 @@
 {
-	"name": "recordly",
+	"name": "supershare",
 	"productName": "SuperShare",
-	"description": "A free, creator-focused screen recorder with auto-zoom, cursor effects, backgrounds, annotations, and more - built for polished videos out of the box.",
-	"author": "webadderall",
-	"homepage": "https://github.com/webadderallorg/Recordly",
+	"description": "A Mac screen recorder with auto-zoom, cursor effects, captions, voice cleanup and your own share links. Based on Recordly.",
+	"author": "okayashwin98",
+	"homepage": "https://github.com/okayashwin98/supershare",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/webadderallorg/Recordly.git"
+		"url": "https://github.com/okayashwin98/supershare.git"
 	},
 	"bugs": {
-		"url": "https://github.com/webadderallorg/Recordly/issues"
+		"url": "https://github.com/okayashwin98/supershare/issues"
 	},
 	"private": true,
 	"version": "1.4.0",
@@ -98,5 +98,6 @@
 		"vitest": "^3.2.7",
 		"web-demuxer": "^4.0.0"
 	},
-	"main": "dist-electron/main.cjs"
+	"main": "dist-electron/main.cjs",
+	"license": "SEE LICENSE IN LICENSE.md"
 }

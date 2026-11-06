@@ -1,3 +1,5 @@
+> **SuperShare:** this page describes Recordly's original design. To run your own share service, follow [SHARING_SETUP.md](SHARING_SETUP.md).
+
 # Recordly cloud sharing
 
 Recordly's **Export** menu offers downloading the current edit or **Create share link**. The Account button at the bottom of the left toolbar opens sign-in. Sharing renders an MP4 to a temporary file, uploads it to Recordly Share, finalizes its metadata, and removes the temporary file when the dialog closes.
