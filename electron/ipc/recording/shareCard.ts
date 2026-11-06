@@ -16,8 +16,9 @@ const PLAY_PATH =
 	"M240,128a15.74,15.74,0,0,1-7.6,13.51L88.32,229.65a16,16,0,0,1-16.2.3A15.86,15.86,0,0,1,64,216.13V39.87a15.86,15.86,0,0,1,8.12-13.82,16,16,0,0,1,16.2.3L232.4,114.49A15.74,15.74,0,0,1,240,128Z";
 
 /**
- * The link-preview image: the whole video frame with the share page's play button in the
- * middle. Where the frame's shape differs from the card's, a blurred copy fills the rest.
+ * The link-preview image: the video frame, which already holds the background and the
+ * recording, with the share page's play button in the middle. A frame close to the card's
+ * shape fills it, trimming a little background; any other shows whole on a blurred copy.
  */
 export function buildShareCardHtml(input: ShareCardInput) {
 	const poster = `data:image/jpeg;base64,${input.poster.toString("base64")}`;
@@ -26,8 +27,10 @@ export function buildShareCardHtml(input: ShareCardInput) {
 <style>
 html, body { margin: 0; width: ${SHARE_CARD_WIDTH}px; height: ${SHARE_CARD_HEIGHT}px; overflow: hidden; background: #0c0c0d; }
 .backdrop, .poster { position: absolute; inset: 0; width: 100%; height: 100%; }
-.backdrop { object-fit: cover; filter: blur(40px) brightness(0.55); transform: scale(1.15); }
+.backdrop { object-fit: cover; filter: blur(40px); transform: scale(1.15); }
 .poster { object-fit: contain; }
+.fill .backdrop { display: none; }
+.fill .poster { object-fit: cover; }
 .play { position: absolute; left: 50%; top: 50%; width: 104px; height: 104px; display: grid; place-items: center;
 	border-radius: 50%; transform: translate(-50%, -50%); background: rgba(40, 40, 40, 0.62); backdrop-filter: blur(6px); }
 .play svg { width: 42%; height: 42%; }
@@ -36,7 +39,13 @@ html, body { margin: 0; width: ${SHARE_CARD_WIDTH}px; height: ${SHARE_CARD_HEIGH
 <img class="poster" src="${poster}" alt="">
 <div class="play"><svg viewBox="0 0 256 256" fill="#fff"><path d="${PLAY_PATH}"/></svg></div>
 <script>
-document.querySelector(".poster").decode().catch(() => {}).then(() => { document.title = "ready"; });
+const poster = document.querySelector(".poster");
+poster.decode().catch(() => {}).then(() => {
+	const shape = poster.naturalWidth / poster.naturalHeight / (${SHARE_CARD_WIDTH} / ${SHARE_CARD_HEIGHT});
+	// Within 15% of the card's shape only background is trimmed (a 16:9 export loses 3% top and bottom).
+	if (shape > 0.85 && shape < 1.18) document.body.classList.add("fill");
+	document.title = "ready";
+});
 </script>
 </body></html>`;
 }
