@@ -231,13 +231,33 @@ export default function SharePlayer({
     }
   }, [videoRef]);
   const fullscreen = useCallback(async () => {
+    const page = document as Document & {
+      webkitFullscreenElement?: Element | null;
+      webkitExitFullscreen?: () => void;
+    };
+    const player = shell.current as (HTMLDivElement & { webkitRequestFullscreen?: () => void }) | null;
+    const video = videoRef.current as (HTMLVideoElement & { webkitEnterFullscreen?: () => void }) | null;
     try {
-      if (document.fullscreenElement) await document.exitFullscreen();
-      else await shell.current?.requestFullscreen();
+      if (document.fullscreenElement) return await document.exitFullscreen();
+      if (page.webkitFullscreenElement) return page.webkitExitFullscreen?.();
+      if (player?.requestFullscreen) return await player.requestFullscreen();
+      if (player?.webkitRequestFullscreen) return player.webkitRequestFullscreen();
     } catch {
-      toast.danger('Fullscreen is unavailable in this browser.');
+      /* Falls back to the phone's own player below. */
     }
-  }, []);
+    // iPhones can only show the video itself full screen, in their own player, which draws
+    // the subtitles; it gets the viewer's subtitle choice while it is open.
+    if (video?.webkitEnterFullscreen) {
+      const setTracks = (mode: TextTrackMode) => {
+        for (const track of Array.from(video.textTracks)) track.mode = mode;
+      };
+      setTracks(captions ? 'showing' : 'hidden');
+      video.addEventListener('webkitendfullscreen', () => setTracks('hidden'), { once: true });
+      video.webkitEnterFullscreen();
+      return;
+    }
+    toast.danger('Fullscreen is unavailable in this browser.');
+  }, [captions, videoRef]);
   async function pictureInPicture() {
     try {
       if (document.pictureInPictureElement) await document.exitPictureInPicture();

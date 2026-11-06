@@ -987,6 +987,10 @@
   .reaction-rail { padding: 12px; justify-content: center; }
   /* Only the progress bar stays at the bottom edge; the rest moves to the centre. */
   .video-toolbar { padding: 24px 0 0; background: none; }
+  /* The controls sit in the middle on phones, so subtitles stay low either way. */
+  .video-caption,
+  .video-shell.controls-shown .video-caption { bottom: 14px; }
+  .video-caption span { font-size: 9px; line-height: 1.7; padding: 3px 6px; border-radius: 4px; }
   .video-toolbar .video-controls,
   .video-toolbar .timeline-markers { display: none; }
   .video-progress { margin: 0; }
