@@ -54,33 +54,51 @@ interface Props {
 const SPEEDS = [0.5, 1, 1.25, 1.5, 2];
 
 /** The playback speed menu: the "1.5×" button on desktop, a gear on phones. */
+/** Speed choices; given `captions`, a Subtitles on/off row sits above them (phones). */
 function SpeedMenu({
   speed,
   onSpeed,
   onOpenChange,
   trigger,
+  captions,
 }: {
   speed: number;
   onSpeed: (rate: number) => void;
   onOpenChange: (open: boolean) => void;
   trigger: ReactNode;
+  captions?: { on: boolean; toggle: () => void };
 }) {
+  const speeds = SPEEDS.map((rate) => (
+    <Dropdown.Item key={rate} id={String(rate)} textValue={`${rate}×`}>
+      <Label>{rate}×</Label>
+      <Dropdown.ItemIndicator />
+    </Dropdown.Item>
+  ));
   return (
     <Dropdown onOpenChange={onOpenChange}>
       {trigger}
       <Dropdown.Popover className="speed-menu">
         <Dropdown.Menu
-          aria-label="Playback speed"
+          aria-label={captions ? 'Player settings' : 'Playback speed'}
           selectionMode="single"
           selectedKeys={new Set([String(speed)])}
-          onAction={(key) => onSpeed(Number(key))}
+          onAction={(key) => (key === 'captions' ? captions?.toggle() : onSpeed(Number(key)))}
         >
-          {SPEEDS.map((rate) => (
-            <Dropdown.Item key={rate} id={String(rate)} textValue={`${rate}×`}>
-              <Label>{rate}×</Label>
-              <Dropdown.ItemIndicator />
-            </Dropdown.Item>
-          ))}
+          {captions ? (
+            <>
+              <Dropdown.Section aria-label="Subtitles">
+                <Dropdown.Item id="captions" textValue="Subtitles">
+                  {/* Never ticked; it keeps the label in line with the speeds below. */}
+                  <Dropdown.ItemIndicator />
+                  <Label>Subtitles</Label>
+                  <span className="menu-value">{captions.on ? 'On' : 'Off'}</span>
+                </Dropdown.Item>
+              </Dropdown.Section>
+              <Dropdown.Section aria-label="Playback speed">{speeds}</Dropdown.Section>
+            </>
+          ) : (
+            speeds
+          )}
         </Dropdown.Menu>
       </Dropdown.Popover>
     </Dropdown>
@@ -115,6 +133,10 @@ export default function SharePlayer({
     idleTimer.current = window.setTimeout(() => setPointerActive(false), 2500);
   }, []);
   useEffect(() => () => window.clearTimeout(idleTimer.current), []);
+  // On the phone layout a tap on the video only shows or hides the controls; the
+  // centre buttons play and pause. These remember the tap until its click arrives.
+  const tapIsPhoneTouch = useRef(false);
+  const tapStartedShown = useRef(false);
   const [poster, setPoster] = useState<string>();
   useEffect(() => {
     let active = true;
@@ -146,6 +168,9 @@ export default function SharePlayer({
   const [menuOpen, setMenuOpen] = useState(false);
   const controlsShown =
     started && (menuOpen || (pointerInside && (!playing || pointerActive)));
+  // Read by the tap handler, which can run before the player re-renders.
+  const controlsShownNow = useRef(controlsShown);
+  controlsShownNow.current = controlsShown;
   // The seek bar is painted every frame while playing; timeupdate alone only
   // fires a few times a second and makes it tick.
   const seekFill = useRef<HTMLDivElement>(null);
@@ -283,7 +308,12 @@ export default function SharePlayer({
       ref={shell}
       className={`video-shell${controlsShown ? ' controls-shown' : ''}${started && !controlsShown ? ' controls-hidden' : ''}`}
       onPointerMove={wakeControls}
-      onPointerDown={wakeControls}
+      onPointerDown={(event) => {
+        tapIsPhoneTouch.current =
+          event.pointerType === 'touch' && window.matchMedia('(max-width: 760px)').matches;
+        tapStartedShown.current = controlsShownNow.current;
+        wakeControls();
+      }}
       onPointerLeave={(event) => {
         // Touch screens fire this after every tap; only a real pointer leaving counts.
         if (event.pointerType === 'touch') return;
@@ -300,7 +330,14 @@ export default function SharePlayer({
           poster={poster}
           preload="metadata"
           playsInline
-          onClick={() => void togglePlay()}
+          onClick={() => {
+            if (!started || !tapIsPhoneTouch.current) return void togglePlay();
+            if (tapStartedShown.current) {
+              window.clearTimeout(idleTimer.current);
+              setPointerActive(false);
+              setPointerInside(false);
+            }
+          }}
           onPlay={() => {
             setPlaying(true);
             setStarted(true);
@@ -439,8 +476,13 @@ export default function SharePlayer({
               speed={speed}
               onSpeed={setRate}
               onOpenChange={setMenuOpen}
+              captions={
+                data.segments.length > 0
+                  ? { on: captions, toggle: () => setCaptions((on) => !on) }
+                  : undefined
+              }
               trigger={
-                <Button isIconOnly variant="ghost" aria-label={`Playback speed: ${speed}×`}>
+                <Button isIconOnly variant="ghost" aria-label="Settings">
                   <GearSixIcon size={26} />
                 </Button>
               }
@@ -460,17 +502,6 @@ export default function SharePlayer({
             <Button isIconOnly variant="ghost" aria-label="Forward 5 seconds" onPress={() => seek(time + 5)}>
               <ClockClockwiseIcon size={28} />
             </Button>
-            {data.segments.length > 0 && (
-              <Button
-                isIconOnly
-                variant="ghost"
-                aria-label="Captions"
-                aria-pressed={captions}
-                onPress={() => setCaptions(!captions)}
-              >
-                <ClosedCaptioningIcon size={26} weight={captions ? 'fill' : 'regular'} />
-              </Button>
-            )}
             <Button isIconOnly variant="ghost" aria-label="Fullscreen" onPress={() => void fullscreen()}>
               <ArrowsOutIcon size={26} />
             </Button>

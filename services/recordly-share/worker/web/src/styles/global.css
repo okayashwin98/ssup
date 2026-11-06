@@ -575,6 +575,10 @@
 .dropdown__popover.speed-menu {
   min-width: 128px;
 }
+.speed-menu .menu-value {
+  margin-left: auto;
+  color: var(--muted);
+}
 .volume-group {
   display: flex;
   align-items: center;
