@@ -166,5 +166,8 @@ export function useVideoEditorAudio({
 		getSourceTrackPreviewGain,
 		noiseFilterSourcePath: noiseFilter.noiseFilterSourcePath,
 		replacesVideoAudio: noiseFilter.replacesVideoAudio,
+		getVoiceCleanupStatus: noiseFilter.getVoiceCleanupStatus,
+		retryVoiceCleanup: noiseFilter.retryVoiceCleanup,
+		preparingClipIds: noiseFilter.preparingClipIds,
 	};
 }

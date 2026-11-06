@@ -48,6 +48,8 @@ interface ItemProps {
 	waveformGain?: number;
 	waveformNormalize?: boolean;
 	muted?: boolean;
+	/** The clip's cleaned voice is still being made. */
+	preparing?: boolean;
 	variant?: "zoom" | "trim" | "clip" | "annotation" | "speed" | "audio" | "caption";
 	isLoading?: boolean;
 	loadingLabel?: string;
@@ -87,6 +89,7 @@ export default function Item({
 	waveformGain = 1,
 	waveformNormalize = false,
 	muted = false,
+	preparing = false,
 	variant = "zoom",
 	isLoading = false,
 	loadingLabel,
@@ -356,6 +359,10 @@ export default function Item({
 							normalize={waveformNormalize}
 							className="absolute inset-0 w-full h-full pointer-events-none opacity-45"
 						/>
+					)}
+					{/* A light sweep across the sound row while its cleaned voice is being made. */}
+					{isAudio && preparing && (
+						<div className="audio-preparing absolute inset-0 z-20 pointer-events-none" />
 					)}
 					{/* Muted overlay for source audio track items */}
 					{isAudio && muted && (

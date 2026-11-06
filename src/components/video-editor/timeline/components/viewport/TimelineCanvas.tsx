@@ -94,6 +94,8 @@ interface TimelineCanvasProps {
 	keyframes?: { id: string; time: number }[];
 	sourceAudioTracks?: SourceAudioTrackWithPeaks[];
 	getSourceAudioTrackSettingsForClip?: (clipId: string | null) => SourceAudioTrackSettings;
+	/** Clips whose cleaned voice is still being made. */
+	preparingClipIds?: ReadonlySet<string>;
 	showSourceAudioTrack?: boolean;
 	zoomsDisabled?: boolean;
 	liveSpanPreviewById?: Record<string, { start: number; end: number }>;
@@ -431,6 +433,8 @@ interface TimelineCanvasRowsProps {
 	onSelectCaption?: (id: string | null) => void;
 	sourceAudioTracks?: SourceAudioTrackWithPeaks[];
 	getSourceAudioTrackSettingsForClip?: (clipId: string | null) => SourceAudioTrackSettings;
+	/** Clips whose cleaned voice is still being made. */
+	preparingClipIds?: ReadonlySet<string>;
 	showSourceAudioTrack?: boolean;
 	zoomsDisabled?: boolean;
 	liveSpanPreviewById?: Record<string, { start: number; end: number }>;
@@ -509,6 +513,7 @@ const TimelineCanvasRows = memo(function TimelineCanvasRows({
 	onSelectCaption,
 	sourceAudioTracks = [],
 	getSourceAudioTrackSettingsForClip,
+	preparingClipIds,
 	showSourceAudioTrack = false,
 	zoomsDisabled = false,
 	liveSpanPreviewById,
@@ -800,6 +805,7 @@ const TimelineCanvasRows = memo(function TimelineCanvasRows({
 										waveformGain={Math.max(0, Math.min(1, settings.volume))}
 										waveformNormalize={Boolean(settings.normalize)}
 										muted={item.muted}
+										preparing={preparingClipIds?.has(item.id)}
 									>
 										{track.label}
 									</Item>
@@ -962,6 +968,7 @@ export default function TimelineCanvas({
 	keyframes = [],
 	sourceAudioTracks = [],
 	getSourceAudioTrackSettingsForClip,
+	preparingClipIds,
 	showSourceAudioTrack = false,
 	zoomsDisabled = false,
 	liveSpanPreviewById,
@@ -1238,6 +1245,7 @@ export default function TimelineCanvas({
 					onSelectCaption={onSelectCaption}
 					sourceAudioTracks={sourceAudioTracks}
 					getSourceAudioTrackSettingsForClip={getSourceAudioTrackSettingsForClip}
+					preparingClipIds={preparingClipIds}
 					showSourceAudioTrack={showSourceAudioTrack}
 					zoomsDisabled={zoomsDisabled}
 					liveSpanPreviewById={liveSpanPreviewById}

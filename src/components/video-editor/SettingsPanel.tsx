@@ -37,6 +37,8 @@ import type { AppLocale } from "../../i18n/config";
 import { SUPPORTED_LOCALES } from "../../i18n/config";
 import { AnnotationSettingsPanel } from "./AnnotationSettingsPanel";
 import CaptionListPanel from "./CaptionListPanel";
+import type { VoiceCleanupStatus } from "./audio/useNoiseFilterAudio";
+import { VoiceCleanupIndicator } from "./audio/VoiceCleanupIndicator";
 import type { CaptionRetimeSpan } from "./captionOps";
 import {
 	CURSOR_MOTION_PRESETS,
@@ -450,6 +452,9 @@ interface SettingsPanelProps {
 	onClipNoiseFilterChange?: (strength: number) => void;
 	selectedClipRemoveFillers?: boolean | null;
 	onClipRemoveFillersChange?: (remove: boolean) => void;
+	/** Where the selected clip's cleaned voice stands, while it is being made or after a failure. */
+	voiceCleanupStatus?: VoiceCleanupStatus | null;
+	onRetryVoiceCleanup?: () => void;
 	onClipDelete?: (id: string) => void;
 	selectedAudioId?: string | null;
 	selectedAudioVolume?: number | null;
@@ -916,6 +921,8 @@ export function SettingsPanel({
 	onClipNoiseFilterChange,
 	selectedClipRemoveFillers,
 	onClipRemoveFillersChange,
+	voiceCleanupStatus,
+	onRetryVoiceCleanup,
 	onClipDelete,
 	selectedAudioId,
 	selectedAudioVolume,
@@ -2810,8 +2817,14 @@ export function SettingsPanel({
 					/>
 				</label>
 				<label className="flex items-center justify-between py-2">
-					<span className="text-xs font-medium text-foreground">
+					<span className="flex items-center gap-1.5 text-xs font-medium text-foreground">
 						{tSettings("clip.filterNoise", "Filter noise")}
+						{(selectedClipNoiseFilter ?? 0) > 0 && (
+							<VoiceCleanupIndicator
+								status={voiceCleanupStatus}
+								onRetry={onRetryVoiceCleanup}
+							/>
+						)}
 					</span>
 					<Switch
 						checked={(selectedClipNoiseFilter ?? 0) > 0}
@@ -2820,8 +2833,14 @@ export function SettingsPanel({
 					/>
 				</label>
 				<label className="flex items-center justify-between py-2">
-					<span className="text-xs font-medium text-foreground">
+					<span className="flex items-center gap-1.5 text-xs font-medium text-foreground">
 						{tSettings("clip.removeFillers", "Remove fillers")}
+						{selectedClipRemoveFillers && (
+							<VoiceCleanupIndicator
+								status={voiceCleanupStatus}
+								onRetry={onRetryVoiceCleanup}
+							/>
+						)}
 					</span>
 					<Switch
 						checked={selectedClipRemoveFillers ?? false}

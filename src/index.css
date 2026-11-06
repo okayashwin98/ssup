@@ -271,6 +271,32 @@ textarea {
 .picker-card-in {
 	animation: picker-card-in 160ms cubic-bezier(0.22, 1, 0.36, 1);
 }
+/* A sound row whose cleaned voice is being made: a soft light sweeps across it. Only the
+   transform moves, so it costs next to nothing; without motion it is a still tint. */
+.audio-preparing {
+	overflow: hidden;
+	background: rgb(255 255 255 / 0.06);
+}
+.audio-preparing::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.22), transparent);
+	transform: translateX(-100%);
+	animation: audio-preparing 1.6s ease-in-out infinite;
+	will-change: transform;
+}
+@keyframes audio-preparing {
+	to {
+		transform: translateX(100%);
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.audio-preparing::after {
+		animation: none;
+		opacity: 0;
+	}
+}
 /* A gentle sway on the hovered window's icon, and on the bar's Window icon meanwhile.
    Both start at a delay from the wall clock (swayPhase) so they move in step. */
 /* Left to right and back, easing only at the ends, so the loop never pauses. */

@@ -362,6 +362,9 @@ export default function VideoEditor() {
 			return 16 / 9;
 		})(),
 	);
+	const selectedClipForVoice = timeline.clipRegions.find(
+		(clip) => clip.id === timeline.selectedClipId,
+	);
 	const settingsPanelProps = useEditorSettingsPanelProps({
 		activeEffectSection,
 		appearance,
@@ -387,6 +390,8 @@ export default function VideoEditor() {
 		setNativeCaptureUnavailableModalOpen,
 		handleUploadWebcam,
 		handleClearWebcam,
+		voiceCleanupStatus: audio.getVoiceCleanupStatus(selectedClipForVoice),
+		onRetryVoiceCleanup: () => audio.retryVoiceCleanup(selectedClipForVoice),
 	});
 	return (
 		<EditorShell

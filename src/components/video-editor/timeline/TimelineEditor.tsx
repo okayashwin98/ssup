@@ -88,6 +88,8 @@ export interface TimelineEditorProps {
 	onSourceAudioAvailabilityChange?: (available: boolean) => void;
 	sourceAudioTrackSettings?: SourceAudioTrackSettings;
 	getSourceAudioTrackSettingsForClip?: (clipId: string | null) => SourceAudioTrackSettings;
+	/** Clips whose cleaned voice is still being made. */
+	preparingClipIds?: ReadonlySet<string>;
 	onSourceAudioTracksMetaChange?: (tracks: SourceAudioTrackMeta) => void;
 }
 
@@ -172,6 +174,7 @@ const TimelineEditor = forwardRef<TimelineEditorHandle, TimelineEditorProps>(
 			onSourceAudioAvailabilityChange,
 			sourceAudioTrackSettings = {},
 			getSourceAudioTrackSettingsForClip,
+			preparingClipIds,
 			onSourceAudioTracksMetaChange,
 		},
 		ref,
@@ -513,6 +516,7 @@ const TimelineEditor = forwardRef<TimelineEditorHandle, TimelineEditorProps>(
 							keyframes={keyframes}
 							sourceAudioTracks={sourceAudioTracks}
 							getSourceAudioTrackSettingsForClip={getSourceAudioTrackSettingsForClip}
+							preparingClipIds={preparingClipIds}
 							showSourceAudioTrack={showSourceAudioTrack}
 							zoomsDisabled={zoomsDisabled}
 							liveSpanPreviewById={liveZoomPreview.previewSpans}

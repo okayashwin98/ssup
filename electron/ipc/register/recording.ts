@@ -1480,28 +1480,32 @@ export function registerRecordingHandlers(
 		}
 	});
 
-	ipcMain.handle(
-		"create-cleaned-audio",
-		async (_event, sourcePath: unknown, request: unknown) => {
-			const { noise, fillers } = (request ?? {}) as { noise?: unknown; fillers?: unknown };
-			const cleanup = {
-				noise: typeof noise === "number" && noise > 0 && noise <= 1 ? noise : undefined,
-				fillers: fillers === true,
-			};
-			if (typeof sourcePath !== "string" || (!cleanup.noise && !cleanup.fillers))
-				return { success: false, error: "Invalid voice cleanup request" };
-			if (!isAllowedLocalReadPath(sourcePath))
-				return { success: false, error: "That recording can't be read" };
-			try {
-				const path = await createCleanedAudio(sourcePath, cleanup);
-				await rememberApprovedLocalReadPath(path);
-				return { success: true, path };
-			} catch (error) {
-				console.error("Voice cleanup failed:", error);
-				return { success: false, error: String(error) };
-			}
-		},
-	);
+	ipcMain.handle("create-cleaned-audio", async (event, sourcePath: unknown, request: unknown) => {
+		const { noise, fillers } = (request ?? {}) as { noise?: unknown; fillers?: unknown };
+		const cleanup = {
+			noise: typeof noise === "number" && noise > 0 && noise <= 1 ? noise : undefined,
+			fillers: fillers === true,
+		};
+		if (typeof sourcePath !== "string" || (!cleanup.noise && !cleanup.fillers))
+			return { success: false, error: "Invalid voice cleanup request" };
+		if (!isAllowedLocalReadPath(sourcePath))
+			return { success: false, error: "That recording can't be read" };
+		try {
+			const path = await createCleanedAudio(sourcePath, cleanup, (progress) => {
+				if (!event.sender.isDestroyed())
+					event.sender.send("voice-cleanup-progress", {
+						sourcePath,
+						cleanup,
+						...progress,
+					});
+			});
+			await rememberApprovedLocalReadPath(path);
+			return { success: true, path };
+		} catch (error) {
+			console.error("Voice cleanup failed:", error);
+			return { success: false, error: String(error) };
+		}
+	});
 
 	ipcMain.handle("mux-native-windows-recording", async (_event, expectedDurationMs?: number) => {
 		const start = Date.now();

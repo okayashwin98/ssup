@@ -1,6 +1,7 @@
 import type { ComponentProps, Dispatch, SetStateAction } from "react";
 import type { AspectRatio } from "@/utils/aspectRatioUtils";
 import { useClipAudioReset } from "../audio/useClipAudioReset";
+import type { VoiceCleanupStatus } from "../audio/useNoiseFilterAudio";
 import type { useAutoCaptionController } from "../captions/useAutoCaptionController";
 import type { useAnnotationRegionCommands } from "../hooks/useAnnotationRegionCommands";
 import type { useAudioRegionCommands } from "../hooks/useAudioRegionCommands";
@@ -37,6 +38,8 @@ type Input = {
 	setNativeCaptureUnavailableModalOpen: Dispatch<SetStateAction<boolean>>;
 	handleUploadWebcam: () => void;
 	handleClearWebcam: () => void;
+	voiceCleanupStatus: VoiceCleanupStatus | null;
+	onRetryVoiceCleanup: () => void;
 };
 
 export function useEditorSettingsPanelProps(input: Input): ComponentProps<typeof SettingsPanel> {
@@ -102,6 +105,8 @@ export function useEditorSettingsPanelProps(input: Input): ComponentProps<typeof
 		selectedClipRemoveFillers:
 			selectedClip?.removeFillers ?? (timeline.selectedClipId ? false : null),
 		onClipRemoveFillersChange: clipCommands.handleClipRemoveFillersChange,
+		voiceCleanupStatus: input.voiceCleanupStatus,
+		onRetryVoiceCleanup: input.onRetryVoiceCleanup,
 		onClipDelete: clipCommands.handleClipDelete,
 		selectedAudioId: timeline.selectedAudioId,
 		selectedAudioVolume: selectedAudio?.volume ?? null,

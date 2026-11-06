@@ -597,6 +597,21 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	createCleanedAudio: (sourcePath: string, cleanup: { noise?: number; fillers?: boolean }) => {
 		return ipcRenderer.invoke("create-cleaned-audio", sourcePath, cleanup);
 	},
+	onVoiceCleanupProgress: (
+		callback: (progress: {
+			sourcePath: string;
+			cleanup: { noise?: number; fillers?: boolean };
+			stage: string;
+			fraction: number;
+		}) => void,
+	) => {
+		const listener = (
+			_event: Electron.IpcRendererEvent,
+			progress: Parameters<typeof callback>[0],
+		) => callback(progress);
+		ipcRenderer.on("voice-cleanup-progress", listener);
+		return () => ipcRenderer.removeListener("voice-cleanup-progress", listener);
+	},
 	getSources: async (opts: Electron.SourcesOptions) => {
 		return await ipcRenderer.invoke("get-sources", opts);
 	},

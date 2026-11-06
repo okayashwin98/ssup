@@ -697,6 +697,15 @@ interface Window {
 			sourcePath: string,
 			cleanup: { noise?: number; fillers?: boolean },
 		) => Promise<{ success: boolean; path?: string; error?: string }>;
+		/** Each step of a voice cleanup in progress; returns a function that stops listening. */
+		onVoiceCleanupProgress: (
+			callback: (progress: {
+				sourcePath: string;
+				cleanup: { noise?: number; fillers?: boolean };
+				stage: string;
+				fraction: number;
+			}) => void,
+		) => () => void;
 		setRecordingState: (recording: boolean) => Promise<void>;
 		getCursorTelemetry: (videoPath?: string) => Promise<{
 			success: boolean;

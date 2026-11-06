@@ -69,14 +69,76 @@ function noiseFilterArgs(cleanup: VoiceCleanup) {
 	return ["-af", `arnndn=m='${model}':mix=${normalizeNoiseFilterStrength(cleanup.noise)}`];
 }
 
-const pending = new Map<string, Promise<string>>();
+/** How far a cleanup has got: the step it is on, and the share of the whole job done (0–1). */
+export type CleanupProgress = { stage: string; fraction: number };
+type Report = (stage: string, fraction: number) => void;
 
-/** Makes (once) and returns the cleaned copy of a recording's voice. */
-export function createCleanedAudio(sourcePath: string, cleanup: VoiceCleanup): Promise<string> {
+const pending = new Map<
+	string,
+	{ job: Promise<string>; listeners: Set<(progress: CleanupProgress) => void> }
+>();
+
+/** Runs a program, handing each line it prints to `onLine`; fails on a non-zero exit. */
+function runWithLines(command: string, args: string[], onLine: (line: string) => void) {
+	return new Promise<void>((resolve, reject) => {
+		const child = spawn(command, args);
+		const read = (stream: NodeJS.ReadableStream) => {
+			let rest = "";
+			stream.on("data", (chunk: Buffer) => {
+				const lines = (rest + chunk.toString("utf8")).split(/\r?\n|\r/);
+				rest = lines.pop() ?? "";
+				for (const line of lines) onLine(line);
+			});
+		};
+		read(child.stdout);
+		read(child.stderr);
+		child.on("error", reject);
+		child.on("close", (code) =>
+			code === 0
+				? resolve()
+				: reject(new Error(`${path.basename(command)} exited with ${code}`)),
+		);
+	});
+}
+
+/** Runs ffmpeg, reporting how much of the input it has got through (0–1). */
+function runFfmpegWithProgress(ffmpeg: string, args: string[], onFraction: (f: number) => void) {
+	let durationUs = 0;
+	return runWithLines(ffmpeg, ["-progress", "pipe:1", "-nostats", ...args], (line) => {
+		const duration = /Duration: (\d+):(\d+):(\d+(?:\.\d+)?)/.exec(line);
+		if (duration && !durationUs)
+			durationUs =
+				(Number(duration[1]) * 3600 + Number(duration[2]) * 60 + Number(duration[3])) * 1e6;
+		const at = /^out_time_us=(\d+)/.exec(line);
+		if (at && durationUs > 0) onFraction(Math.min(1, Number(at[1]) / durationUs));
+	});
+}
+
+/**
+ * Makes (once) and returns the cleaned copy of a recording's voice. `onProgress` hears each
+ * step; asking again while it is being made joins the same job.
+ */
+export function createCleanedAudio(
+	sourcePath: string,
+	cleanup: VoiceCleanup,
+	onProgress?: (progress: CleanupProgress) => void,
+): Promise<string> {
 	if (!cleanup.noise && !cleanup.fillers) return Promise.reject(new Error("Nothing to clean"));
 	const outputPath = getCleanedAudioPath(sourcePath, cleanup);
 	const existing = pending.get(outputPath);
-	if (existing) return existing;
+	if (existing) {
+		if (onProgress) existing.listeners.add(onProgress);
+		return existing.job;
+	}
+	const listeners = new Set(onProgress ? [onProgress] : []);
+	// Passed on only when the step changes or the share done moves by a whole percent.
+	let last = { stage: "", percent: -1 };
+	const report: Report = (stage, fraction) => {
+		const percent = Math.round(Math.max(0, Math.min(1, fraction)) * 100);
+		if (stage === last.stage && percent === last.percent) return;
+		last = { stage, percent };
+		for (const listener of listeners) listener({ stage, fraction: percent / 100 });
+	};
 	const job = (async () => {
 		const [source, output] = await Promise.all([
 			fs.stat(sourcePath),
@@ -88,10 +150,13 @@ export function createCleanedAudio(sourcePath: string, cleanup: VoiceCleanup): P
 		const tempPath = `${outputPath}.part.m4a`;
 		try {
 			if (cleanup.fillers) {
-				const plan = await planFillerRemoval(ffmpeg, sourcePath);
-				await renderWithRoomTone(ffmpeg, sourcePath, tempPath, cleanup, plan);
+				const plan = await planFillerRemoval(ffmpeg, sourcePath, report);
+				await renderWithRoomTone(ffmpeg, sourcePath, tempPath, cleanup, plan, (done) =>
+					report("Applying", 0.75 + 0.25 * done),
+				);
 			} else {
-				await execFileAsync(
+				report("Removing noise", 0);
+				await runFfmpegWithProgress(
 					ffmpeg,
 					[
 						"-hide_banner",
@@ -107,7 +172,7 @@ export function createCleanedAudio(sourcePath: string, cleanup: VoiceCleanup): P
 						"192k",
 						tempPath,
 					],
-					{ timeout: 10 * 60 * 1000, maxBuffer: 10 * 1024 * 1024 },
+					(done) => report("Removing noise", done),
 				);
 			}
 			await fs.rename(tempPath, outputPath);
@@ -117,19 +182,24 @@ export function createCleanedAudio(sourcePath: string, cleanup: VoiceCleanup): P
 			throw error;
 		}
 	})().finally(() => pending.delete(outputPath));
-	pending.set(outputPath, job);
+	pending.set(outputPath, { job, listeners });
 	return job;
 }
 
-type FillerPlan = { spans: FillerSpan[]; roomToneStartMs: number };
+type FillerPlan = { spans: FillerSpan[]; roomToneStartMs: number; durationMs: number };
 
 /**
  * Finds the fillers to remove, from the original sound: the detector's, cross-checked with
  * the fillers the speech model writes out. Also picks the room sound to fill them with.
  */
-async function planFillerRemoval(ffmpeg: string, sourcePath: string): Promise<FillerPlan> {
+async function planFillerRemoval(
+	ffmpeg: string,
+	sourcePath: string,
+	report: Report,
+): Promise<FillerPlan> {
 	const dir = await fs.mkdtemp(path.join(os.tmpdir(), "supershare-fillers-"));
 	try {
+		report("Reading audio", 0);
 		const raw = path.join(dir, "audio.f32");
 		await execFileAsync(
 			ffmpeg,
@@ -150,6 +220,7 @@ async function planFillerRemoval(ffmpeg: string, sourcePath: string): Promise<Fi
 			],
 			{ timeout: 10 * 60 * 1000, maxBuffer: 10 * 1024 * 1024 },
 		);
+		report("Finding fillers", 0.05);
 		const framesPath = path.join(dir, "frames.csv");
 		await execFileAsync(
 			getPrebundledNativeHelperPath("recordly-filler-detector"),
@@ -171,13 +242,16 @@ async function planFillerRemoval(ffmpeg: string, sourcePath: string): Promise<Fi
 				sum += samples[i] * samples[i];
 			return Math.sqrt(sum / perFrame);
 		});
-		const transcript = await transcribeFillers(ffmpeg, raw, dir).catch((error) => {
+		const transcript = await transcribeFillers(ffmpeg, raw, dir, (done) =>
+			report("Checking with transcript", 0.15 + 0.6 * done),
+		).catch((error) => {
 			console.warn("Filler cross-check without a transcript:", error);
 			return null;
 		});
 		return {
 			spans: confirmFillerSpans(detectFillerSpans(frames), transcript),
 			roomToneStartMs: findRoomToneFrame(frames, levels) * FILLER_FRAME_MS,
+			durationMs: (samples.length / 16000) * 1000,
 		};
 	} finally {
 		await fs.rm(dir, { recursive: true, force: true }).catch(() => undefined);
@@ -185,7 +259,12 @@ async function planFillerRemoval(ffmpeg: string, sourcePath: string): Promise<Fi
 }
 
 /** Start times of the fillers the speech model writes out when its prompt shows them. */
-async function transcribeFillers(ffmpeg: string, rawPath: string, dir: string) {
+async function transcribeFillers(
+	ffmpeg: string,
+	rawPath: string,
+	dir: string,
+	onFraction: (done: number) => void,
+) {
 	const model = await getWhisperSmallModelStatus();
 	if (!model.exists || !model.path) return null;
 	const wav = path.join(dir, "audio.wav");
@@ -213,7 +292,8 @@ async function transcribeFillers(ffmpeg: string, rawPath: string, dir: string) {
 	const prompt =
 		`Um, uh, er, erm, ah, hmm. So, um, I was, uh, thinking. Uh, yeah. ${glossary}`.trim();
 	const outputBase = path.join(dir, "transcript");
-	await execFileAsync(
+	onFraction(0);
+	await runWithLines(
 		await resolveWhisperExecutablePath(),
 		[
 			"-m",
@@ -229,10 +309,14 @@ async function transcribeFillers(ffmpeg: string, rawPath: string, dir: string) {
 			prompt,
 			"--carry-initial-prompt",
 			"-np",
+			"-pp",
 			"-mc",
 			"40",
 		],
-		{ timeout: 30 * 60 * 1000, maxBuffer: 50 * 1024 * 1024 },
+		(line) => {
+			const progress = /progress\s*=\s*(\d+)%/.exec(line);
+			if (progress) onFraction(Number(progress[1]) / 100);
+		},
 	);
 	const cues = await readWhisperCaptionOutput(outputBase, true);
 	return cues.flatMap((cue) =>
@@ -251,8 +335,10 @@ async function renderWithRoomTone(
 	outputPath: string,
 	cleanup: VoiceCleanup,
 	plan: FillerPlan,
+	onFraction: (done: number) => void,
 ) {
 	const sampleRate = 48000;
+	const totalSamples = Math.max(1, (plan.durationMs / 1000) * sampleRate);
 	const decodeArgs = [
 		"-vn",
 		"-ac",
@@ -342,6 +428,7 @@ async function renderWithRoomTone(
 						(tone.length ? tone[index % tone.length] : 0) *
 							Math.cos((keep * Math.PI) / 2);
 		}
+		onFraction(Math.min(1, index / totalSamples));
 		if (!encoder.stdin.write(Buffer.from(output.buffer))) {
 			decoder.stdout.pause();
 			encoder.stdin.once("drain", () => decoder.stdout.resume());
