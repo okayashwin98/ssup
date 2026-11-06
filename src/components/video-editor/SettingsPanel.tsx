@@ -1939,7 +1939,7 @@ export function SettingsPanel({
 					)}
 				</div>
 				<div className="flex items-center justify-between py-2">
-					<span className="text-xs text-muted-foreground">
+					<span className="text-xs font-medium text-foreground">
 						{tSettings("effects.removeBackground")}
 					</span>
 					<Switch
@@ -2704,7 +2704,7 @@ export function SettingsPanel({
 							</Button>
 						</div>
 						<div className="flex items-center justify-between py-2">
-							<span className="text-xs text-muted-foreground">
+							<span className="text-xs font-medium text-foreground">
 								{tSettings("effects.classicZoom", "Classic Animation")}
 							</span>
 							<Switch
@@ -2753,7 +2753,7 @@ export function SettingsPanel({
 					formatValue={(v) => `${Math.round(v * 100)}%`}
 				/>
 				<div className="flex items-center justify-between py-2">
-					<span className="text-xs text-muted-foreground">
+					<span className="text-xs font-medium text-foreground">
 						{tSettings("audio.normalize", "Normalize")}
 					</span>
 					<Switch
@@ -2791,7 +2791,7 @@ export function SettingsPanel({
 						</p>
 					)}
 				<label className="flex items-center justify-between py-2">
-					<span className="text-xs text-muted-foreground">
+					<span className="text-xs font-medium text-foreground">
 						{tSettings("clip.mute", "Mute clip")}
 					</span>
 					<Switch
@@ -2876,7 +2876,7 @@ export function SettingsPanel({
 							</div>
 							{advanced && (
 								<div className="flex flex-col gap-3">
-									<label className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+									<label className="flex items-center justify-between gap-3 text-xs font-medium text-foreground">
 										<span>{tSettings("effects.showCursor")}</span>
 										<Switch
 											aria-label={tSettings("effects.showCursor")}
@@ -2884,7 +2884,7 @@ export function SettingsPanel({
 											onCheckedChange={onShowCursorChange}
 										/>
 									</label>
-									<label className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+									<label className="flex items-center justify-between gap-3 text-xs font-medium text-foreground">
 										<span>{tSettings("effects.loopCursor")}</span>
 										<Switch
 											aria-label={tSettings("effects.loopCursor")}
@@ -3092,7 +3092,7 @@ export function SettingsPanel({
 						</div>
 						<div className="flex flex-col gap-3">
 							<div className="flex items-center justify-between py-2">
-								<span className="text-xs text-muted-foreground">
+								<span className="text-xs font-medium text-foreground">
 									{tSettings("effects.show", "Show")}
 								</span>
 								<Switch
@@ -3104,7 +3104,7 @@ export function SettingsPanel({
 							{advanced && (
 								<>
 									<div className="flex items-center justify-between py-2">
-										<span className="text-xs text-muted-foreground">
+										<span className="text-xs font-medium text-foreground">
 											{tSettings("effects.webcamReactToZoom")}
 										</span>
 										<Switch
@@ -3118,7 +3118,7 @@ export function SettingsPanel({
 										/>
 									</div>
 									<div className="flex items-center justify-between py-2">
-										<span className="text-xs text-muted-foreground">
+										<span className="text-xs font-medium text-foreground">
 											{tSettings("effects.webcamMirror", "Mirror webcam")}
 										</span>
 										<Switch

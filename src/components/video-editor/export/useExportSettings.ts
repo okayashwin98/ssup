@@ -9,7 +9,7 @@ import type {
 	GifFrameRate,
 	GifSizePreset,
 } from "@/lib/exporter";
-import { projectCaptionCues } from "../captionTimeline";
+import { buildSubtitleCues } from "../captionTimeline";
 import { saveEditorPreferences, type EditorPreferences } from "../editorPreferences";
 import type { CaptionCue, ClipRegion } from "../types";
 
@@ -73,17 +73,7 @@ export function useExportSettings(
 	]);
 
 	const captionSidecarCues = useMemo(
-		() =>
-			projectCaptionCues(autoCaptions, clips)
-				.filter(
-					(cue) =>
-						Number.isFinite(cue.startMs) &&
-						Number.isFinite(cue.endMs) &&
-						cue.endMs > cue.startMs &&
-						typeof cue.text === "string" &&
-						cue.text.trim().length > 0,
-				)
-				.map(({ startMs, endMs, text }) => ({ startMs, endMs, text })),
+		() => buildSubtitleCues(autoCaptions, clips),
 		[autoCaptions, clips],
 	);
 

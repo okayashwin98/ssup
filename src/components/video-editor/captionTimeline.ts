@@ -1,3 +1,4 @@
+import { splitLongCue } from "@/lib/captionSplit";
 import {
 	type CaptionCue,
 	type ClipRegion,
@@ -48,4 +49,52 @@ export function retimeCaptionFragment(
 		startMs: span.start === fragment.startMs ? fragment.sourceCue.startMs : mapped.startMs,
 		endMs: span.end === fragment.endMs ? fragment.sourceCue.endMs : mapped.endMs,
 	};
+}
+
+const joinWords = (words: NonNullable<CaptionCue["words"]>) =>
+	words
+		.map((word, index) => `${index > 0 && word.leadingSpace ? " " : ""}${word.text}`)
+		.join("")
+		.replace(/\s+/g, " ")
+		.trim();
+
+/**
+ * The captions as subtitles for an exported or shared video: on the edited timeline, with long
+ * cues cut into short pieces. Word timings are used while they still match the cue's text.
+ */
+export function buildSubtitleCues(cues: CaptionCue[], clips: ClipRegion[]) {
+	return projectCaptionCues(cues, clips)
+		.filter(
+			(cue) =>
+				Number.isFinite(cue.startMs) &&
+				Number.isFinite(cue.endMs) &&
+				cue.endMs > cue.startMs &&
+				typeof cue.text === "string" &&
+				cue.text.trim().length > 0,
+		)
+		.flatMap((cue) => {
+			const sourceStart = getClipSourceStartMs(cue.clip);
+			const sourceEnd = getClipSourceEndMs(cue.clip);
+			const toTimeline = (ms: number) =>
+				cue.clip.startMs + (ms - sourceStart) / cue.clip.speed;
+			const words = cue.words ?? [];
+			const wordsMatchText =
+				words.length > 0 && joinWords(words) === cue.text.replace(/\s+/g, " ").trim();
+			const visibleWords = wordsMatchText
+				? words
+						.filter((word) => word.startMs >= sourceStart && word.startMs < sourceEnd)
+						.map((word) => ({
+							...word,
+							startMs: toTimeline(word.startMs),
+							endMs: toTimeline(word.endMs),
+						}))
+				: [];
+			const text = visibleWords.length ? joinWords(visibleWords) : cue.text;
+			return splitLongCue({
+				startMs: cue.startMs,
+				endMs: cue.endMs,
+				text,
+				words: visibleWords,
+			});
+		});
 }

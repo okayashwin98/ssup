@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { captionSpanToSource, projectCaptionCues, retimeCaptionFragment } from "./captionTimeline";
+import {
+	buildSubtitleCues,
+	captionSpanToSource,
+	projectCaptionCues,
+	retimeCaptionFragment,
+} from "./captionTimeline";
 
 const clips = [
 	{ id: "a", startMs: 0, endMs: 1000, sourceStartMs: 0, speed: 3 },
@@ -54,5 +59,36 @@ describe("caption timeline projection", () => {
 			startMs: 1500,
 			endMs: 7800,
 		});
+	});
+});
+
+describe("subtitle cues for export and sharing", () => {
+	const words = "So here in Starlight you can change the width and the height of any Param object"
+		.split(" ")
+		.map((text, i) => ({ text, startMs: i * 400, endMs: i * 400 + 300, leadingSpace: i > 0 }));
+	const text = words.map((word) => word.text).join(" ");
+	const clip = { id: "c", startMs: 1000, endMs: 4500, sourceStartMs: 0, speed: 2 };
+
+	it("cuts long cues at word starts, on the edited timeline", () => {
+		const pieces = buildSubtitleCues(
+			[{ id: "cue", startMs: 0, endMs: 7000, text, words }],
+			[clip],
+		);
+		expect(pieces.map((piece) => piece.text).join(" ")).toBe(text);
+		expect(pieces.length).toBe(2);
+		expect(pieces[0].startMs).toBe(1000);
+		// The second piece starts with its first word: source 3200 ms at 2x after 1 s.
+		expect(pieces[1].startMs).toBe(1000 + 3200 / 2);
+		expect(pieces[1].endMs).toBe(4500);
+	});
+
+	it("falls back to length-based timing once the text was edited", () => {
+		const pieces = buildSubtitleCues(
+			[{ id: "cue", startMs: 0, endMs: 7000, text: `${text} edited`, words }],
+			[clip],
+		);
+		expect(pieces.map((piece) => piece.text).join(" ")).toBe(`${text} edited`);
+		expect(pieces[0].startMs).toBe(1000);
+		expect(pieces.at(-1)?.endMs).toBe(4500);
 	});
 });

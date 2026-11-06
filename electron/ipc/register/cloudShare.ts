@@ -17,8 +17,8 @@ import { isAllowedLocalReadPath } from "../project/manager";
 import { renderShareCard } from "../recording/shareCard";
 import {
 	createShareSubtitles,
+	fitShareSubtitleLimit,
 	type ShareSubtitleSegment,
-	splitLongSegments,
 } from "../recording/shareSubtitles";
 import { createShareThumbnail } from "../recording/shareThumbnail";
 
@@ -292,7 +292,7 @@ async function postShareSubtitles(
 	const response = await fetch(metadataUrl, {
 		method: "POST",
 		headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
-		body: JSON.stringify({ segments }),
+		body: JSON.stringify({ segments: fitShareSubtitleLimit(segments) }),
 		redirect: "error",
 		signal: AbortSignal.timeout(60_000),
 	});
@@ -648,12 +648,8 @@ export function registerCloudShareHandlers() {
 					);
 					const editorSegments = parseEditorCaptionSegments(input.captionCues);
 					if (editorSegments) {
-						// Captions written or corrected in the editor become the subtitles, long ones cut short.
-						void postShareSubtitles(
-							splitLongSegments(editorSegments),
-							metadataUrl,
-							token,
-						).catch((error) =>
+						// Captions written or corrected in the editor become the subtitles as they are.
+						void postShareSubtitles(editorSegments, metadataUrl, token).catch((error) =>
 							console.warn("Shared video subtitles unavailable:", error),
 						);
 					} else {
