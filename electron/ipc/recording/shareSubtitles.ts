@@ -94,6 +94,22 @@ export function splitLongCue(cue: CaptionCuePayload): CaptionCuePayload[] {
 	}));
 }
 
+/** Cuts long subtitles that have no word timing, such as captions from the editor. */
+export function splitLongSegments(segments: ShareSubtitleSegment[]): ShareSubtitleSegment[] {
+	return segments.flatMap((segment) =>
+		splitLongCue({
+			id: "",
+			startMs: segment.startTime * 1000,
+			endMs: segment.endTime * 1000,
+			text: segment.text,
+		}).map((cue) => ({
+			startTime: cue.startMs / 1000,
+			endTime: cue.endMs / 1000,
+			text: cue.text,
+		})),
+	);
+}
+
 /**
  * Transcribes the exact file being shared, so the timing already matches the
  * edited video. Returns null when there is no speech model or no audio.

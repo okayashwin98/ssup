@@ -15,7 +15,11 @@ import { getFfmpegBinaryPath } from "../ffmpeg/binary";
 import { probeNativeVideoMetadata } from "../ffmpeg/metadata";
 import { isAllowedLocalReadPath } from "../project/manager";
 import { renderShareCard } from "../recording/shareCard";
-import { createShareSubtitles, type ShareSubtitleSegment } from "../recording/shareSubtitles";
+import {
+	createShareSubtitles,
+	type ShareSubtitleSegment,
+	splitLongSegments,
+} from "../recording/shareSubtitles";
 import { createShareThumbnail } from "../recording/shareThumbnail";
 
 const MAX_CONTROL_RESPONSE_BYTES = 1024 * 1024;
@@ -315,31 +319,16 @@ async function publishShareSubtitles(videoPath: string, metadataUrl: URL, token:
 	}
 }
 
-type ShareCardProfile = { avatarDataUrl?: unknown; name?: unknown };
-
 /** Composes and uploads the image link previews show; a share works without it. */
 async function publishShareCard(
 	origin: string,
 	shareCode: string,
 	token: string,
-	title: string,
 	poster: Buffer,
-	profile: ShareCardProfile,
 	signal: AbortSignal,
-	shouldUpload: () => boolean = () => true,
 ) {
 	try {
-		const font = await fs.readFile(
-			path.join(process.env.VITE_PUBLIC ?? "", "fonts", "InterDisplay-Medium.woff2"),
-		);
-		const card = await renderShareCard({
-			title,
-			poster,
-			font,
-			avatarDataUrl: typeof profile.avatarDataUrl === "string" ? profile.avatarDataUrl : null,
-			name: typeof profile.name === "string" ? profile.name : "",
-		});
-		if (!shouldUpload()) return;
+		const card = await renderShareCard({ poster });
 		const response = await fetch(new URL(`/api/upload-social/${shareCode}`, origin), {
 			method: "PUT",
 			headers: {
@@ -354,44 +343,6 @@ async function publishShareCard(
 		if (!response.ok) throw new Error(`Link preview upload failed (${response.status})`);
 	} catch (error) {
 		console.warn("Link preview image unavailable:", error);
-	}
-}
-
-const latestCardRefresh = new Map<string, number>();
-
-/** Redraws the link preview with a new title, from the poster already online. */
-export async function refreshShareCard(
-	origin: string,
-	shareCode: string,
-	token: string,
-	title: string,
-	profile: ShareCardProfile,
-) {
-	// Quick successive renames: only the newest title may upload its preview.
-	const run = (latestCardRefresh.get(shareCode) ?? 0) + 1;
-	latestCardRefresh.set(shareCode, run);
-	const isLatest = () => latestCardRefresh.get(shareCode) === run;
-	try {
-		const poster = await fetch(new URL(`/thumb/${shareCode}`, origin), {
-			redirect: "error",
-			signal: AbortSignal.timeout(30000),
-		});
-		// Password-protected posters aren't public; their previews show no image.
-		if (!poster.ok || !isLatest()) return;
-		await publishShareCard(
-			origin,
-			shareCode,
-			token,
-			title,
-			Buffer.from(await poster.arrayBuffer()),
-			profile,
-			AbortSignal.timeout(60000),
-			isLatest,
-		);
-	} catch (error) {
-		console.warn("Link preview not refreshed:", error);
-	} finally {
-		if (isLatest()) latestCardRefresh.delete(shareCode);
 	}
 }
 
@@ -457,14 +408,6 @@ export function registerCloudShareHandlers() {
 				if (!response.ok)
 					throw new Error(
 						await responseError(response, "Could not manage shared recordings"),
-					);
-				if (input.action === "rename" && typeof input.shareCode === "string")
-					void refreshShareCard(
-						new URL(endpoint).origin,
-						input.shareCode,
-						input.token,
-						title,
-						input,
 					);
 				if (input.action !== "list") return { success: true };
 				return {
@@ -686,9 +629,7 @@ export function registerCloudShareHandlers() {
 							endpointOrigin,
 							ticket.shareCode,
 							token,
-							title,
 							thumbnail,
-							input,
 							controller.signal,
 						);
 					} catch {
@@ -707,8 +648,12 @@ export function registerCloudShareHandlers() {
 					);
 					const editorSegments = parseEditorCaptionSegments(input.captionCues);
 					if (editorSegments) {
-						// Captions written or corrected in the editor become the subtitles as they are.
-						void postShareSubtitles(editorSegments, metadataUrl, token).catch((error) =>
+						// Captions written or corrected in the editor become the subtitles, long ones cut short.
+						void postShareSubtitles(
+							splitLongSegments(editorSegments),
+							metadataUrl,
+							token,
+						).catch((error) =>
 							console.warn("Shared video subtitles unavailable:", error),
 						);
 					} else {

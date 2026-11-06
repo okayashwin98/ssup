@@ -12,7 +12,7 @@ vi.mock("../captions/whisper", () => ({
 }));
 vi.mock("../../appSettingsStore", () => ({ readAppSetting: mocks.setting }));
 
-const { createShareSubtitles, splitLongCue } = await import("./shareSubtitles");
+const { createShareSubtitles, splitLongCue, splitLongSegments } = await import("./shareSubtitles");
 
 describe("shared-link subtitles", () => {
 	beforeEach(() => mocks.generate.mockClear());
@@ -96,5 +96,27 @@ describe("long subtitles", () => {
 		expect(pieces[0].startMs).toBe(0);
 		expect(pieces.at(-1)?.endMs).toBe(9000);
 		pieces.slice(1).forEach((piece, index) => expect(piece.startMs).toBe(pieces[index].endMs));
+	});
+});
+
+describe("editor captions", () => {
+	it("are cut the same way, sharing out their time by length", () => {
+		const text =
+			"So here in Starlight you can change the width and the height of any Param object";
+		const pieces = splitLongSegments([
+			{ startTime: 2, endTime: 8, text },
+			{ startTime: 8, endTime: 9, text: "Short one" },
+		]);
+		expect(pieces.length).toBe(3);
+		expect(pieces[0].startTime).toBe(2);
+		expect(pieces[1].endTime).toBe(8);
+		expect(pieces[1].startTime).toBe(pieces[0].endTime);
+		expect(
+			pieces
+				.slice(0, 2)
+				.map((piece) => piece.text)
+				.join(" "),
+		).toBe(text);
+		expect(pieces[2]).toEqual({ startTime: 8, endTime: 9, text: "Short one" });
 	});
 });

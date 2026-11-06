@@ -4,28 +4,13 @@ vi.mock("electron", () => ({ BrowserWindow: class {} }));
 
 const { buildShareCardHtml } = await import("./shareCard");
 
-const base = { poster: Buffer.from("poster"), font: Buffer.from("font") };
-
 describe("buildShareCardHtml", () => {
-	it("escapes the title so it can't add markup to the card", () => {
-		const html = buildShareCardHtml({ ...base, title: `<script>alert("x")</script> & co` });
-		expect(html).toContain("&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt; &amp; co");
-		expect(html).not.toContain(`<script>alert`);
-	});
-
-	it("uses only image data URLs for the photo, else the name's initial", () => {
-		const photo = "data:image/jpeg;base64,AAAA";
-		expect(buildShareCardHtml({ ...base, title: "t", avatarDataUrl: photo })).toContain(
-			`<img class="avatar" src="${photo}"`,
+	it("shows only the video frame and a play button", () => {
+		const html = buildShareCardHtml({ poster: Buffer.from("poster") });
+		expect(html).toContain(
+			`src="data:image/jpeg;base64,${Buffer.from("poster").toString("base64")}"`,
 		);
-		const fallback = buildShareCardHtml({
-			...base,
-			title: "t",
-			avatarDataUrl: `javascript:alert(1)`,
-			name: "jane",
-		});
-		expect(fallback).not.toContain("javascript:");
-		expect(fallback).toContain(`<div class="avatar initial">J</div>`);
-		expect(buildShareCardHtml({ ...base, title: "t" })).not.toContain(`class="avatar`);
+		expect(html).toContain(`<div class="play">`);
+		expect(html).not.toMatch(/class="(avatar|title|fade)"/);
 	});
 });
