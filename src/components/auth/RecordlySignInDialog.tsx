@@ -1,11 +1,6 @@
-import { ArrowRight, GithubLogo } from "@phosphor-icons/react";
+import { GithubLogo } from "@phosphor-icons/react";
 import { OnboardingPermissions } from "./OnboardingPermissions";
-import {
-	OnboardingBody,
-	OnboardingFooter,
-	OnboardingHeader,
-	OnboardingLayout,
-} from "./OnboardingLayout";
+import { OnboardingBody, OnboardingHeader } from "./OnboardingLayout";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useI18n } from "@/contexts/I18nContext";
 import { SignOut } from "@/components/ui/icons";
@@ -38,7 +33,6 @@ export type SignInReason = "account" | "share";
 type Props = {
 	variant?: "compact" | "wide";
 	onboarding?: boolean;
-	startWithPermissions?: boolean;
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	reason?: SignInReason;
@@ -68,7 +62,6 @@ function friendlyAuthError(
 export function RecordlySignInDialog({
 	variant = "compact",
 	onboarding = false,
-	startWithPermissions = false,
 	open,
 	onOpenChange,
 	user,
@@ -79,11 +72,10 @@ export function RecordlySignInDialog({
 	const { t } = useI18n();
 	const awaitingSignIn = useRef(false);
 	const wide = onboarding || variant === "wide";
-	const [showPermissions, setShowPermissions] = useState(false);
-	// Without a configured sign-in service the app runs local-only, so onboarding can continue unsigned.
+	// Without a configured sign-in service the app runs local-only, so onboarding goes straight to permissions.
 	const canContinue = Boolean(user) || !configured;
 	const requiresSignIn = onboarding && !canContinue;
-	const permissions = onboarding && canContinue && showPermissions;
+	const permissions = onboarding && canContinue;
 	const [email, setEmail] = useState("");
 	const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 	const [busy, setBusy] = useState<string>();
@@ -126,7 +118,6 @@ export function RecordlySignInDialog({
 
 	useEffect(() => {
 		if (!open) {
-			setShowPermissions(false);
 			awaitingSignIn.current = false;
 			setBusy(undefined);
 			setMessage(undefined);
@@ -135,17 +126,12 @@ export function RecordlySignInDialog({
 	}, [open]);
 
 	useEffect(() => {
-		if (open && startWithPermissions && canContinue) setShowPermissions(true);
-	}, [open, startWithPermissions, canContinue]);
-
-	useEffect(() => {
 		if (!open) return;
 		if (!user) awaitingSignIn.current = true;
 		else if (awaitingSignIn.current) {
 			awaitingSignIn.current = false;
 			setMessage(undefined);
-			if (onboarding) setShowPermissions(true);
-			else onAuthenticated();
+			if (!onboarding) onAuthenticated();
 		}
 	}, [open, user, onAuthenticated, onboarding]);
 
@@ -439,19 +425,6 @@ export function RecordlySignInDialog({
 					)}
 				</div>
 			</SignInBody>
-			{onboarding && canContinue && (
-				<OnboardingFooter>
-					<div className="flex w-full justify-end">
-						<Button
-							variant="primary"
-							isDisabled={disabled}
-							onPress={() => setShowPermissions(true)}
-						>
-							Continue <ArrowRight size={16} />
-						</Button>
-					</div>
-				</OnboardingFooter>
-			)}
 		</motion.div>
 	);
 	return (
@@ -479,18 +452,12 @@ export function RecordlySignInDialog({
 						}
 						className={
 							onboarding
-								? "h-[min(760px,calc(100dvh-32px))] min-h-0 w-full max-w-[720px] gap-0 overflow-hidden rounded-3xl p-0"
+								? "h-auto max-h-[calc(100dvh-32px)] min-h-0 w-full max-w-[720px] gap-0 overflow-hidden rounded-3xl p-0"
 								: `h-auto min-h-0 w-full max-h-[calc(100dvh-48px)] gap-0 overflow-y-auto rounded-[32px] p-2 ${wide ? "max-w-[1120px] md:grid md:grid-cols-2 md:aspect-[28/19]" : "max-w-[600px]"}`
 						}
 					>
 						{onboarding ? (
-							<OnboardingLayout
-								stage={permissions ? "permissions" : "account"}
-								canViewPermissions={canContinue}
-								onStageChange={(stage) =>
-									setShowPermissions(stage === "permissions" && canContinue)
-								}
-							>
+							<div className="flex h-full min-h-0 flex-col">
 								<AnimatePresence
 									initial={false}
 									mode="wait"
@@ -508,7 +475,6 @@ export function RecordlySignInDialog({
 									>
 										{permissions ? (
 											<OnboardingPermissions
-												onBack={() => setShowPermissions(false)}
 												onFinish={() => {
 													if (canContinue) onAuthenticated();
 												}}
@@ -518,7 +484,7 @@ export function RecordlySignInDialog({
 										)}
 									</motion.div>
 								</AnimatePresence>
-							</OnboardingLayout>
+							</div>
 						) : (
 							<>
 								<div

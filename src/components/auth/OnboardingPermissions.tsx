@@ -1,16 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@heroui/react";
-import { ArrowLeft, ArrowRight, Check, Cursor, Monitor } from "@phosphor-icons/react";
+import { ArrowRight, Check, Cursor, Monitor } from "@phosphor-icons/react";
 import { OnboardingBody, OnboardingFooter, OnboardingHeader } from "./OnboardingLayout";
 import { PermissionsConfetti } from "./PermissionsConfetti";
 
-export function OnboardingPermissions({
-	onBack,
-	onFinish,
-}: {
-	onBack: () => void;
-	onFinish: () => void;
-}) {
+export function OnboardingPermissions({ onFinish }: { onFinish: () => void }) {
 	const [platform, setPlatform] = useState<"checking" | "mac" | "other">("checking");
 	const [screenGranted, setScreenGranted] = useState(false);
 	const [accessibilityGranted, setAccessibilityGranted] = useState(false);
@@ -194,11 +188,8 @@ export function OnboardingPermissions({
 				)}
 			</OnboardingBody>
 			<OnboardingFooter>
-				<Button variant="ghost" aria-label="Back to account" onPress={onBack}>
-					<ArrowLeft size={16} />
-					Back
-				</Button>
 				<Button
+					className="ml-auto"
 					isDisabled={
 						platform === "checking" ||
 						(platform === "mac" &&
