@@ -242,13 +242,10 @@
 		--button-fg: var(--accent-soft-foreground);
 		box-shadow: inset 0 0 0 1px var(--accent-line);
 	}
-	/* Text buttons are full pills; icon-only buttons are small squircles. */
+	/* Buttons are 10px squircles, as in Supercut's app. */
 	.button {
-		border-radius: 9999px;
-		transition-timing-function: var(--ease-out);
-	}
-	.button--icon-only {
 		border-radius: 10px;
+		transition-timing-function: var(--ease-out);
 	}
 
 	/* Corners by role, drawn as squircles where the browser can. */
