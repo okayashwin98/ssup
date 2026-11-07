@@ -51,7 +51,8 @@
 		"skipBack": "Retroceder",
 		"skipForward": "Avanzar",
 		"muteUnmute": "Silenciar/activar sonido",
-		"volume": "Volumen de vista previa"
+		"volume": "Volumen de vista previa",
+		"loop": "Repetir reproducción"
 	},
 	"annotations": {
 		"settings": "Configuración de anotaciones",
@@ -91,7 +92,6 @@
 		"solidColor": "Color Sólido (Censura)",
 		"borderRadius": "Radio del Borde"
 	},
-
 	"fontStyles": {
 		"classic": "Clásico",
 		"editor": "Editor",
@@ -169,7 +169,10 @@
 		"experimentalBuilds": "Consejo: Activa el acceso a versiones experimentales en la configuración",
 		"cursorAppearance": "Consejo: Puedes personalizar la apariencia del cursor"
 	},
-	"account": { "title": "Cuenta", "comingSoon": "Cuenta próximamente" },
+	"account": {
+		"title": "Cuenta",
+		"comingSoon": "Cuenta próximamente"
+	},
 	"nativeCaptureUnavailable": {
 		"title": "Nada está roto, pero no podremos renderizar una superposición de cursor animada.",
 		"description": "Tu dispositivo no es compatible con la captura nativa. Esto puede deberse a varias razones que todavía no hemos identificado. SuperShare seguirá funcionando, pero hará imposible el suavizado del cursor.",

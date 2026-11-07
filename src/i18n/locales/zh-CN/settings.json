@@ -20,6 +20,8 @@
 	"clip": {
 		"title": "片段",
 		"mute": "将片段静音",
+		"filterNoise": "过滤噪音",
+		"removeFillers": "删除口头禅",
 		"resetAudioSettings": "重置音频设置",
 		"mutedState": "音频已静音",
 		"unmutedState": "音频正在播放",

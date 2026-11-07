@@ -20,6 +20,8 @@
 	"clip": {
 		"title": "Клип",
 		"mute": "Отключить звук клипа",
+		"filterNoise": "Фильтровать шум",
+		"removeFillers": "Удалить слова-паразиты",
 		"resetAudioSettings": "Сбросить настройки звука",
 		"mutedState": "Звук выключен",
 		"unmutedState": "Звук включен",

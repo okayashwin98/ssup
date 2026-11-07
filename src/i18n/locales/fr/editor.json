@@ -51,7 +51,8 @@
 		"skipBack": "Reculer",
 		"skipForward": "Avancer",
 		"muteUnmute": "Activer/Désactiver le son",
-		"volume": "Volume de l’aperçu"
+		"volume": "Volume de l’aperçu",
+		"loop": "Lire en boucle"
 	},
 	"annotations": {
 		"settings": "Paramètres des annotations",
@@ -91,7 +92,6 @@
 		"solidColor": "Couleur unie (censure)",
 		"borderRadius": "Rayon de bordure"
 	},
-
 	"fontStyles": {
 		"classic": "Classique",
 		"editor": "Éditeur",
@@ -169,7 +169,10 @@
 		"experimentalBuilds": "Astuce : Activez l’accès aux versions expérimentales dans les paramètres",
 		"cursorAppearance": "Astuce : Vous pouvez personnaliser l’apparence du curseur"
 	},
-	"account": { "title": "Compte", "comingSoon": "Compte bientôt disponible" },
+	"account": {
+		"title": "Compte",
+		"comingSoon": "Compte bientôt disponible"
+	},
 	"nativeCaptureUnavailable": {
 		"title": "Rien n'est cassé, mais nous ne pourrons pas afficher une superposition animée du curseur.",
 		"description": "Votre appareil ne prend pas en charge la capture native. Cela peut arriver pour plusieurs raisons que nous n'avons pas encore identifiées. SuperShare continuera de fonctionner, mais le lissage du curseur sera impossible.",

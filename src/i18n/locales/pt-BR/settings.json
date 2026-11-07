@@ -20,6 +20,8 @@
 	"clip": {
 		"title": "Clipe",
 		"mute": "Silenciar clipe",
+		"filterNoise": "Filtrar ruído",
+		"removeFillers": "Remover vícios de linguagem",
 		"resetAudioSettings": "Redefinir configurações de áudio",
 		"mutedState": "O áudio está mudo",
 		"unmutedState": "O áudio está tocando",

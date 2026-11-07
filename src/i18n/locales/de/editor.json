@@ -51,7 +51,8 @@
 		"skipBack": "Zurück springen",
 		"skipForward": "Vorwärts springen",
 		"muteUnmute": "Stummschalten/Stummschaltung aufheben",
-		"volume": "Vorschaulautstärke"
+		"volume": "Vorschaulautstärke",
+		"loop": "Wiedergabe wiederholen"
 	},
 	"annotations": {
 		"settings": "Einstellungen für Anmerkungen",
@@ -168,7 +169,10 @@
 		"experimentalBuilds": "Tipp: Aktiviere den Zugriff auf experimentelle Builds in den Einstellungen",
 		"cursorAppearance": "Tipp: Du kannst das Aussehen deines Cursors anpassen"
 	},
-	"account": { "title": "Konto", "comingSoon": "Konto demnächst verfügbar" },
+	"account": {
+		"title": "Konto",
+		"comingSoon": "Konto demnächst verfügbar"
+	},
 	"nativeCaptureUnavailable": {
 		"title": "Es ist nichts kaputt, aber wir können kein animiertes Cursor-Overlay rendern.",
 		"description": "Ihr Gerät unterstützt keine native Erfassung. Dies kann verschiedene Gründe haben, die wir noch nicht ermittelt haben. SuperShare funktioniert weiterhin, aber eine Cursor-Glättung ist nicht möglich.",

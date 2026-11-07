@@ -20,6 +20,8 @@
 	"clip": {
 		"title": "클립",
 		"mute": "클립 음소거",
+		"filterNoise": "소음 필터",
+		"removeFillers": "군말 제거",
 		"resetAudioSettings": "오디오 설정 초기화",
 		"mutedState": "오디오가 음소거됨",
 		"unmutedState": "오디오가 재생 중",

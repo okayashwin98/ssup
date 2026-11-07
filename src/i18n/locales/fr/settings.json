@@ -20,6 +20,8 @@
 	"clip": {
 		"title": "Clip",
 		"mute": "Couper le son du clip",
+		"filterNoise": "Filtrer le bruit",
+		"removeFillers": "Supprimer les mots de remplissage",
 		"resetAudioSettings": "Réinitialiser les réglages audio",
 		"mutedState": "Le son est coupé",
 		"unmutedState": "Le son est activé",

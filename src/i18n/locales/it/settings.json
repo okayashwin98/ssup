@@ -20,6 +20,8 @@
 	"clip": {
 		"title": "Clip",
 		"mute": "Disattiva l'audio del clip",
+		"filterNoise": "Filtra rumore",
+		"removeFillers": "Rimuovi intercalari",
 		"resetAudioSettings": "Ripristina impostazioni audio",
 		"mutedState": "Audio disattivato",
 		"unmutedState": "Audio in riproduzione",

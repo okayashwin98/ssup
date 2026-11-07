@@ -20,6 +20,8 @@
 	"clip": {
 		"title": "Clip",
 		"mute": "Clip dempen",
+		"filterNoise": "Ruis filteren",
+		"removeFillers": "Stopwoorden verwijderen",
 		"resetAudioSettings": "Audio-instellingen resetten",
 		"mutedState": "Audio is gedempt",
 		"unmutedState": "Audio wordt afgespeeld",
