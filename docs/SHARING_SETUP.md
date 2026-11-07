@@ -27,8 +27,8 @@ The share page itself is already built (`services/recordly-share/worker/web/dist
 ## 1. Get the code
 
 ```sh
-git clone https://github.com/okayashwin98/supershare.git
-cd supershare
+git clone https://github.com/okayashwin98/ssup.git
+cd ssup
 npm install
 ```
 

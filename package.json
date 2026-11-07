@@ -3,13 +3,13 @@
 	"productName": "SuperShare",
 	"description": "A Mac screen recorder with auto-zoom, cursor effects, captions, voice cleanup and your own share links. Based on Recordly.",
 	"author": "okayashwin98",
-	"homepage": "https://github.com/okayashwin98/supershare",
+	"homepage": "https://github.com/okayashwin98/ssup",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/okayashwin98/supershare.git"
+		"url": "https://github.com/okayashwin98/ssup.git"
 	},
 	"bugs": {
-		"url": "https://github.com/okayashwin98/supershare/issues"
+		"url": "https://github.com/okayashwin98/ssup/issues"
 	},
 	"private": true,
 	"version": "1.4.0",

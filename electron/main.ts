@@ -478,7 +478,7 @@ function setupApplicationMenu() {
 	app.setAboutPanelOptions({
 		applicationName: "SuperShare",
 		credits:
-			"Based on Recordly by webadderall (github.com/webadderallorg/Recordly).\nFree software under the GNU AGPL v3. Source: github.com/okayashwin98/supershare",
+			"Based on Recordly by webadderall (github.com/webadderallorg/Recordly).\nFree software under the GNU AGPL v3. Source: github.com/okayashwin98/ssup",
 	});
 	if (isMac) {
 		template.push({
