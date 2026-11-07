@@ -5,7 +5,7 @@ import { formatRelativeDate } from "@/lib/relativeDate";
 import type { ProjectLibraryEntry } from "../ProjectBrowserDialog";
 import { FrostedFolder } from "./FrostedFolder";
 
-/** A project's raw folder in the Raw section; opening it lists the files inside. */
+/** A project's raw folder in the Raw section; opening it shows the folder in Finder. */
 export function RawFolderCard({
 	name,
 	entries,

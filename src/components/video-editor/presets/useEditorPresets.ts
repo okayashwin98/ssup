@@ -163,6 +163,52 @@ export function useEditorPresets({
 		[currentSnapshot, editorPresets, setActivePresetId, setEditorPresets, t],
 	);
 
+	const handleRenameEditorPreset = useCallback(
+		(presetId: string, name: string) => {
+			const preset = editorPresets.find((item) => item.id === presetId);
+			const normalizedName = name.trim().replace(/\s+/g, " ");
+			if (!preset || !normalizedName) return false;
+			if (normalizedName === preset.name) return true;
+			if (
+				editorPresets.some(
+					(item) =>
+						item.id !== presetId &&
+						item.name.toLocaleLowerCase() === normalizedName.toLocaleLowerCase(),
+				)
+			) {
+				toast.error(
+					t(
+						"editor.presets.errors.duplicateName",
+						"A preset with that name already exists.",
+					),
+				);
+				return false;
+			}
+			const nextPresets = editorPresets.map((item) =>
+				item.id === presetId
+					? { ...item, name: normalizedName, updatedAt: new Date().toISOString() }
+					: item,
+			);
+			if (!saveEditorPresets(nextPresets)) {
+				toast.error(
+					t(
+						"editor.presets.errors.renameFailed",
+						"Could not rename that preset. Check your browser storage settings and try again.",
+					),
+				);
+				return false;
+			}
+			setEditorPresets(nextPresets);
+			toast.success(
+				t("editor.presets.toasts.renamed", 'Renamed preset to "{{name}}"', {
+					name: normalizedName,
+				}),
+			);
+			return true;
+		},
+		[editorPresets, setEditorPresets, t],
+	);
+
 	const handleDeleteEditorPreset = useCallback(
 		(presetId: string) => {
 			const preset = editorPresets.find((item) => item.id === presetId);
@@ -196,6 +242,7 @@ export function useEditorPresets({
 		currentEditorPreset,
 		handleApplyEditorPreset,
 		handleUpdateEditorPreset,
+		handleRenameEditorPreset,
 		handleDeleteEditorPreset,
 		handleSavePresetSubmit,
 	};

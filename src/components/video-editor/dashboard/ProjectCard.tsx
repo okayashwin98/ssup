@@ -188,6 +188,7 @@ export function ProjectCard({
 						variant="ghost"
 						size="icon"
 						aria-label={`Options for ${entry.name}`}
+						data-tooltip="Options"
 						className="absolute right-0 top-5 size-6 min-w-6 text-muted-foreground"
 					>
 						<DotsThree weight="bold" className="size-5" />

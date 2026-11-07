@@ -1,9 +1,10 @@
 import { Card } from "@heroui/react";
 import { lazy, Suspense, useEffect, useState } from "react";
-import { useI18n } from "./contexts/I18nContext";
-import { getStartupView } from "./lib/startupView";
+import { AutoTooltips } from "./components/ui/auto-tooltip";
 import { HomeLoadingSkeleton } from "./components/video-editor/dashboard/HomeLoadingSkeleton";
 import { EditorLoadingSkeleton } from "./components/video-editor/layout/EditorLoadingSkeleton";
+import { useI18n } from "./contexts/I18nContext";
+import { getStartupView } from "./lib/startupView";
 
 const HudWindow = lazy(() => import("./components/launch/HudWindow"));
 const SourceSelector = lazy(() =>
@@ -90,7 +91,12 @@ export default function App() {
 			content = <UpdateToastWindow />;
 			break;
 		case "editor":
-			content = <EditorWindow />;
+			content = (
+				<>
+					<EditorWindow />
+					<AutoTooltips />
+				</>
+			);
 			break;
 		case "capture-picker":
 			content = <CapturePicker />;

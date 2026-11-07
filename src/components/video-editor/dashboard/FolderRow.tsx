@@ -84,6 +84,7 @@ export function FolderRow({
 					variant="ghost"
 					size="icon"
 					aria-label={`Options for ${folder.name}`}
+					data-tooltip="Options"
 					className="size-6 min-w-6 text-muted-foreground opacity-0 group-hover:opacity-100 focus:opacity-100"
 				>
 					<DotsThree className="size-4" />

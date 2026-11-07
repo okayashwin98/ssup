@@ -3,8 +3,7 @@ import { SharedRecordings } from "../cloud/SharedRecordings";
 import { CLOUD_SHARE_ENDPOINT } from "../cloud/endpoint";
 import { RecordNewButton } from "./RecordNewButton";
 import { RawPreview } from "./RawRecordings";
-import { useEffect, useState } from "react";
-import { ArrowLeft, Cloud, ImageSquare } from "@/components/ui/icons";
+import { Cloud, ImageSquare } from "@/components/ui/icons";
 import { RawFolderCard } from "./RawFolderCard";
 
 import { Button } from "@/components/ui/button";
@@ -76,19 +75,20 @@ export function DashboardGrid({
 	| "deleteEntries"
 	| "run"
 >) {
-	// Raw shows one card per project folder; opening a folder lists its files.
-	const [rawFolder, setRawFolder] = useState<string | null>(null);
-	useEffect(() => {
-		if (!isRaw) setRawFolder(null);
-	}, [isRaw]);
+	// Raw shows one card per project folder, which opens in Finder, then the loose files.
 	const folderOf = (entry: (typeof visible)[number]) => entry.rawSource?.folder ?? null;
 	const rawFolders = new Map<string, typeof visible>();
-	if (isRaw && !rawFolder)
+	if (isRaw)
 		for (const entry of visible) {
 			const folder = folderOf(entry);
 			if (folder) rawFolders.set(folder, [...(rawFolders.get(folder) ?? []), entry]);
 		}
-	const cards = isRaw ? visible.filter((entry) => folderOf(entry) === rawFolder) : visible;
+	const cards = isRaw ? visible.filter((entry) => !folderOf(entry)) : visible;
+	const openRawFolder = (name: string) =>
+		run(async () => {
+			const result = await window.electronAPI.openRawFolder(name);
+			if (!result.success) throw new Error(result.error || "Could not open folder");
+		});
 	const renderCard = (entry: (typeof visible)[number]) => (
 		<ProjectCard
 			key={entry.path}
@@ -111,19 +111,10 @@ export function DashboardGrid({
 	);
 	return (
 		<>
-			<main className="custom-scrollbar min-h-0 flex-1 overflow-y-auto px-7 pb-10 lg:px-10">
-				{isRaw && rawFolder && (
-					<Button
-						variant="ghost"
-						size="sm"
-						className="mb-6 -ml-3 gap-2 text-[13px]"
-						onClick={() => setRawFolder(null)}
-					>
-						<ArrowLeft className="size-4" />
-						<span className="text-muted-foreground">Raw /</span>
-						<span className="font-medium">{rawFolder}</span>
-					</Button>
-				)}
+			{/* Gap above the grid sits inside the scroller, so hover lifts are not clipped. */}
+			<main
+				className={`custom-scrollbar min-h-0 flex-1 overflow-y-auto px-7 pb-10 lg:px-10 ${section === "settings" || section === "shared" ? "" : "pt-7"}`}
+			>
 				{error && (
 					<p role="alert" className="mb-4 text-sm text-danger">
 						{error}
@@ -160,13 +151,7 @@ export function DashboardGrid({
 					<LibrarySkeleton />
 				) : cards.length || rawFolders.size ? (
 					<ul
-						aria-label={
-							isRaw
-								? rawFolder
-									? `Files in ${rawFolder}`
-									: "Raw files"
-								: "Your projects"
-						}
+						aria-label={isRaw ? "Raw files" : "Your projects"}
 						className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,280px),1fr))] gap-x-7 gap-y-10 lg:gap-x-9"
 					>
 						{[...rawFolders].map(([name, entries]) => (
@@ -174,7 +159,7 @@ export function DashboardGrid({
 								key={name}
 								name={name}
 								entries={entries}
-								onOpen={() => setRawFolder(name)}
+								onOpen={() => void openRawFolder(name)}
 							/>
 						))}
 						{cards.map(renderCard)}

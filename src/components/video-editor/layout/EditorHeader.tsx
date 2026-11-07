@@ -1,14 +1,14 @@
-import type { ShareResolution } from "@/lib/exporter/types";
 import { Separator } from "@heroui/react";
-import {
-	House,
-	FilmStrip,
-	ArrowClockwise as Redo2,
-	ArrowCounterClockwise as Undo2,
-} from "@/components/ui/icons";
 import type { CSSProperties, FormEvent, RefObject } from "react";
 import { Button } from "@/components/ui/button";
+import {
+	FilmStrip,
+	House,
+	ArrowUUpRight as Redo2,
+	ArrowUUpLeft as Undo2,
+} from "@/components/ui/icons";
 import type { useI18n } from "@/contexts/I18nContext";
+import type { ShareResolution } from "@/lib/exporter/types";
 import type { useExportDimensions } from "../export/useExportDimensions";
 import type { useExportSession } from "../export/useExportSession";
 import type { useExportSettings } from "../export/useExportSettings";
@@ -203,7 +203,8 @@ export function EditorHeader(props: Props) {
 						variant="ghost"
 						onClick={handleUndo}
 						disabled={!canUndo}
-						className="inline-flex w-9 min-w-9 items-center justify-center p-0 disabled:cursor-not-allowed"
+						size="icon"
+						className="disabled:cursor-not-allowed"
 						title={t("common.actions.undo", "Undo")}
 						aria-label={t("common.actions.undo", "Undo")}
 					>
@@ -214,7 +215,8 @@ export function EditorHeader(props: Props) {
 						variant="ghost"
 						onClick={handleRedo}
 						disabled={!canRedo}
-						className="inline-flex w-9 min-w-9 items-center justify-center p-0 disabled:cursor-not-allowed"
+						size="icon"
+						className="disabled:cursor-not-allowed"
 						title={t("common.actions.redo", "Redo")}
 						aria-label={t("common.actions.redo", "Redo")}
 					>

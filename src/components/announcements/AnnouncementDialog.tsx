@@ -309,6 +309,7 @@ export function AnnouncementDialog({ audience }: { audience: AnnouncementAudienc
 											} `}
 											onClick={() => setCurrentIndex(index)}
 											aria-label={`${t("announcements.show", "Show announcement")} ${index + 1}`}
+											data-no-auto-tooltip=""
 										/>
 									))}
 								</div>

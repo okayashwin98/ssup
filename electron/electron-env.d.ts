@@ -1073,6 +1073,8 @@ interface Window {
 		revealInFolder: (
 			filePath: string,
 		) => Promise<{ success: boolean; error?: string; message?: string }>;
+		/** Opens a project folder of the recordings folder in Finder. */
+		openRawFolder: (name: string) => Promise<{ success: boolean; error?: string }>;
 		cloudShareUpload: (input: {
 			filePath: string;
 			endpoint: string;

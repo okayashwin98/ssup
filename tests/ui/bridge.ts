@@ -35,6 +35,7 @@ export async function installDesktopBridge(
 				previewUpdateToast: async () => ({ success: true }),
 				setRecordingsRemoved: async () => ({ success: true, value: null }),
 				getRecordingThumbnail: async () => ({ success: false, error: "Unavailable" }),
+				openRawFolder: success,
 				setAppSetting: () => true,
 				getExperimentalUpdatesEnabled: async () => false,
 				showRecordingPermissions: async () => {

@@ -273,6 +273,13 @@
 	.chip {
 		border-radius: 6px;
 	}
+	/* Library ticks drawn at roughly the weight of the text beside them. */
+	[data-slot="menu-item-indicator--checkmark"],
+	[data-slot="checkbox-indicator"] svg,
+	[data-slot="list-box-item-indicator"] svg,
+	[data-slot="color-swatch-picker-indicator"] svg {
+		stroke-width: 2.75;
+	}
 
 	/* Corners by role, drawn as squircles where the browser can. */
 	.tooltip {

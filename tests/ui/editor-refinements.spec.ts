@@ -139,8 +139,14 @@ test("populated project and preset popovers fit long names and dismiss outside",
 		.getByRole("textbox", { name: "Preset name" })
 		.fill("A very long saved preset name that must not push its delete button out");
 	await presets.getByRole("button", { name: "Save", exact: true }).click();
-	await expect(presets.getByRole("button", { name: /Delete preset/ })).toBeVisible();
+	await expect(
+		presets.getByRole("button", { name: "Preset options", exact: true }),
+	).toBeVisible();
 	await expectButtonsFit(presets);
+	await presets.getByRole("button", { name: "Preset options", exact: true }).click();
+	await expect(page.getByRole("menuitem", { name: "Delete preset", exact: true })).toBeVisible();
+	await page.keyboard.press("Escape");
+	await expect(page.getByRole("menuitem", { name: "Delete preset", exact: true })).toHaveCount(0);
 	await page.screenshot({
 		path: "test-results/editor-presets-populated.png",
 		animations: "disabled",

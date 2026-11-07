@@ -20,6 +20,7 @@ export function DashboardFilters({
 	busy,
 	deleteEntries,
 	hideSelection = false,
+	flush = false,
 }: Pick<
 	DashboardModel & DashboardProps,
 	| "isRaw"
@@ -34,10 +35,14 @@ export function DashboardFilters({
 	| "visible"
 	| "busy"
 	| "deleteEntries"
-> & { hideSelection?: boolean }) {
+> & {
+	hideSelection?: boolean;
+	/** No gap below: the grid's scroller supplies it, leaving room for hover lifts. */
+	flush?: boolean;
+}) {
 	return (
 		<>
-			<div className="flex items-center gap-3 px-7 pb-7 lg:px-10">
+			<div className={`flex items-center gap-3 px-7 lg:px-10 ${flush ? "" : "pb-7"}`}>
 				<div className="flex gap-2" aria-label="Time filters">
 					{[
 						["all", "All"],
@@ -59,7 +64,7 @@ export function DashboardFilters({
 						<Button
 							variant="ghost"
 							size="icon"
-							className="min-w-7 text-danger"
+							className="text-muted-foreground hover:text-danger"
 							aria-label={
 								isRaw ? "Select raw files to remove" : "Select projects to delete"
 							}
@@ -109,7 +114,9 @@ export function DashboardFilters({
 				</div>
 			</div>
 			{selecting && (
-				<div className="flex items-center gap-3 px-7 pb-5 text-xs lg:px-10">
+				<div
+					className={`flex items-center gap-3 px-7 text-xs lg:px-10 ${flush ? "pt-7" : "pb-5"}`}
+				>
 					<Button
 						variant="ghost"
 						size="sm"

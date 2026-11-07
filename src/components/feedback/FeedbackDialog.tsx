@@ -193,6 +193,7 @@ export function FeedbackDialog({
 											variant="ghost"
 											isDisabled={sending}
 											aria-label={`Remove ${file.name}`}
+											data-tooltip="Remove file"
 											onPress={() =>
 												setFiles(files.filter((_, i) => i !== index))
 											}

@@ -31,6 +31,7 @@ export function FolderColors({
 				variant="ghost"
 				size="icon"
 				aria-label={`Change color for ${name}`}
+				data-tooltip="Change color"
 				className="size-8 min-w-8 rounded-md"
 			>
 				<FolderSimple weight="fill" className="size-[18px]" style={{ color: value }} />

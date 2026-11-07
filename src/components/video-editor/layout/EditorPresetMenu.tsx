@@ -1,4 +1,6 @@
-import { ArrowClockwise, BookmarkSimple, CaretDown, Check, X } from "@/components/ui/icons";
+import { Dropdown } from "@heroui/react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowClockwise, BookmarkSimple, CaretDown, Check, DotsThree } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -21,9 +23,33 @@ export function EditorPresetMenu({ t, presets }: Props) {
 		currentEditorPreset,
 		handleApplyEditorPreset,
 		handleUpdateEditorPreset,
+		handleRenameEditorPreset,
 		handleDeleteEditorPreset,
 		handleSavePresetSubmit,
 	} = presets;
+	const [editingId, setEditingId] = useState<string | null>(null);
+	const [nameDraft, setNameDraft] = useState("");
+	// Stops the blur that follows Enter or Escape from committing a second time.
+	const editingRef = useRef<string | null>(null);
+
+	useEffect(() => {
+		if (!presetPopoverOpen) {
+			editingRef.current = null;
+			setEditingId(null);
+		}
+	}, [presetPopoverOpen]);
+
+	const startRename = (presetId: string, name: string) => {
+		setNameDraft(name);
+		editingRef.current = presetId;
+		requestAnimationFrame(() => requestAnimationFrame(() => setEditingId(presetId)));
+	};
+	const finishRename = (save: boolean) => {
+		const presetId = editingRef.current;
+		editingRef.current = null;
+		setEditingId(null);
+		if (save && presetId) handleRenameEditorPreset(presetId, nameDraft);
+	};
 
 	return (
 		<Popover open={presetPopoverOpen} onOpenChange={setPresetPopoverOpen}>
@@ -79,7 +105,7 @@ export function EditorPresetMenu({ t, presets }: Props) {
 						<p className="text-xs font-medium text-foreground">
 							{t("editor.presets.savedList", "Saved presets")}
 						</p>
-						<div className="max-h-56 space-y-1 overflow-y-auto pr-1 custom-scrollbar">
+						<div className="flex max-h-56 flex-col gap-1 overflow-y-auto custom-scrollbar">
 							{editorPresets.length === 0 ? (
 								<div className="rounded-lg bg-default px-3 py-4 text-center text-[11px] text-muted-foreground">
 									{t("editor.presets.empty", "No presets yet.")}
@@ -91,61 +117,118 @@ export function EditorPresetMenu({ t, presets }: Props) {
 										<div
 											key={preset.id}
 											className={cn(
-												"flex min-w-0 items-center gap-1 rounded-lg p-1 text-[13px] transition-colors",
+												"flex h-8 min-w-0 shrink-0 items-center gap-0.5 rounded-[10px] text-[13px] transition-colors",
 												isActive
-													? "bg-default text-foreground"
-													: "text-muted hover:bg-default hover:text-foreground",
+													? "bg-default/70 text-foreground"
+													: "text-muted hover:bg-default/40 hover:text-foreground",
 											)}
 										>
+											{editingId === preset.id ? (
+												<form
+													className="min-w-0 flex-1"
+													onSubmit={(event) => {
+														event.preventDefault();
+														finishRename(true);
+													}}
+												>
+													<Input
+														autoFocus
+														onFocus={(event) =>
+															event.currentTarget.select()
+														}
+														aria-label={t(
+															"editor.presets.namePlaceholder",
+															"Preset name",
+														)}
+														className="h-8 w-full min-w-0 text-[13px]"
+														value={nameDraft}
+														onChange={(event) =>
+															setNameDraft(event.target.value)
+														}
+														onBlur={() => finishRename(true)}
+														onKeyDown={(event) => {
+															if (event.key === "Escape") {
+																// Cancel the rename without closing the popover.
+																event.preventDefault();
+																event.stopPropagation();
+																finishRename(false);
+															}
+														}}
+													/>
+												</form>
+											) : (
+												<button
+													type="button"
+													onClick={() =>
+														handleApplyEditorPreset(preset.id)
+													}
+													className="flex h-full min-w-0 flex-1 items-center justify-between gap-2 rounded-[10px] px-2.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-focus"
+												>
+													<span className="truncate">{preset.name}</span>
+													{isActive ? (
+														<Check className="h-3.5 w-3.5 shrink-0 text-accent" />
+													) : null}
+												</button>
+											)}
 											<Button
 												variant="ghost"
 												type="button"
-												onClick={() => handleApplyEditorPreset(preset.id)}
-												className="flex h-8 min-w-0 flex-1 items-center justify-between px-2 text-left text-[13px]"
-											>
-												<span className="truncate pr-3">{preset.name}</span>
-												{isActive ? (
-													<Check className="h-3.5 w-3.5 shrink-0 text-accent" />
-												) : null}
-											</Button>
-											<Button
-												variant="ghost"
-												type="button"
+												size="icon"
 												onClick={() => handleUpdateEditorPreset(preset.id)}
-												size="icon"
-												className="inline-flex h-7 w-7 min-w-7 shrink-0 items-center justify-center p-0"
+												className="shrink-0"
 												aria-label={t(
 													"editor.presets.updateAriaLabel",
 													"Update {{name}} with current settings",
 													{ name: preset.name },
 												)}
-												title={t(
-													"editor.presets.updateAriaLabel",
-													"Update {{name}} with current settings",
-													{ name: preset.name },
-												)}
+												data-tooltip="Update preset"
 											>
-												<ArrowClockwise className="h-3.5 w-3.5" />
+												<ArrowClockwise />
 											</Button>
-											<Button
-												variant="ghost"
-												type="button"
-												onClick={() => handleDeleteEditorPreset(preset.id)}
-												size="icon"
-												className="inline-flex h-7 w-7 min-w-7 shrink-0 items-center justify-center p-0"
-												aria-label={t(
-													"editor.presets.deleteAriaLabel",
-													"Delete preset {{name}}",
-													{ name: preset.name },
-												)}
-												title={t(
-													"editor.presets.deleteAriaLabel",
-													"Delete preset {{name}}",
-													{ name: preset.name },
-												)}
-											>
-												<X className="h-3.5 w-3.5" />
-											</Button>
+											<Dropdown>
+												<Button
+													variant="ghost"
+													size="icon"
+													className="shrink-0"
+													aria-label={t(
+														"editor.presets.optionsAriaLabel",
+														"Preset options",
+													)}
+													data-tooltip="Options"
+												>
+													<DotsThree weight="bold" />
+												</Button>
+												<Dropdown.Popover>
+													<Dropdown.Menu
+														aria-label={t(
+															"editor.presets.optionsAriaLabel",
+															"Preset options",
+														)}
+													>
+														<Dropdown.Item
+															id="rename"
+															onAction={() =>
+																startRename(preset.id, preset.name)
+															}
+														>
+															{t("editor.presets.rename", "Rename")}
+														</Dropdown.Item>
+														<Dropdown.Item
+															id="delete"
+															variant="danger"
+															className="text-danger"
+															onAction={() =>
+																handleDeleteEditorPreset(preset.id)
+															}
+														>
+															{t(
+																"editor.presets.delete",
+																"Delete preset",
+															)}
+														</Dropdown.Item>
+													</Dropdown.Menu>
+												</Dropdown.Popover>
+											</Dropdown>
 										</div>
 									);
 								})

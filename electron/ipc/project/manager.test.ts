@@ -358,6 +358,31 @@ describe("local media path policy", () => {
 		expect(ready).toHaveBeenCalledWith(expect.objectContaining({ path: projectPath }));
 	});
 
+	it("keeps a styled preview from an earlier save instead of a raw first frame", async () => {
+		const generate = vi.fn();
+		vi.doMock("./firstFrameThumbnail", () => ({ createProjectFirstFrameThumbnail: generate }));
+		const manager = await import("./manager");
+		const source = path.join(tempRoot, "source.mp4");
+		const projectPath = path.join(tempRoot, "styled.recordly");
+		await fs.writeFile(source, "video");
+		await fs.writeFile(
+			projectPath,
+			JSON.stringify({ version: 2, videoPath: source, editor: {} }),
+		);
+		const png = Buffer.alloc(24);
+		Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]).copy(png);
+		png.writeUInt32BE(640, 16);
+		png.writeUInt32BE(480, 20);
+		const thumbnail = manager.getProjectThumbnailPath(projectPath);
+		await fs.writeFile(thumbnail, png);
+		// The project is saved again later, so the preview is older than the project.
+		const later = new Date(Date.now() + 60_000);
+		await fs.utimes(projectPath, later, later);
+		const entry = await manager.buildProjectLibraryEntry(projectPath, tempRoot);
+		expect(entry?.thumbnailPath).toBe(thumbnail);
+		expect(generate).not.toHaveBeenCalled();
+	});
+
 	it("replaces a thumbnail symlink without overwriting its target", async () => {
 		vi.doMock("./firstFrameThumbnail", () => ({
 			createProjectFirstFrameThumbnail: vi.fn().mockResolvedValue(Buffer.from("new poster")),

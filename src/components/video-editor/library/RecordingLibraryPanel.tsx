@@ -242,6 +242,7 @@ export function RecordingLibraryPanel({
 							size="icon"
 							className="shrink-0"
 							aria-label={`Add ${entry.name} to timeline`}
+							data-tooltip="Add to timeline"
 							title="Add to timeline"
 							disabled={library.busy || library.importing}
 							onClick={() => void library.addToTimeline(entry.path)}

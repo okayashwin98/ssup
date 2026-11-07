@@ -108,6 +108,7 @@ export default function PlaybackCursor({
 				<button
 					type="button"
 					aria-label={`Playhead ${formatPlayheadTime(clampedTime)}`}
+					data-no-auto-tooltip=""
 					data-testid="playhead-cap"
 					onMouseEnter={() => setIsHovered(true)}
 					onMouseLeave={() => setIsHovered(false)}

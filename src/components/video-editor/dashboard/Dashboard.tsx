@@ -24,7 +24,7 @@ export function Dashboard(props: DashboardProps) {
 									<>
 										<DashboardAnnouncements />
 										<DashboardToolbar {...view} />
-										<DashboardFilters {...view} />
+										<DashboardFilters {...view} flush />
 									</>
 								)}
 								<DashboardGrid {...view} />

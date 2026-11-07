@@ -6,6 +6,17 @@ import type { ProjectLibraryEntry } from "../ProjectBrowserDialog";
 import type { DashboardProps } from "./types";
 import { useDashboardMetadata } from "./useDashboardMetadata";
 import { useProjectFolders } from "./useProjectFolders";
+// Project files are rewritten on every save, so their own creation time tracks the last edit.
+const createdTime = (entry: ProjectLibraryEntry) =>
+	entry.recordedAt ?? entry.createdAt ?? entry.updatedAt;
+export const compareEntries =
+	(sort: string) =>
+	(a: ProjectLibraryEntry, b: ProjectLibraryEntry): number =>
+		sort === "name"
+			? a.name.localeCompare(b.name)
+			: sort === "created"
+				? createdTime(b) - createdTime(a)
+				: b.updatedAt - a.updatedAt;
 export function useDashboardModel({
 	entries,
 	onOpenChange,
@@ -80,13 +91,7 @@ export function useDashboardModel({
 						(!folder || folder.paths.includes(entry.path))
 					);
 				})
-				.sort((a, b) =>
-					sort === "name"
-						? a.name.localeCompare(b.name)
-						: sort === "created"
-							? (b.createdAt ?? b.updatedAt) - (a.createdAt ?? a.updatedAt)
-							: b.updatedAt - a.updatedAt,
-				),
+				.sort(compareEntries(sort)),
 		[libraryEntries, query, period, sort, folders, section],
 	);
 	const run = async (action: () => Promise<void>) => {

@@ -426,7 +426,8 @@ export async function buildProjectLibraryEntry(
 
 		const recordingInfo = await getProjectRecordingInfo(normalizedPath);
 		const thumbnailPath = getProjectThumbnailPath(normalizedPath);
-		const thumbnailExists = await hasFreshProjectThumbnail(thumbnailPath, stats.mtimeMs);
+		// A styled preview from an earlier save beats a raw first frame, so only its size is checked.
+		const thumbnailExists = await hasFreshProjectThumbnail(thumbnailPath, 0);
 		if (!thumbnailExists) {
 			void refreshProjectThumbnail(normalizedPath, stats)
 				.then((ready) => {

@@ -72,6 +72,7 @@ export function DashboardAnnouncements({
 								isIconOnly
 								variant="ghost"
 								aria-label={`Announcement ${slide + 1}`}
+								data-no-auto-tooltip=""
 								aria-pressed={slide === active}
 								onPress={() => setIndex(slide)}
 								className="!size-6 !min-h-6 !min-w-6 rounded-full p-0"

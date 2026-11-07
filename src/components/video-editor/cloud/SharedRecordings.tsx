@@ -328,6 +328,7 @@ export function SharedRecordings({
 												size="sm"
 												isIconOnly
 												aria-label={`Open ${recording.title}`}
+												data-tooltip="Open"
 												onPress={() =>
 													void window.electronAPI.openExternalUrl(
 														recording.url,
@@ -342,6 +343,7 @@ export function SharedRecordings({
 											size="sm"
 											isIconOnly
 											aria-label={`Delete ${recording.title}`}
+											data-tooltip="Delete"
 											isDisabled={Boolean(deleting)}
 											className="text-danger"
 											onPress={() => void remove(recording.code)}

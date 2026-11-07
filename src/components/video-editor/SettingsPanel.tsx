@@ -1798,6 +1798,7 @@ export function SettingsPanel({
 										key={g}
 										className={wallpaperTileClass(gradient === g)}
 										aria-label={`Gradient ${idx + 1}`}
+										data-no-auto-tooltip=""
 										onClick={() => {
 											setGradient(g);
 											onWallpaperChange(g);

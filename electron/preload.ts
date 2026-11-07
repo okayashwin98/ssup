@@ -1169,6 +1169,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	revealInFolder: (filePath: string) => {
 		return ipcRenderer.invoke("reveal-in-folder", filePath);
 	},
+	openRawFolder: (name: string) => ipcRenderer.invoke("open-raw-folder", name),
 	cloudShareUpload: (input: {
 		filePath: string;
 		endpoint: string;

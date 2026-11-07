@@ -483,6 +483,27 @@ export function registerProjectHandlers() {
 		}
 	});
 
+	ipcMain.handle("open-raw-folder", async (_, name: string) => {
+		try {
+			// Only a direct, visible subfolder of the recordings folder (never an app bundle).
+			if (
+				typeof name !== "string" ||
+				!name ||
+				name !== path.basename(name) ||
+				name.startsWith(".") ||
+				/\.app$/i.test(name)
+			)
+				return { success: false, error: "Invalid folder" };
+			const folder = path.join(await getRecordingsDir(), name);
+			if (!(await fs.stat(folder)).isDirectory())
+				return { success: false, error: "Not a folder" };
+			const error = await shell.openPath(folder);
+			return error ? { success: false, error } : { success: true };
+		} catch (error) {
+			return { success: false, error: String(error) };
+		}
+	});
+
 	ipcMain.handle("get-recordings-directory", async () => {
 		try {
 			const recordingsDir = await getRecordingsDir();
