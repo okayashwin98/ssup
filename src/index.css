@@ -4,19 +4,19 @@
 @custom-variant dark (&:where(.dark, .dark *));
 @source "../index.html";
 
-/* DM Sans is bundled for consistent typography and offline desktop use. */
+/* Inter for text and Inter Display (medium) for headings, bundled for offline use. */
 @font-face {
-	font-family: "DM Sans";
-	src: url("./assets/fonts/dm-sans/DMSans-Variable.ttf") format("truetype");
+	font-family: "InterVariable";
+	src: url("./assets/fonts/inter/InterVariable.woff2") format("woff2");
 	font-style: normal;
-	font-weight: 100 1000;
+	font-weight: 100 900;
 	font-display: swap;
 }
 @font-face {
-	font-family: "DM Sans";
-	src: url("./assets/fonts/dm-sans/DMSans-Italic-Variable.ttf") format("truetype");
-	font-style: italic;
-	font-weight: 100 1000;
+	font-family: "Inter Display";
+	src: url("./assets/fonts/inter/InterDisplay-Medium.woff2") format("woff2");
+	font-style: normal;
+	font-weight: 500;
 	font-display: swap;
 }
 
@@ -51,8 +51,10 @@
 @layer base {
 	:root {
 		--app-font-sans:
-			"DM Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-			sans-serif;
+			"InterVariable", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+			"Segoe UI", sans-serif;
+		--app-font-display: "Inter Display", var(--app-font-sans);
+		--app-font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 		--brand-accent: var(--accent);
 		--brand-accent-rgb: 0, 111, 238;
 		--primary: var(--accent);
@@ -60,6 +62,61 @@
 		--muted-foreground: var(--muted);
 		--destructive: var(--danger);
 		--input: var(--field-border);
+	}
+
+	/* SuperShare's own neutrals, laid over HeroUI's cool greys: warm and deliberate, so
+	   any theme colour sits well on them. Light is near-white with near-black ink; dark is
+	   a brown-black with cream ink. Borders and dividers are the ink at low strength. */
+	:root,
+	[data-theme="light"] {
+		--background: #f7f6f3;
+		--foreground: #100e0e;
+		--surface: #ffffff;
+		--surface-secondary: #f1f0ec;
+		--surface-tertiary: #e9e7e2;
+		--overlay: #ffffff;
+		--muted: #6b6964;
+		--default: rgb(16 14 14 / 0.06);
+		--default-foreground: #100e0e;
+		--field-background: #ffffff;
+		--border: rgb(16 14 14 / 0.1);
+		--separator: rgb(16 14 14 / 0.07);
+		--overlay-shadow:
+			0 0 0 1px rgb(16 14 14 / 0.08), 0 20px 25px -5px rgb(0 0 0 / 0.1),
+			0 8px 10px -6px rgb(0 0 0 / 0.1);
+		/* Theme-coloured text stays readable on white, even for pale colours. */
+		--accent-soft-foreground: color-mix(in oklab, var(--accent) 50%, var(--foreground));
+	}
+	.dark,
+	[data-theme="dark"] {
+		--background: #100e0e;
+		--foreground: #fdfff0;
+		--surface: #181616;
+		--surface-secondary: #222220;
+		--surface-tertiary: #2b2927;
+		--overlay: #181616;
+		--muted: #969692;
+		--default: rgb(253 255 240 / 0.09);
+		--default-foreground: #fdfff0;
+		--field-background: #181616;
+		--border: rgb(253 255 240 / 0.1);
+		--separator: rgb(253 255 240 / 0.07);
+		--overlay-shadow: 0 0 0 1px #212121, 0 12px 40px rgb(0 0 0 / 0.8);
+		/* Theme-coloured text stays readable even for pale colours. */
+		--accent-soft-foreground: color-mix(in oklab, var(--accent) 75%, var(--foreground));
+	}
+	/* Text steps down from one ink; the theme colour's soft fill and outline are mixed
+	   from whatever colour the user picks. */
+	:root,
+	[data-theme="light"],
+	.dark,
+	[data-theme="dark"] {
+		--text-nav: color-mix(in srgb, var(--foreground) 65%, transparent);
+		--text-subtle: color-mix(in srgb, var(--foreground) 50%, transparent);
+		--text-faint: color-mix(in srgb, var(--foreground) 40%, transparent);
+		--accent-soft: color-mix(in oklab, var(--accent) 10%, transparent);
+		--accent-line: color-mix(in oklab, var(--accent) 30%, transparent);
+		--ease-out: cubic-bezier(0, 0, 0.2, 1);
 	}
 	html,
 	body,
@@ -159,6 +216,88 @@
 	background: color-mix(in srgb, var(--accent) 38%, transparent);
 	color: inherit;
 }
+@layer components {
+	/* Main buttons are ink: cream on dark, near-black on light. The theme colour is kept for
+	   recording and sharing (button--accent) and their quieter partners (button--accent-soft). */
+	.button--primary {
+		--button-bg: var(--foreground);
+		--button-bg-hover: color-mix(in oklab, var(--foreground) 86%, var(--background));
+		--button-bg-pressed: color-mix(in oklab, var(--foreground) 80%, var(--background));
+		--button-fg: var(--background);
+	}
+	/* Secondary buttons read in ink too; a pressed toggle keeps the theme colour. */
+	.button--secondary:not([aria-pressed="true"]) {
+		--button-fg: var(--default-foreground);
+	}
+	.button--primary.button--accent {
+		--button-bg: var(--accent);
+		--button-bg-hover: var(--accent-hover);
+		--button-bg-pressed: var(--accent-hover);
+		--button-fg: var(--accent-foreground);
+	}
+	.button.button--accent-soft {
+		--button-bg: var(--accent-soft);
+		--button-bg-hover: color-mix(in oklab, var(--accent) 16%, transparent);
+		--button-bg-pressed: color-mix(in oklab, var(--accent) 20%, transparent);
+		--button-fg: var(--accent-soft-foreground);
+		box-shadow: inset 0 0 0 1px var(--accent-line);
+	}
+	/* Text buttons are full pills; icon-only buttons are small squircles. */
+	.button {
+		border-radius: 9999px;
+		transition-timing-function: var(--ease-out);
+	}
+	.button--icon-only {
+		border-radius: 10px;
+	}
+
+	/* Corners by role, drawn as squircles where the browser can. */
+	.tooltip {
+		border-radius: 10px;
+	}
+	.popover,
+	.dropdown__popover,
+	.select__popover,
+	.combo-box__popover {
+		border-radius: 14px;
+	}
+	.card,
+	.modal__dialog:not(.modal__dialog--full) {
+		border-radius: 16px;
+	}
+	.button,
+	.tooltip,
+	.popover,
+	.dropdown__popover,
+	.select__popover,
+	.combo-box__popover,
+	.card,
+	.modal__dialog,
+	.menu-item,
+	.list-box-item,
+	.select__trigger,
+	.input,
+	.textarea,
+	.rounded-md,
+	.rounded-lg,
+	.rounded-xl,
+	.rounded-2xl,
+	.rounded-3xl {
+		corner-shape: superellipse(1.3);
+	}
+
+	/* Headings in Inter Display at medium weight, letters pulled slightly together. */
+	h1,
+	h2,
+	.modal__heading,
+	.alert-dialog__heading,
+	.drawer__heading {
+		font-family: var(--app-font-display);
+		font-weight: 500;
+		letter-spacing: -0.01em;
+	}
+}
+
 input:not(
 		[type="checkbox"],
 		[type="radio"],

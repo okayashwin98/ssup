@@ -262,7 +262,13 @@ export function CloudShareButton({
 	const form = (
 		<>
 			{shareUrl ? (
-				<Button type="button" size="lg" onClick={copyShareUrl} className="w-full">
+				<Button
+					type="button"
+					variant="accent"
+					size="lg"
+					onClick={copyShareUrl}
+					className="w-full"
+				>
 					{copied ? <Check className="h-4 w-4" /> : <LinkSimple className="h-4 w-4" />}
 					{copied ? t("editor.cloud.copied") : "Copy link"}
 				</Button>
@@ -314,6 +320,7 @@ export function CloudShareButton({
 						) : (
 							<Button
 								type="button"
+								variant="accent"
 								size="lg"
 								className="w-full"
 								disabled={

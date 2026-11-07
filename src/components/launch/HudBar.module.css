@@ -31,7 +31,7 @@
 	border-radius: 27px;
 	corner-shape: superellipse(1.9);
 	color: #fff;
-	font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", var(--app-font-sans), sans-serif;
+	font-family: var(--app-font-sans);
 	font-size: 13px;
 	font-weight: 500;
 	white-space: nowrap;

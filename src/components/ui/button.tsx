@@ -2,8 +2,11 @@ import { Button as HeroButton, type ButtonProps as HeroButtonProps } from "@hero
 import { forwardRef, type ButtonHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
+/** default is ink; accent (theme colour) is for recording and sharing, accent-soft its quieter partner. */
 type Variant =
 	| "default"
+	| "accent"
+	| "accent-soft"
 	| "destructive"
 	| "destructive-soft"
 	| "outline"
@@ -27,6 +30,8 @@ export interface ButtonProps
 }
 const variants = {
 	default: "primary",
+	accent: "primary",
+	"accent-soft": "secondary",
 	destructive: "danger",
 	"destructive-soft": "danger-soft",
 	outline: "outline",
@@ -63,6 +68,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
 				"[&_svg:not([class*=size-])]:size-6": iconSize === "xl",
 			},
 			variant === "link" && "h-auto p-0 underline underline-offset-4",
+			variant === "accent" && "button--accent",
+			variant === "accent-soft" && "button--accent-soft",
 			className,
 		),
 	};

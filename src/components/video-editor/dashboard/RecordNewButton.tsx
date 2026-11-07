@@ -15,7 +15,7 @@ export function RecordNewButton({
 }) {
 	return (
 		<Button
-			variant="default"
+			variant="accent"
 			disabled={busy}
 			onClick={() => void run(() => window.electronAPI.showRecordingHud())}
 			className={cn("h-10 shrink-0 gap-2 text-[13px]", className)}

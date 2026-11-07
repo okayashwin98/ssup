@@ -189,7 +189,7 @@ export function OnboardingPermissions({ onFinish }: { onFinish: () => void }) {
 			</OnboardingBody>
 			<OnboardingFooter>
 				<Button
-					className="ml-auto"
+					className="ml-auto button--accent"
 					isDisabled={
 						platform === "checking" ||
 						(platform === "mac" &&

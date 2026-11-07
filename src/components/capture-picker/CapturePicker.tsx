@@ -146,7 +146,7 @@ function StartButton({ onStart }: { onStart: () => void }) {
 			onPointerUp={(event) => event.stopPropagation()}
 		>
 			<Button
-				variant="default"
+				variant="accent"
 				className="h-11 px-6 text-[15px] shadow-lg"
 				style={{ textShadow: "none" }}
 				onClick={onStart}
@@ -811,15 +811,19 @@ export function CapturePicker() {
 				</div>
 			)}
 			{mode === "window" && !hasWindows && !target && (
-				// Screen Studio's look: system font, a medium title and a light, softly rounded button.
+				// A medium Inter Display title and a light, softly rounded button.
 				<div
 					className="absolute inset-0 flex flex-col items-center justify-center gap-5 text-white"
 					style={{
-						fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif',
 						textShadow: "0 1px 6px rgba(0,0,0,0.45)",
 					}}
 				>
-					<div className="text-4xl font-medium">No windows to select</div>
+					<div
+						className="text-4xl font-medium"
+						style={{ fontFamily: "var(--app-font-display)", letterSpacing: "-0.01em" }}
+					>
+						No windows to select
+					</div>
 					<button
 						type="button"
 						className="rounded-lg bg-white/15 px-5 py-2.5 text-base hover:bg-white/25"

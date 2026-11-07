@@ -182,6 +182,7 @@ export function EditorExportMenu(props: Props) {
 				<PopoverTrigger asChild>
 					<Button
 						type="button"
+						variant="accent"
 						className="inline-flex h-9 min-w-[104px] items-center justify-center gap-2 px-4.5"
 					>
 						<Export className="h-4 w-4" />
