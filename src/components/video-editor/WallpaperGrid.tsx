@@ -1,6 +1,6 @@
 import { Button, ToggleButton } from "@heroui/react";
-import { Check, Plus, X } from "@/components/ui/icons";
 import { useEffect, useState } from "react";
+import { Check, Plus, X } from "@/components/ui/icons";
 import { getRenderableVideoUrl } from "@/lib/assetPath";
 import { isVideoWallpaperSource } from "@/lib/wallpapers";
 
@@ -46,6 +46,7 @@ export function WallpaperGrid({
 						<ToggleButton
 							isSelected={selected}
 							aria-label={item.label}
+							data-no-auto-tooltip=""
 							onChange={() => onSelect(item.value)}
 							className="relative aspect-[4/3] h-auto w-full min-w-0 overflow-hidden rounded-md p-0"
 						>

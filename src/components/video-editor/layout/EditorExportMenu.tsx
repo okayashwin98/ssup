@@ -1,22 +1,20 @@
-import { SHARE_RESOLUTIONS, type ShareResolution } from "@/lib/exporter/types";
-import { availableShareResolutions } from "../exportDimensions";
-import { copyText } from "@/lib/copyText";
-import { LinkSimple, HardDrive, Export } from "@phosphor-icons/react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { CloudShareButton } from "../cloud/CloudShareButton";
-import { Card, TagGroup, Tag } from "@heroui/react";
+import { Card, ProgressBar, Tag, TagGroup } from "@heroui/react";
+import { Export, HardDrive, LinkSimple } from "@phosphor-icons/react";
 import { motion, useReducedMotion } from "motion/react";
-import { ProgressBar } from "@heroui/react";
-
-import { toast } from "@/components/ui/toast";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { toast } from "@/components/ui/toast";
 import type { useI18n } from "@/contexts/I18nContext";
+import { copyText } from "@/lib/copyText";
+import { SHARE_RESOLUTIONS, type ShareResolution } from "@/lib/exporter/types";
+import { CloudShareButton } from "../cloud/CloudShareButton";
 import { Choices, ExportSettingsMenu } from "../ExportSettingsMenu";
 import type { useExportDimensions } from "../export/useExportDimensions";
 import type { useExportSession } from "../export/useExportSession";
 import type { useExportSettings } from "../export/useExportSettings";
 import type { useExportStatusViewModel } from "../export/useExportStatusViewModel";
+import { availableShareResolutions } from "../exportDimensions";
 
 type Props = {
 	projectPath?: string | null;
@@ -193,7 +191,7 @@ export function EditorExportMenu(props: Props) {
 					aria-label="Publish"
 					align="end"
 					sideOffset={10}
-					className="w-[360px] max-h-none overflow-hidden p-0"
+					className="w-[400px] max-h-none overflow-hidden p-0"
 					isKeyboardDismissDisabled={shareBusy}
 					shouldCloseOnInteractOutside={() => !shareBusy}
 				>

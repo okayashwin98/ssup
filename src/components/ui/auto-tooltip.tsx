@@ -6,9 +6,10 @@ const OPEN_DELAY_MS = 1500;
 const WARM_WINDOW_MS = 500;
 const GAP = 6;
 const EDGE = 8;
+const MAX_CONTROL_SIZE = 64;
 
-const CONTROL_SELECTOR =
-	'button, [role="button"], [role="radio"], [role="switch"], [role="menuitem"], a[href]';
+// Switches are left out: their label sits beside them.
+const CONTROL_SELECTOR = 'button, [role="button"], [role="radio"], [role="menuitem"], a[href]';
 
 type Tip = { label: string; anchor: DOMRect };
 
@@ -16,6 +17,9 @@ type Tip = { label: string; anchor: DOMRect };
 function labelFor(el: HTMLElement): string | null {
 	if (el.closest("[data-no-auto-tooltip]")) return null;
 	if (el.innerText.trim() !== "") return null;
+	// Cards and large tiles explain themselves with their own picture and caption.
+	const { width, height } = el.getBoundingClientRect();
+	if (width > MAX_CONTROL_SIZE || height > MAX_CONTROL_SIZE) return null;
 	// A short fixed tooltip when the accessible name carries item names.
 	if (el.dataset.tooltip !== undefined) return el.dataset.tooltip.trim() || null;
 	const labelledBy = el.getAttribute("aria-labelledby");
@@ -98,7 +102,7 @@ export function AutoTooltips() {
 			if (direct) return direct;
 			if (!(event.target instanceof Element)) return null;
 			for (const el of event.target.querySelectorAll<HTMLElement>(
-				':is(button, [role="button"], [role="radio"], [role="switch"]):is(:disabled, [aria-disabled="true"])',
+				':is(button, [role="button"], [role="radio"]):is(:disabled, [aria-disabled="true"])',
 			)) {
 				const r = el.getBoundingClientRect();
 				if (

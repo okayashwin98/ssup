@@ -1,5 +1,4 @@
-import { DownloadSimple as Download } from "@/components/ui/icons";
-import { Card, Label, Description, TagGroup, Tag } from "@heroui/react";
+import { Card, Description, Label, Tag, TagGroup } from "@heroui/react";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -71,11 +70,13 @@ export function Choices<T extends string | number>({
 									? option.label
 									: String(option.value))
 							}
-							className="h-auto min-h-10 flex-1 justify-center flex-col gap-0.5 py-2"
+							className="h-auto min-h-10 min-w-0 flex-1 justify-center flex-col gap-0.5 px-1.5 py-2"
 						>
 							{option.label}
 							{option.description && (
-								<span className="text-[10px] opacity-70">{option.description}</span>
+								<span className="whitespace-nowrap text-[10px] tabular-nums opacity-70">
+									{option.description}
+								</span>
 							)}
 						</Tag>
 					))}
@@ -181,8 +182,7 @@ export function ExportSettingsMenu({
 			</Card.Content>
 			{!hideAction && (
 				<Card.Footer>
-					<Button size="lg" onClick={onExport} className="w-full">
-						<Download />
+					<Button onClick={onExport} className="w-full">
 						{tSettings("export.exportVideo", undefined, { format: "Video" })}
 					</Button>
 				</Card.Footer>
