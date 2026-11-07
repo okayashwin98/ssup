@@ -50,7 +50,7 @@ export function DashboardFilters({
 							size="sm"
 							aria-pressed={period === id}
 							onClick={() => setPeriod(id)}
-							className={`h-7 rounded-lg px-3 text-xs ${period === id ? "bg-default/60 text-foreground" : "text-muted-foreground"}`}
+							className={`px-3 text-xs ${period === id ? "bg-default/60 text-foreground" : "text-muted-foreground"}`}
 						>
 							{label}
 						</Button>
@@ -59,7 +59,7 @@ export function DashboardFilters({
 						<Button
 							variant="ghost"
 							size="icon"
-							className="size-7 min-w-7 text-danger"
+							className="min-w-7 text-danger"
 							aria-label={
 								isRaw ? "Select raw files to remove" : "Select projects to delete"
 							}
@@ -79,7 +79,7 @@ export function DashboardFilters({
 							variant="ghost"
 							size="sm"
 							aria-label={isRaw ? "Sort raw files" : "Sort projects"}
-							className="h-7 gap-2 text-xs text-muted-foreground"
+							className="gap-2 text-xs text-muted-foreground"
 						>
 							{sort === "recent"
 								? isRaw

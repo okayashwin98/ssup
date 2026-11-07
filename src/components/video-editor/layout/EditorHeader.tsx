@@ -119,7 +119,7 @@ export function EditorHeader(props: Props) {
 					variant="ghost"
 					size="sm"
 					onClick={handleOpenProjectBrowser}
-					className="h-9 shrink-0 gap-2 px-3"
+					className="shrink-0 gap-2 px-3"
 					title="Home"
 					aria-label="Home"
 				>
@@ -172,7 +172,7 @@ export function EditorHeader(props: Props) {
 							variant="ghost"
 							type="button"
 							onClick={() => setIsEditingProjectName(true)}
-							className="inline-flex h-9 min-w-0 max-w-full items-center gap-1.5 rounded-lg px-2"
+							className="inline-flex min-w-0 max-w-full items-center gap-1.5 px-2"
 							title={t("editor.project.renameTitle", "Rename project")}
 							aria-label={t("editor.project.renameTitle", "Rename project")}
 						>
@@ -186,7 +186,7 @@ export function EditorHeader(props: Props) {
 				<Button
 					variant="secondary"
 					size="sm"
-					className="h-9 shrink-0 gap-2"
+					className="shrink-0 gap-2"
 					aria-expanded={props.clipsOpen}
 					onClick={props.onToggleClips}
 				>
@@ -203,7 +203,7 @@ export function EditorHeader(props: Props) {
 						variant="ghost"
 						onClick={handleUndo}
 						disabled={!canUndo}
-						className="inline-flex h-9 w-9 min-w-9 items-center justify-center p-0 disabled:cursor-not-allowed"
+						className="inline-flex w-9 min-w-9 items-center justify-center p-0 disabled:cursor-not-allowed"
 						title={t("common.actions.undo", "Undo")}
 						aria-label={t("common.actions.undo", "Undo")}
 					>
@@ -214,7 +214,7 @@ export function EditorHeader(props: Props) {
 						variant="ghost"
 						onClick={handleRedo}
 						disabled={!canRedo}
-						className="inline-flex h-9 w-9 min-w-9 items-center justify-center p-0 disabled:cursor-not-allowed"
+						className="inline-flex w-9 min-w-9 items-center justify-center p-0 disabled:cursor-not-allowed"
 						title={t("common.actions.redo", "Redo")}
 						aria-label={t("common.actions.redo", "Redo")}
 					>

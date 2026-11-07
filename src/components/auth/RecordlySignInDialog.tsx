@@ -318,7 +318,7 @@ export function RecordlySignInDialog({
 												key={provider}
 												variant="secondary"
 												aria-label={`Continue with ${label}`}
-												className="h-11 w-full min-w-0 gap-2 rounded-xl px-2 text-xs font-medium text-foreground @[360px]:text-sm"
+												className="w-full min-w-0 gap-2 px-2 text-xs font-medium text-foreground @[360px]:text-sm"
 												isDisabled={disabled || !configured}
 												onPress={() =>
 													void run(provider, () =>

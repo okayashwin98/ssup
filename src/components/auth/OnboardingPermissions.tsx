@@ -144,7 +144,7 @@ export function OnboardingPermissions({ onFinish }: { onFinish: () => void }) {
 											) : (
 												<Button
 													variant="secondary"
-													className="h-11 shrink-0 rounded-xl"
+													className="shrink-0 "
 													isDisabled={Boolean(busy)}
 													onPress={() => void allow(key)}
 													aria-label={`Allow ${name}`}

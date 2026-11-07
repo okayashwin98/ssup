@@ -242,10 +242,36 @@
 		--button-fg: var(--accent-soft-foreground);
 		box-shadow: inset 0 0 0 1px var(--accent-line);
 	}
-	/* Buttons are 10px squircles, as in Supercut's app. */
-	.button {
+	/* Buttons and button-like controls: one 32px height and 10px squircle corners, as in Supercut's app. */
+	.button,
+	.toggle-button,
+	.tag {
+		height: 32px;
 		border-radius: 10px;
 		transition-timing-function: var(--ease-out);
+	}
+	/* Doubled class beats the library's first/last-child group corners. */
+	.toggle-button-group.toggle-button-group--detached .toggle-button.toggle-button {
+		border-radius: 10px;
+	}
+	.button--icon-only,
+	.toggle-button--icon-only {
+		width: 32px;
+		min-width: 32px;
+	}
+	.menu-item,
+	.list-box-item,
+	.select__trigger,
+	.input,
+	.tabs__list {
+		border-radius: 10px;
+	}
+	.tabs__tab,
+	.tabs__indicator {
+		border-radius: 8px;
+	}
+	.chip {
+		border-radius: 6px;
 	}
 
 	/* Corners by role, drawn as squircles where the browser can. */

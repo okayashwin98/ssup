@@ -588,16 +588,34 @@ const ZOOM_DEPTH_OPTIONS: Array<{ depth: ZoomDepth; label: string }> = [
 const WEBCAM_POSITION_PRESETS: Array<{
 	preset: Exclude<WebcamPositionPreset, "custom">;
 	label: string;
+	corners: string;
 }> = [
-	{ preset: "top-left", label: "↖" },
-	{ preset: "top-center", label: "↑" },
-	{ preset: "top-right", label: "↗" },
-	{ preset: "center-left", label: "←" },
-	{ preset: "center", label: "•" },
-	{ preset: "center-right", label: "→" },
-	{ preset: "bottom-left", label: "↙" },
-	{ preset: "bottom-center", label: "↓" },
-	{ preset: "bottom-right", label: "↘" },
+	// Numpad look: only the grid's four outer corners keep the full radius.
+	{
+		preset: "top-left",
+		label: "↖",
+		corners: "rounded-tr-[4px] rounded-br-[4px] rounded-bl-[4px]",
+	},
+	{ preset: "top-center", label: "↑", corners: "rounded-[4px]" },
+	{
+		preset: "top-right",
+		label: "↗",
+		corners: "rounded-tl-[4px] rounded-br-[4px] rounded-bl-[4px]",
+	},
+	{ preset: "center-left", label: "←", corners: "rounded-[4px]" },
+	{ preset: "center", label: "•", corners: "rounded-[4px]" },
+	{ preset: "center-right", label: "→", corners: "rounded-[4px]" },
+	{
+		preset: "bottom-left",
+		label: "↙",
+		corners: "rounded-tl-[4px] rounded-tr-[4px] rounded-br-[4px]",
+	},
+	{ preset: "bottom-center", label: "↓", corners: "rounded-[4px]" },
+	{
+		preset: "bottom-right",
+		label: "↘",
+		corners: "rounded-tl-[4px] rounded-tr-[4px] rounded-bl-[4px]",
+	},
 ];
 
 type CursorStyleOption = { value: CursorStyle; label: string };
@@ -2057,7 +2075,7 @@ export function SettingsPanel({
 							type="button"
 							variant="outline"
 							onClick={onPickWhisperModel}
-							className="h-9 w-full px-4 text-sm"
+							className="w-full px-4 text-sm"
 						>
 							{tSettings("captions.useCustomModel", "Use custom")}
 						</Button>
@@ -2133,7 +2151,7 @@ export function SettingsPanel({
 				<div className="flex flex-wrap items-center gap-2">
 					<div className="grid w-full grid-cols-1 gap-2">
 						{whisperModelDownloadStatus === "downloading" ? (
-							<Button type="button" disabled className="h-9 w-full px-4 text-sm">
+							<Button type="button" disabled className="w-full px-4 text-sm">
 								{tSettings("captions.downloading", "Downloading...")}{" "}
 								{Math.round(whisperModelDownloadProgress)}%
 							</Button>
@@ -2142,7 +2160,7 @@ export function SettingsPanel({
 								type="button"
 								variant="outline"
 								onClick={onDeleteWhisperSmallModel}
-								className="h-9 w-full px-4 text-sm"
+								className="w-full px-4 text-sm"
 							>
 								{tSettings("captions.deleteModel", "Delete Model")}
 							</Button>
@@ -2150,7 +2168,7 @@ export function SettingsPanel({
 							<Button
 								type="button"
 								onClick={onDownloadWhisperSmallModel}
-								className="h-9 w-full px-4 text-sm"
+								className="w-full px-4 text-sm"
 							>
 								{tSettings("captions.downloadModel", "Download Model")}
 							</Button>
@@ -2160,7 +2178,7 @@ export function SettingsPanel({
 							variant="outline"
 							onClick={onClearAutoCaptions}
 							disabled={captionCueCount === 0}
-							className="h-9 w-full px-4 text-sm"
+							className="w-full px-4 text-sm"
 						>
 							{tSettings("captions.clearFull", "Clear Captions")}
 						</Button>
@@ -2171,7 +2189,7 @@ export function SettingsPanel({
 						type="button"
 						onClick={onGenerateAutoCaptions}
 						disabled={isGeneratingCaptions || !whisperModelPath}
-						className="h-9 w-full px-4 text-sm"
+						className="w-full px-4 text-sm"
 					>
 						{isGeneratingCaptions
 							? tSettings("captions.generating", "Generating...")
@@ -3261,6 +3279,7 @@ export function SettingsPanel({
 											key={option.preset}
 											value={option.preset}
 											textValue={option.preset}
+											className={option.corners}
 										>
 											{option.label}
 										</ChoiceItem>
@@ -3370,7 +3389,7 @@ export function SettingsPanel({
 											type="button"
 											variant="outline"
 											onClick={onUploadWebcam}
-											className="h-9 w-full min-w-0 justify-start gap-2 px-3"
+											className="w-full min-w-0 justify-start gap-2 px-3"
 										>
 											<Upload className="h-3 w-3" />
 											<span className="min-w-0 truncate">
@@ -3384,7 +3403,7 @@ export function SettingsPanel({
 												type="button"
 												variant="outline"
 												onClick={onClearWebcam}
-												className="h-9 w-full min-w-0 justify-start gap-2 px-3"
+												className="w-full min-w-0 justify-start gap-2 px-3"
 											>
 												<Trash2 className="h-3 w-3" />
 												<span className="min-w-0 truncate">

@@ -147,7 +147,7 @@ function StartButton({ onStart }: { onStart: () => void }) {
 		>
 			<Button
 				variant="accent"
-				className="h-11 px-6 text-[15px] shadow-lg"
+				className="px-6 text-[15px] shadow-lg"
 				style={{ textShadow: "none" }}
 				onClick={onStart}
 			>

@@ -96,7 +96,7 @@ export function DashboardSidebar({
 					<Button
 						variant="ghost"
 						size="icon"
-						className="size-7 min-w-7"
+						className="min-w-7"
 						aria-label="New folder"
 						onClick={() => {
 							let name = "Untitled folder",

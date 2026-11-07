@@ -127,11 +127,7 @@ export function EditorPreviewPanel(props: Props) {
 					<div className="flex h-10 shrink-0 items-center justify-center gap-3">
 						<DropdownMenu>
 							<DropdownMenuTrigger asChild>
-								<Button
-									variant="ghost"
-									size="sm"
-									className="h-7 gap-1 px-2 text-xs"
-								>
+								<Button variant="ghost" size="sm" className="gap-1 px-2 text-xs">
 									<span className="font-medium">
 										{getAspectRatioLabel(aspectRatio)}
 									</span>
@@ -158,7 +154,7 @@ export function EditorPreviewPanel(props: Props) {
 							variant="ghost"
 							size="sm"
 							onClick={handleOpenCropEditor}
-							className="h-7 gap-1.5 px-2 text-xs"
+							className="gap-1.5 px-2 text-xs"
 						>
 							<Crop className="h-3.5 w-3.5" />
 							<span className="font-medium">{t("settings.crop.title")}</span>
@@ -233,7 +229,7 @@ export function EditorPreviewPanel(props: Props) {
 				<div className="editor-playback-tools z-10 flex min-w-0 items-center gap-2">
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
-							<Button variant="ghost" size="sm" className="h-9 gap-2 px-3">
+							<Button variant="ghost" size="sm" className="gap-2 px-3">
 								<Plus className="h-3.5 w-3.5" />
 								<span className="font-medium">{t("editor.toolbar.addLayer")}</span>
 								<CaretDown className="h-3 w-3" />
@@ -279,7 +275,6 @@ export function EditorPreviewPanel(props: Props) {
 						disabled={!appearance.zoomsEnabled}
 						variant="ghost"
 						size="icon"
-						className="h-9 w-9"
 						title={t("timeline.zoom.addZoom")}
 					>
 						<MagnifyingGlassPlus className="h-4 w-4" />
@@ -289,7 +284,6 @@ export function EditorPreviewPanel(props: Props) {
 						disabled={!appearance.zoomsEnabled}
 						variant="ghost"
 						size="icon"
-						className="h-9 w-9"
 						title={t("timeline.zoom.suggestZooms")}
 					>
 						<MagicWand className="h-4 w-4" />
@@ -298,7 +292,6 @@ export function EditorPreviewPanel(props: Props) {
 						onClick={() => timelineRef.current?.splitClip()}
 						variant="ghost"
 						size="icon"
-						className="h-9 w-9"
 						title={t("editor.toolbar.splitClip")}
 					>
 						<Scissors className="h-4 w-4" />
@@ -313,7 +306,6 @@ export function EditorPreviewPanel(props: Props) {
 						<Button
 							variant="ghost"
 							size="icon"
-							className="h-9 w-9"
 							title={t("editor.playback.skipBack")}
 							onClick={playback.handlePreviewSkipBack}
 						>
@@ -322,7 +314,7 @@ export function EditorPreviewPanel(props: Props) {
 						<Button
 							variant="ghost"
 							size="icon"
-							className={`h-9 w-9  ${isPlaying ? "bg-foreground/10 text-foreground hover:bg-foreground/20" : "bg-neutral-800 text-white hover:bg-neutral-700 dark:bg-white dark:text-black dark:hover:bg-white/90"} `}
+							className={`size-9 min-w-9 rounded-full [corner-shape:round] ${isPlaying ? "bg-foreground/10 text-foreground hover:bg-foreground/20" : "bg-neutral-800 text-white hover:bg-neutral-700 dark:bg-white dark:text-black dark:hover:bg-white/90"} `}
 							onClick={playback.togglePlayPause}
 							title={isPlaying ? "Pause" : "Play"}
 						>
@@ -335,7 +327,6 @@ export function EditorPreviewPanel(props: Props) {
 						<Button
 							variant="ghost"
 							size="icon"
-							className="h-9 w-9"
 							title={t("editor.playback.skipForward")}
 							onClick={playback.handlePreviewSkipForward}
 						>

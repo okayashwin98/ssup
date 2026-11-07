@@ -42,7 +42,7 @@ export function DashboardToolbar({
 						variant="secondary"
 						disabled={busy}
 						onClick={() => void run(onImportFile)}
-						className="h-10 shrink-0 gap-2 text-[13px]"
+						className="shrink-0 gap-2 text-[13px]"
 					>
 						{action === "refresh" ? (
 							<ArrowClockwise className="size-4" />

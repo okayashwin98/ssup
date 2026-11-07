@@ -18,7 +18,7 @@ export function RecordNewButton({
 			variant="accent"
 			disabled={busy}
 			onClick={() => void run(() => window.electronAPI.showRecordingHud())}
-			className={cn("h-10 shrink-0 gap-2 text-[13px]", className)}
+			className={cn("shrink-0 gap-2 text-[13px]", className)}
 		>
 			<Plus className="size-4" />
 			{first ? "Capture your first video" : "Capture"}

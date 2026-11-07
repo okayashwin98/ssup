@@ -100,7 +100,6 @@ export function RecordingLibraryPanel({
 				<Button
 					variant="ghost"
 					size="icon"
-					className="size-7"
 					aria-label="Close Clips"
 					onClick={() => library.setOpen(false)}
 				>
@@ -148,7 +147,6 @@ export function RecordingLibraryPanel({
 					<Button
 						variant="ghost"
 						size="icon"
-						className="size-7"
 						aria-label="Move selected videos to Trash"
 						title="Move selected to Trash"
 						disabled={library.busy || library.importing}
@@ -242,7 +240,7 @@ export function RecordingLibraryPanel({
 						<Button
 							variant="ghost"
 							size="icon"
-							className="size-7 shrink-0"
+							className="shrink-0"
 							aria-label={`Add ${entry.name} to timeline`}
 							title="Add to timeline"
 							disabled={library.busy || library.importing}

@@ -34,7 +34,7 @@ export function FolderRow({
 	};
 	return (
 		<div
-			className={`folder-row group flex h-10 items-center gap-1 rounded-lg px-1 ${active ? "bg-default/70" : "hover:bg-default/40"}`}
+			className={`folder-row group flex h-8 items-center gap-1 rounded-[10px] px-1 ${active ? "bg-default/70" : "hover:bg-default/40"}`}
 		>
 			<FolderColors
 				value={folder.color}

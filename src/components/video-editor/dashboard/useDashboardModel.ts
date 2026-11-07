@@ -123,7 +123,7 @@ export function useDashboardModel({
 						await onOpenProject(entry.path);
 					});
 	const navClass = (active: boolean) =>
-		`h-10 w-full justify-start gap-3 px-3 text-[13px] ${active ? "bg-default/50 font-medium" : "text-muted-foreground"}`;
+		`w-full justify-start gap-3 px-3 text-[13px] ${active ? "bg-default/50 font-medium" : "text-muted-foreground"}`;
 
 	return {
 		isRaw,

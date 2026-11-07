@@ -60,7 +60,7 @@ export function FolderColors({
 					</ColorSlider>
 					<div className="flex items-center gap-2">
 						<ColorField aria-label="Hex color" className="min-w-0 flex-1">
-							<Input aria-label="Hex color" className="h-8 text-xs" />
+							<Input aria-label="Hex color" className="h-8 text-xs tabular-nums" />
 						</ColorField>
 						<Button
 							variant="ghost"

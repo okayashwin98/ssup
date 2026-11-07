@@ -131,7 +131,7 @@ export function AddCustomFontDialog({ onFontAdded }: AddCustomFontDialogProps) {
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>
 			<DialogTrigger asChild>
-				<Button variant="outline" size="sm" className="w-full h-9 text-xs">
+				<Button variant="outline" size="sm" className="w-full text-xs">
 					<Plus className="w-3 h-3 mr-1" />
 					{t("addFont.title")}
 				</Button>

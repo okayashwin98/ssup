@@ -58,10 +58,15 @@ export function ColorControl({
 			<Button
 				variant="secondary"
 				aria-label={label}
-				className="h-9 min-w-0 max-w-full gap-2 px-3 text-[13px]"
+				className="min-w-0 max-w-full gap-2 px-3 text-[13px]"
 			>
 				<ColorSwatch size="sm" />
-				<span className="truncate">
+				{/* Fixed width fits "#CCCCCC" (widest hex in Inter), so dragging never resizes it. */}
+				<span
+					className={
+						compact ? "w-[5.25em] shrink-0 truncate text-left tabular-nums" : "truncate"
+					}
+				>
 					{compact ? (value === "transparent" ? "None" : value.toUpperCase()) : label}
 				</span>
 			</Button>
@@ -87,7 +92,7 @@ export function ColorControl({
 					)}
 					<ColorField>
 						<Label>Hex color</Label>
-						<Input />
+						<Input className="tabular-nums" />
 					</ColorField>
 					{onClear && (
 						<Button variant="ghost" onClick={onClear}>
