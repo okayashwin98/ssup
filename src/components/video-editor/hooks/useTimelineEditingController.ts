@@ -87,7 +87,11 @@ export function useTimelineEditingController(input: Input) {
 	});
 	const visibleAudioRegions = useMemo(
 		() =>
-			visibleTrackRegions(timeline.audioRegions, input.appearance.hiddenTimelineLayers, "audio"),
+			visibleTrackRegions(
+				timeline.audioRegions,
+				input.appearance.hiddenTimelineLayers,
+				"audio",
+			),
 		[timeline.audioRegions, input.appearance.hiddenTimelineLayers],
 	);
 	const audio = useVideoEditorAudio({

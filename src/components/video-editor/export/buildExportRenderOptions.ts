@@ -40,7 +40,8 @@ export function buildExportRenderOptions({
 		speedRegions: effectiveSpeedRegions,
 		// A video row turned off takes the recording and its shadow out of the picture.
 		showVideo: isTimelineLayerOn(appearance.hiddenTimelineLayers, "video"),
-		showShadow: shadowIntensity > 0 && isTimelineLayerOn(appearance.hiddenTimelineLayers, "video"),
+		showShadow:
+			shadowIntensity > 0 && isTimelineLayerOn(appearance.hiddenTimelineLayers, "video"),
 		shadowIntensity,
 		backgroundBlur: appearance.backgroundBlur,
 		zoomMotionBlur: appearance.zoomMotionBlur,

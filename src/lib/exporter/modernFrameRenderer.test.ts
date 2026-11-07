@@ -277,10 +277,11 @@ describe("ModernFrameRenderer Pixi lifecycle", () => {
 			};
 			renderer.config.preferredRenderBackend = undefined;
 
-			await expect(renderer.createPixiApplication({} as HTMLCanvasElement)).resolves
-				.toMatchObject({
-					backend: "webgl",
-				});
+			await expect(
+				renderer.createPixiApplication({} as HTMLCanvasElement),
+			).resolves.toMatchObject({
+				backend: "webgl",
+			});
 
 			expect(pixiInitializationErrorsMock).toHaveLength(0);
 			expect(pixiApplicationInstancesMock).toHaveLength(1);

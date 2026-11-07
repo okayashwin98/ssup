@@ -17,16 +17,18 @@ export function getRecordingSourceLabel(source: SelectedSource | null): string {
 }
 
 function toFileSafeName(value: string) {
-	return value
-		.replace(/[\\/:*?"<>|]/g, " ")
-		.replace(/\p{Cc}/gu, " ")
-		.replace(/\s+/g, " ")
-		.trim()
-		// A leading dot would hide the project's recordings folder.
-		.replace(/^\.+\s*/, "")
-		.slice(0, 80)
-		// Same rule as typed names: no trailing dot or space.
-		.replace(/[. ]+$/, "");
+	return (
+		value
+			.replace(/[\\/:*?"<>|]/g, " ")
+			.replace(/\p{Cc}/gu, " ")
+			.replace(/\s+/g, " ")
+			.trim()
+			// A leading dot would hide the project's recordings folder.
+			.replace(/^\.+\s*/, "")
+			.slice(0, 80)
+			// Same rule as typed names: no trailing dot or space.
+			.replace(/[. ]+$/, "")
+	);
 }
 
 /** Project name for a new recording, e.g. "Figma – Oct 23, 2026"; null for imported media. */

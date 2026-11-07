@@ -95,16 +95,22 @@ export function useExportDialogActions({
 	}, [resolveCurrentSettings, session, handleExport]);
 
 	// The menu passes the size it shows, which may be smaller than the saved choice.
-	const prepareExportForShare = useCallback(async (resolution?: ShareResolution) => {
-		const resolvedSettings = resolveCurrentSettings("mp4");
-		if (!resolvedSettings) return undefined;
-		session.setExportError(null);
-		session.setShowExportDropdown(true);
-		return handleExport(
-			resolveShareExportSettings(resolvedSettings, resolution ?? settings.shareResolution),
-			{ destination: "share" },
-		);
-	}, [resolveCurrentSettings, session, handleExport, settings.shareResolution]);
+	const prepareExportForShare = useCallback(
+		async (resolution?: ShareResolution) => {
+			const resolvedSettings = resolveCurrentSettings("mp4");
+			if (!resolvedSettings) return undefined;
+			session.setExportError(null);
+			session.setShowExportDropdown(true);
+			return handleExport(
+				resolveShareExportSettings(
+					resolvedSettings,
+					resolution ?? settings.shareResolution,
+				),
+				{ destination: "share" },
+			);
+		},
+		[resolveCurrentSettings, session, handleExport, settings.shareResolution],
+	);
 
 	const handleCancelExport = useCallback(() => {
 		if (!session.isExporting) return;

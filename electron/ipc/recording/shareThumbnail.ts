@@ -31,7 +31,13 @@ export async function createShareThumbnail(filePath: string, signal: AbortSignal
 			"mjpeg",
 			"pipe:1",
 		],
-		{ encoding: "buffer", maxBuffer: 8 * 1024 * 1024, timeout: 15000, windowsHide: true, signal },
+		{
+			encoding: "buffer",
+			maxBuffer: 8 * 1024 * 1024,
+			timeout: 15000,
+			windowsHide: true,
+			signal,
+		},
 	);
 	if (!stdout.length) throw new Error("Video has no preview frame");
 	return stdout;

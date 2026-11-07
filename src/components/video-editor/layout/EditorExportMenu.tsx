@@ -256,7 +256,9 @@ export function EditorExportMenu(props: Props) {
 											inline
 											projectPath={props.projectPath}
 											projectTitle={props.projectTitle}
-											prepareFile={() => props.prepareExportForShare(shareResolution)}
+											prepareFile={() =>
+												props.prepareExportForShare(shareResolution)
+											}
 											onCancelPrepare={handleCancelExport}
 											preparationProgress={exportProgress?.percentage ?? 0}
 											authToken={props.authToken}

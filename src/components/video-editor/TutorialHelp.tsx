@@ -111,8 +111,7 @@ export function KeyboardShortcutsDialog({
 			<DialogContent className="max-w-lg">
 				<DialogHeader>
 					<DialogTitle className="text-xl font-semibold text-foreground flex items-center gap-2">
-						<Keyboard className="h-5 w-5 text-accent" />{" "}
-						{t("keyboardShortcuts.title")}
+						<Keyboard className="h-5 w-5 text-accent" /> {t("keyboardShortcuts.title")}
 					</DialogTitle>
 					<DialogDescription className="text-muted-foreground">
 						{t(

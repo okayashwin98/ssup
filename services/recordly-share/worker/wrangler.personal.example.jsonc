@@ -1,28 +1,30 @@
 // Template for your own share service. Copy to wrangler.personal.jsonc (git ignores that
 // name) and replace every <...> value. See docs/SHARING_SETUP.md.
 {
-  "$schema": "./node_modules/wrangler/config-schema.json",
-  // Becomes the address: https://<worker-name>.<your-subdomain>.workers.dev
-  "name": "<worker-name>",
-  // From `npx wrangler whoami`.
-  "account_id": "<cloudflare-account-id>",
-  "main": "src/index.js",
-  "compatibility_date": "2024-11-01",
-  "workers_dev": true,
-  "preview_urls": false,
-  "assets": { "directory": "./web/dist", "binding": "ASSETS", "run_worker_first": true },
-  // From `npx wrangler d1 create <database-name>`.
-  "d1_databases": [{ "binding": "DB", "database_name": "<database-name>", "database_id": "<database-id>" }],
-  // From `npx wrangler r2 bucket create <bucket-name>`.
-  "r2_buckets": [{ "binding": "VIDEOS_BUCKET", "bucket_name": "<bucket-name>" }],
-  "vars": {
-    // The app signs uploads with the API_SECRET password (set with `wrangler secret put`).
-    "ALLOW_API_SECRET_UPLOADS": "true",
-    // Shown on share pages until you set a name and photo in the app's Settings.
-    "CREATOR_NAME": "<your display name>",
-    // Keep recordings until you delete them, instead of expiring after 30 days.
-    "KEEP_RECORDINGS": "true"
-  },
-  // Daily clean-up of expired recordings and unfinished uploads.
-  "triggers": { "crons": ["0 3 * * *"] }
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	// Becomes the address: https://<worker-name>.<your-subdomain>.workers.dev
+	"name": "<worker-name>",
+	// From `npx wrangler whoami`.
+	"account_id": "<cloudflare-account-id>",
+	"main": "src/index.js",
+	"compatibility_date": "2024-11-01",
+	"workers_dev": true,
+	"preview_urls": false,
+	"assets": { "directory": "./web/dist", "binding": "ASSETS", "run_worker_first": true },
+	// From `npx wrangler d1 create <database-name>`.
+	"d1_databases": [
+		{ "binding": "DB", "database_name": "<database-name>", "database_id": "<database-id>" }
+	],
+	// From `npx wrangler r2 bucket create <bucket-name>`.
+	"r2_buckets": [{ "binding": "VIDEOS_BUCKET", "bucket_name": "<bucket-name>" }],
+	"vars": {
+		// The app signs uploads with the API_SECRET password (set with `wrangler secret put`).
+		"ALLOW_API_SECRET_UPLOADS": "true",
+		// Shown on share pages until you set a name and photo in the app's Settings.
+		"CREATOR_NAME": "<your display name>",
+		// Keep recordings until you delete them, instead of expiring after 30 days.
+		"KEEP_RECORDINGS": "true"
+	},
+	// Daily clean-up of expired recordings and unfinished uploads.
+	"triggers": { "crons": ["0 3 * * *"] }
 }

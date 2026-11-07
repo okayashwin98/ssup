@@ -253,7 +253,8 @@ export function CapturePicker() {
 		const sent = JSON.stringify(rects);
 		if (sent === sentGlass.current) return;
 		sentGlass.current = sent;
-		if (!window.electronAPI.capturePickerSetGlassRects(rects) && rects.length) setOnGlass(false);
+		if (!window.electronAPI.capturePickerSetGlassRects(rects) && rects.length)
+			setOnGlass(false);
 	}, [onGlass]);
 	useLayoutEffect(syncGlass);
 

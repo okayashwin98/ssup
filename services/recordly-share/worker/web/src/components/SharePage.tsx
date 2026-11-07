@@ -30,8 +30,7 @@ const reactions = [
 
 /** The owner's photo, or their initials until one is set. */
 function CreatorAvatar({ creator }: { creator: ShareData["creator"] }) {
-	if (creator?.avatarUrl)
-		return <img className="viewer-avatar" src={creator.avatarUrl} alt="" />;
+	if (creator?.avatarUrl) return <img className="viewer-avatar" src={creator.avatarUrl} alt="" />;
 	if (!creator?.name) return null;
 	const initials = creator.name
 		.split(/\s+/)

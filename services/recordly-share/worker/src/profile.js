@@ -49,10 +49,12 @@ export async function handleProfileUpdate(request, env) {
 /** The browser-tab icon: the owner's photo cut to a circle, or the app icon until one is set. */
 export async function handleFavicon(request, env) {
 	const avatar = await env.VIDEOS_BUCKET.get(AVATAR_KEY);
-	if (!avatar) return env.ASSETS.fetch(new Request(new URL("/icon-64.png", request.url), request));
+	if (!avatar)
+		return env.ASSETS.fetch(new Request(new URL("/icon-64.png", request.url), request));
 	const bytes = new Uint8Array(await avatar.arrayBuffer());
 	let binary = "";
-	for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+	for (let i = 0; i < bytes.length; i += 0x8000)
+		binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
 	const photo = `data:${avatar.httpMetadata?.contentType || "image/jpeg"};base64,${btoa(binary)}`;
 	const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><clipPath id="c"><circle cx="32" cy="32" r="32"/></clipPath><image href="${photo}" width="64" height="64" preserveAspectRatio="xMidYMid slice" clip-path="url(#c)"/></svg>`;
 	return new Response(svg, {

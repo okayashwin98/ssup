@@ -67,8 +67,7 @@ export function useClipAudioSettingsController({
 	);
 
 	const previewSourceAudioTrackSettings = useMemo(
-		() =>
-			activeClipId ? activeSourceAudioTrackSettings : heardSelectedSettings,
+		() => (activeClipId ? activeSourceAudioTrackSettings : heardSelectedSettings),
 		[activeClipId, activeSourceAudioTrackSettings, heardSelectedSettings],
 	);
 

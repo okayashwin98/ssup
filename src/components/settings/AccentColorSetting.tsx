@@ -17,7 +17,11 @@ export function AccentColorSetting() {
 	const isCustom = !SWATCHES.some(({ color }) => color === accent);
 	return (
 		<SettingsRow title="Theme colour" stacked>
-			<div role="radiogroup" aria-label="Theme colour" className="flex flex-wrap items-center gap-2">
+			<div
+				role="radiogroup"
+				aria-label="Theme colour"
+				className="flex flex-wrap items-center gap-2"
+			>
 				{SWATCHES.map(({ name, color }) => (
 					<button
 						key={color}
