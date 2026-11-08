@@ -1,8 +1,8 @@
 ---
-import Base from "../layouts/Base.astro";
 import SharePage from "../components/SharePage";
+import Base from "../layouts/Base.astro";
 ---
-<Base title="SuperShare">
+<Base title="SuperShare" bodyClass="share-body">
   <SharePage client:load />
   <noscript>Please enable JavaScript to watch this recording and leave feedback.</noscript>
 </Base>

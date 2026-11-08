@@ -11,6 +11,44 @@ export function Brand() {
 	);
 }
 
+export interface Owner {
+	name: string;
+	avatarUrl?: string | null;
+}
+
+/** The owner's photo, or their initials until one is set. */
+export function OwnerAvatar({ owner }: { owner?: Owner | null }) {
+	if (owner?.avatarUrl) return <img className="owner-avatar" src={owner.avatarUrl} alt="" />;
+	if (!owner?.name) return null;
+	const initials = owner.name
+		.split(/\s+/)
+		.filter(Boolean)
+		.slice(0, 2)
+		.map((part) => part[0])
+		.join("")
+		.toUpperCase();
+	return (
+		<span className="owner-avatar owner-avatar-initials" aria-hidden="true">
+			{initials}
+		</span>
+	);
+}
+
+/** Who shared the recording, in place of the app's own brand. */
+export function OwnerBrand({ owner }: { owner: Owner }) {
+	return (
+		<span className="brand">
+			<OwnerAvatar owner={owner} />
+			<span>{owner.name}</span>
+		</span>
+	);
+}
+
+/** A ring with a fading tail. */
+export function Spinner({ label }: { label: string }) {
+	return <span className="share-spinner" role="status" aria-label={label} />;
+}
+
 export function Notice({ children }: { children: ReactNode }) {
 	return (
 		<Alert status="danger" role="alert">
@@ -24,13 +62,11 @@ export function Notice({ children }: { children: ReactNode }) {
 	);
 }
 
-export function CenteredCard({ children }: { children: ReactNode }) {
+export function CenteredCard({ children, header }: { children: ReactNode; header?: ReactNode }) {
 	return (
 		<main className="gate-page">
 			<Card className="gate-card">
-				<Card.Header>
-					<Brand />
-				</Card.Header>
+				<Card.Header>{header ?? <Brand />}</Card.Header>
 				<Card.Content className="gate-content">{children}</Card.Content>
 			</Card>
 		</main>
@@ -54,6 +90,7 @@ export function CopyButton({ time = 0, code }: { time?: number; code?: string })
 			size="sm"
 			variant="ghost"
 			aria-label="Copy link"
+			className="copy-link-button"
 			onPress={() => void copyLink(time, code)}
 		>
 			<LinkSimpleIcon size={16} />

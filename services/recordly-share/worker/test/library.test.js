@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeAll } from "vitest";
 import { env, SELF } from "cloudflare:test";
+import { beforeAll, describe, expect, it } from "vitest";
 import { expectedSessionToken } from "../src/index.js";
 
 const AUTH = { Authorization: "Bearer test-secret" };
@@ -230,6 +230,16 @@ describe("owner profile", () => {
 		const data = await (await SELF.fetch(`${BASE}/s/${code}/data`)).json();
 		expect(data.creator.name).toBe("Jane Doe");
 		expect(data.creator.avatarUrl).toMatch(/^\/profile\/avatar\?v=\d+$/);
+		// The password gate names the owner too, with nothing beyond name and photo.
+		const locked = await createAndCompleteShare({
+			title: "Locked",
+			password_hash: "a".repeat(64),
+		});
+		const gate = await SELF.fetch(`${BASE}/s/${locked}/data`);
+		expect(gate.status).toBe(401);
+		const gateData = await gate.json();
+		expect(gateData.password_protected).toBe(true);
+		expect(gateData.creator).toEqual({ name: "Jane Doe", avatarUrl: data.creator.avatarUrl });
 		await SELF.fetch(`${BASE}/api/profile`, {
 			method: "POST",
 			headers: { ...AUTH, "Content-Type": "application/json" },

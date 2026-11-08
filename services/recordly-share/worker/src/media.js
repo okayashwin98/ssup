@@ -2,8 +2,8 @@
 // See ../../LICENSE and ../../../../THIRD_PARTY_NOTICES.md for attribution.
 
 import { verifyPasswordAuth } from "./auth.js";
-import { getCreatorProfile } from "./profile.js";
 import { jsonResponse } from "./http.js";
+import { getCreatorProfile } from "./profile.js";
 import { finiteNonnegative } from "./video.js";
 
 function formatDuration(seconds) {
@@ -190,7 +190,10 @@ export async function handleShareData(request, env, shareCode) {
 	if (video.password_hash) {
 		const authed = await verifyPasswordAuth(request, env, shareCode, video);
 		if (!authed) {
-			return jsonResponse({ password_protected: true, title: video.title }, 401);
+			// The gate shows who shared it: name and photo only.
+			const owner = await getCreatorProfile(env).catch(() => null);
+			const creator = owner ? { name: owner.name, avatarUrl: owner.avatarUrl } : null;
+			return jsonResponse({ password_protected: true, title: video.title, creator }, 401);
 		}
 	}
 

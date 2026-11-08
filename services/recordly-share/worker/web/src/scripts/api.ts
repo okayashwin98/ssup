@@ -40,6 +40,8 @@ export interface ShareData {
 export interface PasswordRequired {
 	password_protected: true;
 	title: string;
+	/** Who shared it: name and photo only. */
+	creator?: { name: string; avatarUrl?: string | null } | null;
 }
 
 export interface Expired {
@@ -128,6 +130,24 @@ export async function fetchComments(
 ): Promise<CommentsResponse> {
 	const res = await fetch(`/s/${shareCode}/comments?page=${page}&limit=${limit}`);
 	return res.json();
+}
+
+/** Every comment, fetched page by page so none are left out of the list or the timeline. */
+export async function fetchAllComments(shareCode: string): Promise<CommentsResponse> {
+	const limit = 100;
+	const maxPages = 20;
+	const byId = new Map<number, Comment>();
+	let total = 0;
+	for (let page = 1; page <= maxPages; page++) {
+		const result = await fetchComments(shareCode, page, limit);
+		if (!Array.isArray(result.comments)) throw new Error("Could not load comments");
+		// A comment posted mid-load can shift a page; keep each one once.
+		for (const comment of result.comments) byId.set(comment.id, comment);
+		total = result.total;
+		if (result.comments.length < limit || byId.size >= total) break;
+	}
+	const comments = [...byId.values()];
+	return { comments, total: Math.max(total, comments.length), page: 1, limit };
 }
 
 export async function postComment(

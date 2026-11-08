@@ -1,10 +1,11 @@
 @import "tailwindcss";
 @import "@heroui/styles";
 
+/* Inter Display, self-hosted (SIL OFL, see /fonts/Inter-OFL.txt). */
 @font-face {
-	font-family: "DM Sans";
-	src: url("/fonts/DMSans-Variable.ttf") format("truetype");
-	font-weight: 100 1000;
+	font-family: "Inter Display";
+	src: url("/fonts/InterDisplay-Regular.woff2") format("woff2");
+	font-weight: 400;
 	font-style: normal;
 	font-display: swap;
 }
@@ -15,15 +16,37 @@
 	font-style: normal;
 	font-display: swap;
 }
-@theme {
-	--font-sans: "DM Sans", sans-serif;
+@font-face {
+	font-family: "Inter Display";
+	src: url("/fonts/InterDisplay-SemiBold.woff2") format("woff2");
+	font-weight: 600;
+	font-style: normal;
+	font-display: swap;
 }
-/* Match the desktop dashboard typography. */
+@font-face {
+	font-family: "Inter Display";
+	src: url("/fonts/InterDisplay-Bold.woff2") format("woff2");
+	font-weight: 700;
+	font-style: normal;
+	font-display: swap;
+}
+@theme {
+	--font-sans:
+		"Inter Display", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+		sans-serif;
+}
 @layer base {
 	:root {
-		font-family:
-			"DM Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-			sans-serif;
+		font-family: var(--font-sans);
+		/* Share page tokens not in the HeroUI theme (Figma "Share page" collection). */
+		--share-placeholder: #a1a1aa;
+		--share-text-secondary: #484b5a;
+		--share-focus-ring: 0 0 0 1.5px color-mix(in srgb, var(--accent) 25%, transparent);
+	}
+	:root.dark,
+	:root[data-theme="dark"] {
+		--share-placeholder: #63636b;
+		--share-text-secondary: #c9c9d1;
 	}
 	html {
 		background: var(--background);
@@ -50,25 +73,12 @@
 	}
 }
 
-/* Only page geometry and media presentation live here; controls use HeroUI. */
-.share-header {
-	min-height: 64px;
-	padding: 12px 28px;
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 20px;
-	border-bottom: 1px solid var(--separator);
-	background: var(--surface);
-}
-.header-start,
+/* ---------- Shared pieces ---------- */
 .brand {
 	display: flex;
 	align-items: center;
 	gap: 10px;
 	min-width: 0;
-}
-.brand {
 	color: var(--foreground);
 	font-weight: 600;
 	text-decoration: none;
@@ -77,18 +87,61 @@
 .brand img {
 	border-radius: 8px;
 }
-.header-divider {
-	height: 20px;
-	width: 1px;
-	background: var(--separator);
-	margin: 0 8px;
+.timestamp {
+	color: var(--accent);
 }
-.header-context {
-	font-size: 13px;
-	color: var(--muted);
+/* The owner's photo or initials. */
+.owner-avatar {
+	width: 28px;
+	height: 28px;
+	border-radius: 999px;
+	object-fit: cover;
+	flex-shrink: 0;
+}
+.owner-avatar-initials {
+	display: grid;
+	place-items: center;
+	background: var(--surface-secondary);
+	color: var(--foreground);
+	font-size: 11px;
+	font-weight: 600;
+	line-height: 17px;
+}
+/* A ring with a fading tail. */
+.share-spinner {
+	display: inline-block;
+	width: 24px;
+	height: 24px;
+	padding: 2px;
+	flex-shrink: 0;
+}
+.share-spinner::before {
+	content: "";
+	display: block;
+	width: 100%;
+	height: 100%;
+	border-radius: 999px;
+	background: conic-gradient(
+		from 0deg,
+		transparent,
+		color-mix(in srgb, var(--accent) 15%, transparent) 25%,
+		var(--accent)
+	);
+	mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2.5px));
+	animation: share-spin 800ms linear infinite;
+}
+@keyframes share-spin {
+	to {
+		transform: rotate(1turn);
+	}
+}
+
+/* ---------- Share page layout ---------- */
+.recording-app {
+	height: 100dvh;
+	display: flex;
+	flex-direction: column;
 	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
 }
 .share-workspace {
 	display: grid;
@@ -100,78 +153,102 @@
 	padding: 16px;
 	align-items: stretch;
 }
+.share-workspace > aside {
+	min-width: 0;
+	min-height: 0;
+}
+/* The column's single track never grows past the column (a wide row of
+   reaction buttons used to push the video off a phone's screen). */
 .recording-column {
 	display: grid;
+	grid-template-columns: minmax(0, 1fr);
 	grid-template-rows: auto minmax(0, 1fr) auto;
 	gap: 12px;
 	min-width: 0;
 	min-height: 0;
 }
-.recording-heading {
+
+/* Header: owner, "Owner / title", theme and copy link. */
+.viewer-heading {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 	gap: 16px;
-	min-height: 58px;
+	min-height: 48px;
 }
-.recording-title {
-	font-size: 22px;
-	font-weight: 600;
-	letter-spacing: -0.025em;
-	overflow-wrap: anywhere;
+.viewer-heading > .owner-avatar {
+	margin-right: -6px;
 }
-.recording-meta {
+.viewer-crumb {
+	flex: 1;
+	min-width: 0;
+	font-size: 15px;
+	font-weight: 500;
+	line-height: 23px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.viewer-crumb-owner {
+	color: var(--muted);
+	font-weight: 400;
+}
+.viewer-heading-actions {
 	display: flex;
 	align-items: center;
-	flex-wrap: wrap;
 	gap: 8px;
-	margin-top: 6px;
-	font-size: 12px;
-	color: var(--muted);
+	flex-shrink: 0;
 }
-.recording-meta span + span::before {
-	content: "·";
-	margin-right: 8px;
-}
+
+/* Reactions: emoji buttons in one bordered tray under the video. */
 .reaction-rail {
 	display: flex;
 	align-items: center;
-	/* The player is centred in its column, so this centres the row under the video. */
 	justify-content: center;
-	gap: 12px;
-	flex-wrap: wrap;
 }
 .reaction-buttons {
 	display: flex;
-	gap: 4px;
-	flex-wrap: wrap;
+	align-items: center;
+	gap: 2px;
+	padding: 4px;
+	border: 1px solid var(--separator);
+	border-radius: 12px;
+	background: var(--surface);
 }
 .reaction-buttons .button {
 	min-width: 40px;
+	width: 40px;
+	height: 32px;
+	padding: 0 10px;
+	border-radius: 10px;
+	font-size: 14px;
+	line-height: 20px;
 }
-.chapter-list {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
+@media (hover: hover) {
+	.reaction-buttons .button:hover,
+	.reaction-buttons .button[data-hovered="true"] {
+		background: var(--surface-secondary);
+	}
 }
-.chapter-list .button {
-	justify-content: flex-start;
-	height: auto;
-	min-height: 40px;
-	white-space: normal;
-	text-align: left;
-}
-.timestamp {
-	font-variant-numeric: tabular-nums;
-	color: var(--accent);
-}
+
+/* ---------- Feedback card ---------- */
 .feedback-card {
 	height: 100%;
-	padding: 16px;
+	padding: 16px 0 0;
 	min-width: 0;
 	min-height: 0;
 	overflow: hidden;
 	gap: 0;
+}
+.feedback-header {
+	flex-shrink: 0;
+	padding: 0 16px 12px;
+}
+.feedback-title {
+	margin: 0;
+	font-size: 14px;
+	font-weight: 600;
+	line-height: 20px;
 }
 .feedback-tabs {
 	display: flex;
@@ -179,16 +256,51 @@
 	flex: 1;
 	min-height: 0;
 	width: 100%;
-	gap: 12px;
+	gap: 0;
 }
-/* Icon-only switcher, centred and only as wide as its icons. */
+/* Icon-only switcher at the left, only as wide as its icons. */
+.feedback-tabs .tabs__list-container {
+	flex-shrink: 0;
+	align-self: flex-start;
+	margin: 0 16px 12px;
+	border-radius: 10px;
+}
+.feedback-tabs .tabs__list {
+	padding: 4px;
+}
 .feedback-tabs .tabs__tab {
 	width: 52px;
+	height: 32px;
 	padding-inline: 0;
+	border-radius: 8px;
+}
+.feedback-tabs .tabs__indicator {
+	border-radius: 8px;
+	box-shadow: none;
+}
+.feedback-tabs .tabs__separator {
+	display: none;
+}
+/* Each panel scrolls on its own, edge to edge inside the card. */
+.feedback-tabs .tabs__panel {
+	flex: 1;
+	min-height: 0;
+	margin: 0;
+	padding: 0 16px;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	scrollbar-width: thin;
+}
+.feedback-tabs .tabs__panel:not([hidden]) {
+	display: flex;
+	flex-direction: column;
+}
+.feedback-tabs .tabs__panel > * {
+	flex-shrink: 0;
 }
 .empty-feedback {
 	display: flex;
-	height: 100%;
+	flex: 1;
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
@@ -202,63 +314,19 @@
 .empty-feedback h2 {
 	font-size: 14px;
 	font-weight: 500;
+	line-height: 20px;
 }
 .empty-feedback p {
 	color: var(--muted);
 	font-size: 13px;
-	line-height: 1.6;
+	line-height: 20.8px;
 	max-width: 230px;
 }
-.composer {
-	display: flex;
-	flex-direction: column;
-	flex-shrink: 0;
-	gap: 8px;
-	border-top: 1px solid var(--separator);
-	padding-top: 12px;
-	margin-top: 12px;
-}
-/* Looks like one field; the textarea inside it drops its own fill and ring. */
-.comment-box {
-	@apply rounded-field bg-field shadow-field;
-	display: flex;
-	align-items: flex-end;
-	gap: 4px;
-	padding: 4px;
-	border: var(--border-width-field) solid var(--field-border);
-	transition:
-		background-color 150ms var(--ease-smooth),
-		box-shadow 150ms var(--ease-out);
-}
-.comment-box:focus-within {
-	@apply status-focused-field;
-	background-color: var(--field-focus);
-}
-.comment-box .textfield {
-	flex: 1;
-	min-width: 0;
-}
-.comment-box .textarea,
-.comment-box .textarea:is(:hover, :focus, [data-hovered="true"], [data-focused="true"]) {
-	background: transparent;
-	box-shadow: none;
-	border-color: transparent;
-	padding: 6px 8px;
-}
-.comment-box .button .timestamp {
-	color: inherit;
-}
-/* Starts at one line and grows with the comment. */
-.comment-box textarea {
-	field-sizing: content;
-	min-height: 32px;
-	max-height: 140px;
-	resize: none;
-}
+
+/* Comments */
 .comment-item {
-	padding: 14px 8px;
-	border-bottom: 1px solid var(--separator);
-	border-radius: var(--radius);
+	padding: 10px 8px 8px;
+	border-radius: 8px;
 }
 .comment-item[data-active="true"] {
 	background: var(--accent-soft);
@@ -267,7 +335,21 @@
 	display: flex;
 	align-items: center;
 	gap: 8px;
+	height: 32px;
 	font-size: 13px;
+	line-height: 20px;
+}
+.comment-heading strong {
+	font-weight: 700;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.comment-heading .avatar__fallback {
+	font-size: 12px;
+	font-weight: 500;
+	line-height: 18px;
 }
 .comment-heading .button {
 	margin-left: auto;
@@ -275,38 +357,62 @@
 .comment-item p {
 	margin: 8px 0;
 	font-size: 13px;
-	line-height: 1.65;
+	line-height: 21.45px;
 	white-space: pre-wrap;
 	overflow-wrap: anywhere;
 }
 .comment-date {
+	display: block;
 	color: var(--muted);
 	font-size: 11px;
+	line-height: 17px;
 }
 .inline-timestamp {
 	display: inline;
-	padding: 0 2px;
+	padding: 0;
 	min-width: 0;
 	height: auto;
+	font-size: 14px;
+	font-weight: 500;
+	line-height: inherit;
 	vertical-align: baseline;
 }
+
+/* Transcript */
 .transcript-item {
-	padding: 12px 4px;
+	padding: 10px 4px 8px;
 	border-bottom: 1px solid var(--separator);
 }
 .transcript-item[data-active="true"] {
 	background: var(--accent-soft);
-	border-radius: var(--radius);
+	border-radius: 8px;
+	border-bottom-color: transparent;
 }
 .transcript-heading {
 	display: flex;
 	align-items: center;
 	gap: 8px;
-	color: var(--muted);
-	font-size: 12px;
+	height: 32px;
 }
+.transcript-speaker {
+	font-size: 13px;
+	font-weight: 700;
+	line-height: 20px;
+	color: var(--foreground);
+}
+/* The copy-link button shows on the row under the pointer and on the playing row. */
 .transcript-heading .copy-timestamp {
 	margin-left: auto;
+	visibility: hidden;
+}
+.transcript-item[data-active="true"] .copy-timestamp,
+.transcript-item:focus-within .copy-timestamp {
+	visibility: visible;
+}
+@media (hover: hover) {
+	.transcript-item:hover .copy-timestamp {
+		visibility: visible;
+	}
 }
 .transcript-seek {
 	justify-content: flex-start;
@@ -315,8 +421,208 @@
 	width: 100%;
 	height: auto;
 	padding: 8px;
-	line-height: 1.65;
+	border-radius: 8px;
+	font-size: 14px;
+	font-weight: 500;
+	line-height: 23.1px;
 }
+
+/* Details */
+.recording-details + .recording-details {
+	margin-top: 20px;
+}
+.recording-details h2 {
+	font-size: 14px;
+	font-weight: 600;
+	line-height: 20px;
+	margin-bottom: 4px;
+}
+.recording-details p {
+	white-space: pre-wrap;
+	font-size: 14px;
+	line-height: 23.8px;
+	color: var(--muted);
+}
+.chapter-list {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 4px;
+}
+.chapter-list .button {
+	justify-content: flex-start;
+	height: auto;
+	min-height: 40px;
+	padding: 0 12px;
+	white-space: normal;
+	text-align: left;
+}
+
+/* Composer: pill field with the send button inside, then who and when. */
+.composer {
+	display: flex;
+	flex-direction: column;
+	flex-shrink: 0;
+	gap: 4px;
+	margin-top: 12px;
+	padding: 12px 8px 8px;
+	border-top: 1px solid var(--separator);
+}
+.composer[hidden] {
+	display: none;
+}
+.composer-error {
+	font-size: 12px;
+	font-weight: 500;
+	line-height: 18px;
+	color: var(--danger);
+	text-align: center;
+}
+.comment-box {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	padding: 4px;
+	border: 1px solid var(--border);
+	border-radius: 999px;
+	background: var(--field-background);
+	transition:
+		border-color 150ms var(--ease-smooth),
+		box-shadow 150ms var(--ease-out);
+}
+.comment-box:focus-within {
+	border-color: var(--accent);
+	box-shadow: var(--share-focus-ring);
+}
+.comment-box textarea {
+	flex: 1;
+	min-width: 0;
+	height: 32px;
+	max-height: 140px;
+	padding: 6px 12px;
+	border: 0;
+	background: transparent;
+	color: var(--foreground);
+	font-size: 14px;
+	line-height: 20px;
+	outline: none;
+	resize: none;
+}
+.comment-box textarea::placeholder {
+	color: var(--share-placeholder);
+	opacity: 1;
+}
+.comment-box[data-disabled="true"] textarea {
+	opacity: 0.5;
+}
+/* Text that wraps: a rounded box, the send button below the text at the right. */
+.comment-box[data-multiline="true"] {
+	flex-direction: column;
+	align-items: flex-end;
+	padding: 12px 4px 4px;
+	border-radius: 18px;
+}
+.comment-box[data-multiline="true"] textarea {
+	flex: none;
+	width: 100%;
+	padding: 0 8px;
+	overflow-y: auto;
+}
+.comment-box .send-button {
+	width: 40px;
+	min-width: 40px;
+	height: 32px;
+	padding: 0;
+	border-radius: 999px;
+	flex-shrink: 0;
+	background: var(--accent);
+	color: var(--accent-foreground);
+}
+.comment-box .send-button:is(:disabled, [data-disabled="true"], [aria-disabled="true"]) {
+	background: var(--surface-secondary);
+	color: var(--foreground);
+	opacity: 0.5;
+}
+.composer-meta {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	height: 24px;
+	padding: 0 8px;
+	font-size: 13px;
+	font-weight: 500;
+	line-height: 18.72px;
+	color: var(--share-placeholder);
+}
+.composer-meta > span {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	min-width: 0;
+}
+.composer-name {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	padding: 0;
+	border: 0;
+	background: none;
+	color: var(--share-text-secondary);
+	text-decoration: underline dotted;
+	text-underline-offset: 3px;
+	cursor: pointer;
+	border-radius: 4px;
+}
+.composer-name:hover {
+	color: var(--foreground);
+}
+.composer-name:focus-visible {
+	outline: 2px solid var(--focus);
+	outline-offset: 2px;
+}
+.composer-time {
+	color: var(--share-text-secondary);
+	font-variant-numeric: tabular-nums;
+}
+
+/* "Your name" dialog. */
+.modal__dialog.name-modal {
+	width: 360px;
+	max-width: 100%;
+	padding: 24px;
+	border-radius: 16px;
+}
+.name-modal-form {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+.name-modal-heading {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+.name-modal-heading h2 {
+	font-size: 16px;
+	font-weight: 600;
+	line-height: 22px;
+}
+.name-modal-heading p {
+	color: var(--muted);
+	font-size: 14px;
+	line-height: 20px;
+}
+.name-modal-field .input {
+	width: 100%;
+}
+.name-modal-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+}
+
+/* ---------- Gate card (password, unavailable, error) ---------- */
 .gate-page {
 	min-height: 100svh;
 	display: grid;
@@ -345,6 +651,31 @@
 	font-size: 14px;
 	line-height: 1.6;
 }
+.share-body .gate-card {
+	gap: 12px;
+	border-radius: 16px;
+}
+.share-body .gate-card .brand {
+	font-size: 16px;
+	line-height: 22px;
+}
+.share-body .gate-content h1 {
+	line-height: 28px;
+}
+.share-body .gate-field {
+	gap: 8px;
+}
+.share-body .gate-field .label::after {
+	margin-inline-start: 4px;
+}
+.share-body .gate-content p.field-error-text {
+	color: var(--danger);
+	font-size: 12px;
+	font-weight: 500;
+	line-height: 18px;
+}
+
+/* ---------- Loading skeleton ---------- */
 .loading-title {
 	width: 48%;
 	height: 26px;
@@ -361,6 +692,8 @@
 .loading-sidebar {
 	height: 440px;
 }
+
+/* ---------- Player ---------- */
 .video-shell {
 	position: relative;
 	display: flex;
@@ -437,7 +770,7 @@
 	aspect-ratio: 1;
 	border-radius: 999px;
 	transform: translate(-50%, -50%);
-	background: rgba(40, 40, 40, 0.62);
+	background: rgb(0 0 0 / 0.45);
 	backdrop-filter: blur(6px);
 	transition:
 		transform 160ms ease,
@@ -451,7 +784,7 @@
 @media (hover: hover) {
 	.video-cover:hover .video-cover-play {
 		transform: translate(-50%, -50%) scale(1.05);
-		background: rgba(40, 40, 40, 0.78);
+		background: rgb(0 0 0 / 0.6);
 	}
 }
 .video-cover-text {
@@ -463,7 +796,6 @@
 	gap: clamp(8px, 2cqh, 18px);
 }
 .video-cover-title {
-	font-family: "Inter Display", "DM Sans", sans-serif;
 	font-size: clamp(22px, 5.2cqw, 64px);
 	font-weight: 500;
 	line-height: 1.05;
@@ -482,22 +814,10 @@
 	min-width: 0;
 }
 .video-cover-details {
-	font-family: "Inter Display", "DM Sans", sans-serif;
 	font-size: clamp(12px, 1.5cqw, 16px);
 	font-weight: 500;
+	line-height: 1.25;
 	opacity: 0.6;
-}
-.viewer-crumb {
-	min-width: 0;
-	font-size: 15px;
-	font-weight: 500;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-.viewer-crumb-owner {
-	color: var(--muted, rgba(127, 127, 127, 0.9));
-	font-weight: 400;
 }
 .video-play-overlay {
 	position: absolute;
@@ -546,6 +866,7 @@
 	opacity: 0;
 	pointer-events: none;
 	transition: opacity 200ms ease;
+	container-type: inline-size;
 }
 .video-shell.controls-shown .video-toolbar,
 .video-toolbar:focus-within {
@@ -597,8 +918,20 @@
 	align-items: center;
 	gap: 4px;
 }
-.dropdown__popover.speed-menu {
-	min-width: 128px;
+/* Round 32px icon buttons; the speed label is a 48px-wide rounded rectangle. */
+.video-controls .button {
+	height: 32px;
+}
+.video-controls .button--icon-only {
+	width: 32px;
+	min-width: 32px;
+	border-radius: 999px;
+}
+.video-controls .speed-control {
+	width: 48px;
+	min-width: 48px;
+	padding: 0;
+	border-radius: 10px;
 }
 .speed-menu .menu-value {
 	margin-left: auto;
@@ -659,13 +992,11 @@
 	left: 50%;
 	transform: translateX(-50%);
 	font-size: 13px;
+	line-height: 20px;
 	font-variant-numeric: tabular-nums;
 	color: rgb(255 255 255 / 0.85);
 	white-space: nowrap;
 	pointer-events: none;
-}
-.video-toolbar {
-	container-type: inline-size;
 }
 /* Too narrow to centre: the time sits after the buttons and the volume bar hides. */
 @container (max-width: 620px) {
@@ -709,6 +1040,7 @@
 	position: absolute;
 	inset: 0;
 	background: rgb(0 0 0 / 0.7);
+	color: white;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
@@ -717,123 +1049,23 @@
 }
 .timeline-markers {
 	position: relative;
-	height: 20px;
+	height: 24px;
 	margin: 0 8px;
+	flex-shrink: 0;
 }
-.timeline-marker {
+.timeline-markers .timeline-marker {
 	position: absolute;
 	transform: translateX(-50%);
-	min-width: 18px;
-	height: 18px;
+	min-width: 24px;
+	height: 24px;
 	padding: 0 3px;
-	font-size: 10px;
-}
-@media (prefers-reduced-motion: reduce) {
-	*,
-	*::before,
-	*::after {
-		scroll-behavior: auto !important;
-	}
-}
-
-.recording-app {
-	height: 100dvh;
-	display: flex;
-	flex-direction: column;
-	overflow: hidden;
-}
-.recording-app .share-header {
-	flex-shrink: 0;
-	min-height: 56px;
-	padding: 10px 20px;
-}
-.recording-app .recording-heading {
-	min-height: 48px;
-}
-.recording-heading > div {
-	min-width: 0;
-}
-.recording-app .recording-title {
-	font-size: 20px;
-	display: -webkit-box;
-	-webkit-line-clamp: 2;
-	-webkit-box-orient: vertical;
-	overflow: hidden;
-}
-.share-workspace > aside {
-	min-width: 0;
-	min-height: 0;
-}
-.feedback-tabs .tabs__list-container {
-	flex-shrink: 0;
-	align-self: center;
-}
-.feedback-title {
-	margin: 0 0 12px;
-	font-size: 14px;
-	font-weight: 600;
-}
-.feedback-tabs .tabs__panel {
-	flex: 1;
-	min-height: 0;
-	padding: 0;
-	overflow: hidden;
-}
-.feedback-tabs .tabs__panel:not([hidden]) {
-	display: flex;
-	flex-direction: column;
-}
-.composer[hidden] {
-	display: none;
-}
-.paged-panel {
-	display: flex;
-	flex-direction: column;
-	min-height: 0;
-	height: 100%;
-	flex: 1;
-	gap: 8px;
-}
-.page-viewport {
-	flex: 1;
-	min-height: 0;
-	overflow: hidden;
-}
-.page-flow {
-	height: 100%;
-	column-count: 1;
-	column-gap: 24px;
-	column-fill: auto;
-	overflow-wrap: anywhere;
-}
-.page-flow .comment-item,
-.page-flow .transcript-item {
-	break-inside: avoid-column;
-}
-.page-navigation {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	flex-shrink: 0;
+	border-radius: 8px;
 	font-size: 12px;
-	color: var(--muted);
+	font-weight: 500;
+	line-height: 18px;
 }
-.page-navigation[hidden] {
-	display: none;
-}
-.recording-details {
-	margin-bottom: 20px;
-}
-.recording-details h2 {
-	font-size: 14px;
-	font-weight: 600;
-	margin-bottom: 10px;
-}
-.recording-details p {
-	white-space: pre-wrap;
-	font-size: 14px;
-	line-height: 1.7;
-	color: var(--muted);
+.timeline-markers .timeline-marker.button--primary {
+	color: white;
 }
 .video-progress {
 	position: relative;
@@ -863,98 +1095,6 @@
 	cursor: pointer;
 	margin: 0;
 }
-.mobile-view-switch {
-	display: none;
-}
-@media (max-width: 1100px) {
-	.share-workspace {
-		grid-template-columns: minmax(0, 1fr) 310px;
-		gap: 12px;
-		padding: 12px;
-	}
-	.volume-control {
-		display: none;
-	}
-}
-@media (max-width: 760px) {
-	.mobile-view-switch {
-		display: flex;
-		flex-shrink: 0;
-		justify-content: center;
-		gap: 8px;
-		padding: 8px 12px 0;
-	}
-	.share-workspace {
-		grid-template-columns: minmax(0, 1fr);
-	}
-	.recording-app .header-context,
-	.recording-app .header-divider {
-		display: none;
-	}
-	.recording-app .share-header {
-		padding: 8px 12px;
-	}
-	.recording-app .recording-title {
-		font-size: 18px;
-	}
-	.feedback-card {
-		padding: 12px;
-	}
-	.reaction-buttons {
-		gap: 0;
-	}
-	/* Finger-sized: Apple asks for at least 44 points. */
-	.reaction-buttons .button {
-		min-width: 44px;
-		height: 44px;
-		padding-inline: 6px;
-	}
-	.reaction-rail {
-		gap: 4px;
-		flex-wrap: nowrap;
-	}
-	.recording-app .recording-meta {
-		gap: 4px;
-		font-size: 11px;
-	}
-	.video-time {
-		margin: 0 4px;
-		font-size: 11px;
-	}
-	.skip-control,
-	.pip-control {
-		display: none;
-	}
-}
-@media (max-height: 620px) {
-	.recording-app .share-header {
-		min-height: 44px;
-		padding-block: 6px;
-	}
-	.recording-app .share-workspace {
-		padding: 8px;
-		gap: 8px;
-	}
-	.feedback-card {
-		padding: 10px;
-	}
-	.composer {
-		gap: 6px;
-		padding-top: 8px;
-		margin-top: 8px;
-	}
-	.empty-feedback {
-		padding: 4px;
-		gap: 4px;
-	}
-	.empty-feedback > svg {
-		display: none;
-	}
-	.empty-feedback p {
-		font-size: 12px;
-	}
-}
-
 .timestamp-reactions {
 	position: absolute;
 	inset: 0;
@@ -984,53 +1124,397 @@
 	}
 }
 @media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		scroll-behavior: auto !important;
+	}
 	.timestamp-reaction {
 		animation: none;
 	}
+	.share-spinner::before {
+		animation-duration: 2s;
+	}
 }
 
-.creator-info {
-	display: flex;
-	align-items: center;
+/* ---------- HeroUI pieces, Figma shapes (share page only) ---------- */
+.share-body .card {
+	border-radius: 16px;
+}
+.share-body .button:not(.button--icon-only) {
+	border-radius: 10px;
+}
+.share-body .button--icon-only {
+	border-radius: 999px;
+}
+/* Icons sit flush inside the padding, as in Figma (HeroUI pulls them 2px outward). */
+.share-body .button svg {
+	margin-inline: 0;
+}
+/* Fields: 1px border, no shadow; accent border and a soft ring when focused. */
+.share-body .input {
+	height: 36px;
+	padding: 0 12px;
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	background: var(--field-background);
+	box-shadow: none;
+	line-height: 20px;
+}
+.share-body .input::placeholder {
+	color: var(--share-placeholder);
+}
+.share-body .input:is(:hover, [data-hovered="true"]) {
+	background: var(--field-background);
+}
+.share-body .input:is(:focus, :focus-visible, [data-focused="true"], [data-focus-visible="true"]) {
+	border-color: var(--accent);
+	background: var(--field-background);
+	box-shadow: var(--share-focus-ring);
+	outline: none;
+}
+.share-body .label {
+	line-height: 20px;
+}
+.share-body .tooltip {
+	max-width: 320px;
+	padding: 8px;
+	border-radius: 8px;
+	color: var(--foreground);
+	font-size: 12px;
+	line-height: 18px;
+	word-break: normal;
+	overflow-wrap: anywhere;
+}
+.share-body .dropdown__popover {
+	border-radius: 12px;
+}
+.share-body .dropdown__popover.speed-menu {
+	min-width: 128px;
+}
+.share-body .dropdown__popover.settings-menu {
+	min-width: 156px;
+}
+.share-body .dropdown__popover :is(.menu, .dropdown__menu) {
+	padding: 4px;
+	gap: 4px;
+}
+.share-body .dropdown__popover .menu-item .label {
+	font-weight: 400;
+}
+.share-body .dropdown__popover .menu-item {
+	min-height: 36px;
+	padding: 0 12px 0 28px;
 	gap: 8px;
-	margin-top: 6px;
-	min-width: 0;
+	border-radius: 8px;
+	font-size: 14px;
+	line-height: 20px;
 }
-.creator-info > div {
-	min-width: 0;
-}
-.creator-name {
-	font-size: 12px;
-	font-weight: 600;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-.creator-bio {
-	font-size: 11px;
+.share-body .dropdown__popover .menu-item__indicator {
 	color: var(--muted);
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
+}
+/* The phone settings menu: Subtitles above, a full-width line, then the speeds. */
+.share-body .speed-menu .menu-section {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+.share-body .speed-menu .menu-section + .menu-section {
+	position: relative;
+	padding-top: 5px;
+}
+.share-body .speed-menu .menu-section + .menu-section::before {
+	content: "";
+	position: absolute;
+	top: 0;
+	left: -4px;
+	right: -4px;
+	height: 1px;
+	background: var(--separator);
+}
+.share-body .toast {
+	border-radius: 12px;
+}
+.share-body .toast__indicator {
+	padding: 0;
+}
+.share-body .modal__backdrop {
+	background: var(--backdrop);
 }
 
-.timeline-markers {
-	height: 24px;
-	flex-shrink: 0;
-}
-.timeline-markers .timeline-marker {
-	height: 24px;
-	min-width: 24px;
-	font-size: 12px;
+/* ---------- Tablet ---------- */
+@media (max-width: 1100px) {
+	.share-workspace {
+		grid-template-columns: minmax(0, 1fr) 310px;
+		gap: 12px;
+		padding: 12px;
+	}
+	.volume-control {
+		display: none;
+	}
 }
 
+/* ---------- Phones: one column, the page scrolls ---------- */
+.touch-controls {
+	display: none;
+}
+@media (max-width: 760px) {
+	/* Comments fill the space under the video; on short screens the page scrolls instead. */
+	.recording-app {
+		overflow-y: auto;
+	}
+	.recording-app .share-workspace {
+		display: flex;
+		flex-direction: column;
+		flex: 1 0 auto;
+		padding: 0;
+		gap: 0;
+	}
+	.recording-app .share-workspace > aside {
+		display: flex;
+		flex-direction: column;
+		padding: 0;
+	}
+	/* Edge to edge, no card corners; the list grows and the page scrolls. */
+	.recording-app .share-workspace > aside > .feedback-card {
+		height: auto;
+		padding-top: 12px;
+		border-radius: 0;
+		box-shadow: none;
+	}
+	.feedback-tabs .tabs__panel {
+		flex: none;
+		overflow: visible;
+	}
+	.recording-app .recording-column {
+		display: flex;
+		flex-direction: column;
+		gap: 0;
+	}
+	.recording-app .viewer-heading {
+		padding: 4px 12px;
+		min-height: 52px;
+		gap: 12px;
+		flex-wrap: nowrap;
+	}
+	.recording-app .viewer-heading .copy-link-label {
+		display: none;
+	}
+	/* Finger-sized round buttons in the header. */
+	.viewer-heading-actions .button {
+		width: 44px;
+		height: 44px;
+		min-width: 44px;
+		padding: 0;
+		border-radius: 999px;
+	}
+	.viewer-heading-actions .button svg {
+		width: 18px;
+		height: 18px;
+	}
+	/* Full width at the top, the recording's own shape, no card corners. */
+	.video-area {
+		container-type: inline-size;
+		display: block;
+	}
+	.video-area > .video-shell {
+		width: 100%;
+		max-height: none;
+		border-radius: 0;
+	}
+	.video-stage {
+		max-height: none;
+		container-type: inline-size;
+	}
+	.video-frame {
+		width: 100%;
+	}
+	/* A white band of reactions with a line under it. */
+	.reaction-rail {
+		padding: 12px;
+		background: var(--surface);
+		border-bottom: 1px solid var(--separator);
+	}
+	.reaction-buttons {
+		gap: 6px;
+		padding: 2px;
+	}
+	.reaction-buttons .button {
+		padding: 0 6px;
+	}
+	/* Only the progress bar stays, flush with the bottom edge, while the recording plays
+	   or is paused; the rest moves to the centre. */
+	.video-toolbar {
+		padding: 24px 0 0;
+		background: none;
+	}
+	.video-shell.is-started .video-toolbar {
+		opacity: 1;
+	}
+	.video-shell.is-ended .video-toolbar {
+		opacity: 0;
+	}
+	.video-progress {
+		margin: 0;
+		padding: 8px 0 0;
+	}
+	.seek-track {
+		border-radius: 0;
+	}
+	/* The controls sit in the middle on phones, so subtitles stay low either way. */
+	.video-caption,
+	.video-shell.controls-shown .video-caption {
+		bottom: 14px;
+	}
+	/* Size and spacing go on the line box itself, or the larger page text keeps lines 24px apart. */
+	.video-caption {
+		font-size: 9px;
+		line-height: 20px;
+	}
+	.video-caption span {
+		line-height: inherit;
+		padding: 3px 6px;
+		border-radius: 4px;
+	}
+	.video-toolbar .video-controls,
+	.video-toolbar .timeline-markers {
+		display: none;
+	}
+	.video-time {
+		margin: 0 4px;
+		font-size: 11px;
+	}
+	.skip-control,
+	.pip-control {
+		display: none;
+	}
+	.touch-controls {
+		position: absolute;
+		inset: 0;
+		z-index: 3;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		color: white;
+		background: rgb(0 0 0 / 0.38);
+		opacity: 0;
+		pointer-events: none;
+		transition: opacity 200ms ease;
+	}
+	.video-shell.controls-shown .touch-controls {
+		opacity: 1;
+	}
+	.video-shell.controls-shown .touch-controls .button {
+		pointer-events: auto;
+	}
+	.touch-controls-row {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+	}
+	/* Five round 40px buttons; play and pause sit on a dark circle. */
+	.touch-controls .button {
+		color: white;
+		width: 40px;
+		height: 40px;
+		min-width: 0;
+		padding: 0;
+		border-radius: 999px;
+	}
+	.touch-controls .button svg {
+		width: 20px;
+		height: 20px;
+	}
+	.touch-controls .touch-play {
+		background: rgb(0 0 0 / 0.45);
+	}
+	/* A press darkens to black, so the white icons stay readable; it clears when the finger lifts. */
+	.touch-controls .button:is([data-pressed="true"], [aria-expanded="true"]) {
+		color: white;
+		background: rgb(0 0 0 / 0.8);
+	}
+	@media (hover: hover) {
+		.touch-controls .button:hover {
+			color: white;
+			background: rgb(0 0 0 / 0.8);
+		}
+	}
+	.touch-time {
+		font-size: 14px;
+		line-height: 20px;
+		font-variant-numeric: tabular-nums;
+		color: rgb(255 255 255 / 0.9);
+	}
+	/* A larger tap area round a time inside a comment, without moving the text. */
+	.inline-timestamp {
+		padding: 8px 4px;
+		margin: -8px -2px;
+	}
+	/* Small buttons keep their desktop 32px height in the comment and transcript rows. */
+	.comment-heading .button {
+		height: 32px;
+	}
+	/* The cover keeps the desktop layout, smaller so the text clears the play button. */
+	.video-cover-text {
+		left: 14px;
+		right: 14px;
+		bottom: 12px;
+		gap: 6px;
+	}
+	.video-cover-play {
+		width: 40px;
+	}
+	.video-cover[data-ended="true"] .video-cover-text {
+		left: 20px;
+		right: 20px;
+		bottom: 20px;
+	}
+	.video-cover-title {
+		font-size: clamp(16px, 4.6cqw, 22px);
+		line-height: 19px;
+	}
+	.video-cover-details {
+		font-size: 12px;
+		line-height: 15px;
+	}
+}
+@media (max-height: 620px) {
+	.recording-app .share-workspace {
+		padding: 8px;
+		gap: 8px;
+	}
+	.composer {
+		gap: 4px;
+		padding-top: 8px;
+		margin-top: 8px;
+	}
+	.empty-feedback {
+		padding: 4px;
+		gap: 4px;
+	}
+	.empty-feedback > svg {
+		display: none;
+	}
+	.empty-feedback p {
+		font-size: 12px;
+	}
+}
+@media (max-width: 760px) and (max-height: 620px) {
+	.recording-app .share-workspace {
+		padding: 0;
+		gap: 0;
+	}
+}
+
+/* ---------- Library ---------- */
 /* Same theme aliases and shell treatment as the desktop dashboard. */
 @theme inline {
 	--color-muted-foreground: var(--muted);
 }
 .library-dashboard {
 	height: 100dvh;
-	font-family: "DM Sans", sans-serif;
 }
 .dark .library-dashboard > .card {
 	background: color-mix(in srgb, var(--background) 92%, var(--foreground) 8%);
@@ -1073,259 +1557,10 @@
 .dark .library-dashboard > .card {
 	background: color-mix(in srgb, var(--background) 92%, var(--foreground) 8%);
 }
-.recording-app .viewer-heading {
-	min-height: 48px;
-	gap: 16px;
-}
-.viewer-identity {
-	display: flex;
-	align-items: flex-start;
-	gap: 16px;
-	min-width: 0;
-	flex: 1;
-}
-.viewer-caption {
-	height: 48px;
-	min-width: 0;
-	flex: 1;
-}
-.recording-app .viewer-heading .recording-title {
-	display: block;
-	font-size: 12px;
-	font-weight: 500;
-	line-height: 20px;
-	letter-spacing: normal;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-.recording-app .viewer-heading .recording-meta {
-	margin-top: 4px;
-	height: 24px;
-	font-size: 11px;
-	gap: 8px;
-	white-space: nowrap;
-}
-.viewer-heading-actions {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	flex-shrink: 0;
-}
-@media (max-width: 480px) {
-	.recording-app .viewer-heading {
-		flex-wrap: wrap;
-	}
-	.viewer-identity {
-		flex-basis: 100%;
-	}
-	.viewer-heading-actions {
-		margin-left: auto;
-	}
-}
 
-/* The owner's photo before "Owner / title". */
-.viewer-avatar {
-	width: 28px;
-	height: 28px;
-	margin-right: -6px;
-	border-radius: 999px;
-	object-fit: cover;
-	flex-shrink: 0;
-}
-.viewer-avatar-initials {
-	display: grid;
-	place-items: center;
-	background: var(--surface-secondary, rgba(127, 127, 127, 0.2));
-	font-size: 11px;
-	font-weight: 600;
-}
-.recording-app .viewer-heading .viewer-crumb {
-	flex: 1;
-}
-
-/* The recording column's single track never grows past the column (a wide row of
-   reaction buttons used to push the video off a phone's screen). */
-.recording-column {
-	grid-template-columns: minmax(0, 1fr);
-}
-
-/* Phones: big centre controls replace the control row. */
-.touch-controls {
-	display: none;
-}
-@media (max-width: 760px) {
-	/* Comments fill the space under the video; on short screens the page scrolls instead. */
-	.recording-app {
-		overflow-y: auto;
-	}
-	.recording-app .share-workspace {
-		display: flex;
-		flex-direction: column;
-		flex: 1 0 auto;
-	}
-	.recording-app .share-workspace > aside {
-		flex: 1 1 0;
-		min-height: 360px;
-		display: flex;
-		flex-direction: column;
-		padding: 0;
-	}
-	/* Edge to edge and down to the bottom of the screen, no card corners. */
-	.recording-app .share-workspace > aside > .feedback-card {
-		flex: 1;
-		min-height: 0;
-		border-radius: 0;
-	}
-	.recording-app .share-workspace {
-		padding: 0;
-		gap: 0;
-	}
-	.recording-app .recording-column {
-		display: flex;
-		flex-direction: column;
-		gap: 0;
-	}
-	.recording-app .viewer-heading {
-		padding: 8px 12px;
-		min-height: 52px;
-		gap: 12px;
-		flex-wrap: nowrap;
-	}
-	.recording-app .viewer-heading .copy-link-label {
-		display: none;
-	}
-	/* Full width at the top, the recording's own shape, no card corners. */
-	.video-area {
-		container-type: inline-size;
-		display: block;
-	}
-	.video-area > .video-shell {
-		width: 100%;
-		max-height: none;
-		border-radius: 0;
-	}
-	.video-stage {
-		max-height: none;
-		container-type: inline-size;
-	}
-	.video-frame {
-		width: 100%;
-	}
-	.reaction-rail {
-		padding: 12px;
-		justify-content: center;
-	}
-	/* Only the progress bar stays at the bottom edge; the rest moves to the centre. */
-	.video-toolbar {
-		padding: 24px 0 0;
-		background: none;
-	}
-	/* The controls sit in the middle on phones, so subtitles stay low either way. */
-	.video-caption,
-	.video-shell.controls-shown .video-caption {
-		bottom: 14px;
-	}
-	/* Size and spacing go on the line box itself, or the larger page text keeps lines 24px apart. */
-	.video-caption {
-		font-size: 9px;
-		line-height: 20px;
-	}
-	.video-caption span {
-		line-height: inherit;
-		padding: 3px 6px;
-		border-radius: 4px;
-	}
-	.video-toolbar .video-controls,
-	.video-toolbar .timeline-markers {
-		display: none;
-	}
-	.video-progress {
-		margin: 0;
-	}
-	.touch-controls {
-		position: absolute;
-		inset: 0;
-		z-index: 3;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		gap: 8px;
-		color: white;
-		background: rgb(0 0 0 / 0.38);
-		opacity: 0;
-		pointer-events: none;
-		transition: opacity 200ms ease;
-	}
-	.video-shell.controls-shown .touch-controls {
-		opacity: 1;
-	}
-	.video-shell.controls-shown .touch-controls .button {
-		pointer-events: auto;
-	}
-	/* Sized to the video so all six buttons fit on the narrowest phones. */
-	.touch-controls-row {
-		display: flex;
-		align-items: center;
-		gap: clamp(2px, 2.5cqw, 28px);
-	}
-	.touch-controls .button {
-		color: white;
-		width: clamp(40px, 12cqw, 48px);
-		height: clamp(40px, 12cqw, 48px);
-		min-width: 0;
-		border-radius: 999px;
-	}
-	.touch-controls .touch-play {
-		width: clamp(52px, 16cqw, 64px);
-		height: clamp(52px, 16cqw, 64px);
-		background: rgb(0 0 0 / 0.45);
-	}
-	/* A press darkens to black, so the white icons stay readable; it clears when the finger lifts. */
-	.touch-controls .button[data-pressed="true"] {
-		color: white;
-		background: rgb(0 0 0 / 0.75);
-	}
-	@media (hover: hover) {
-		.touch-controls .button:hover {
-			color: white;
-			background: rgb(0 0 0 / 0.75);
-		}
-	}
-	.touch-time {
-		font-size: 14px;
-		font-variant-numeric: tabular-nums;
-		color: rgb(255 255 255 / 0.9);
-	}
-	/* Finger-sized taps in the header and on comments. */
-	.viewer-heading-actions .button {
-		width: 44px;
-		height: 44px;
-		min-width: 44px;
-	}
-	.comment-heading .button {
-		min-height: 40px;
-	}
-	.comment-box .button {
-		min-height: 40px;
-	}
-	/* A larger tap area round a time inside a comment, without moving the text. */
-	.inline-timestamp {
-		padding: 8px 4px;
-		margin: -8px -2px;
-	}
-	/* The cover keeps the desktop layout, smaller so the text clears the play button. */
-	.video-cover-text {
-		left: 14px;
-		right: 14px;
-		bottom: 12px;
-		gap: 6px;
-	}
-	.video-cover-title {
-		font-size: clamp(16px, 4.6cqw, 22px);
-	}
-	.video-cover-details {
-		font-size: 12px;
+/* Phones zoom into fields smaller than 16px when tapped. */
+@media (max-width: 640px) {
+	.comment-box textarea {
+		font-size: 16px;
 	}
 }

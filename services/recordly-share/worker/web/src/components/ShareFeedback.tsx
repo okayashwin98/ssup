@@ -1,42 +1,33 @@
+import { Avatar, Button, Card, Input, Modal, Tabs, TextField, toast } from "@heroui/react";
 import {
-	Avatar,
-	Button,
-	Card,
-	Input,
-	Spinner,
-	Tabs,
-	TextArea,
-	TextField,
-	toast,
-} from "@heroui/react";
-import {
-	ChatCenteredIcon,
+	ArrowUpIcon,
+	ChatCenteredTextIcon,
 	ChatCircleIcon,
 	InfoIcon,
 	LinkSimpleIcon,
-	PaperPlaneTiltIcon,
 	TextAlignLeftIcon,
 } from "@phosphor-icons/react";
 import {
+	type Dispatch,
+	type FormEvent,
+	type RefObject,
+	type SetStateAction,
 	useEffect,
+	useLayoutEffect,
 	useRef,
 	useState,
 	useSyncExternalStore,
-	type Dispatch,
-	type SetStateAction,
-	type RefObject,
 } from "react";
 import {
-	fetchComments,
+	type Comment,
+	fetchAllComments,
 	formatDate,
 	formatTimestamp,
 	postComment,
-	type Comment,
 	type ShareData,
 } from "../scripts/api";
 import { timestampParts } from "../scripts/shareModel";
-import { copyLink, Notice } from "./ShareUI";
-import PagedPanel from "./PagedPanel";
+import { copyLink, Spinner } from "./ShareUI";
 
 interface Props {
 	data: ShareData;
@@ -51,6 +42,52 @@ interface Props {
 }
 
 const phoneQuery = "(max-width: 760px)";
+const NAME_KEY = "recordly-comment-name";
+
+/** Viewers comment under one of these until they pick their own name. */
+export const VIEWER_NAMES = [
+	"Curious Otter",
+	"Brave Fox",
+	"Gentle Panda",
+	"Quiet Owl",
+	"Swift Falcon",
+	"Sunny Koala",
+	"Clever Raven",
+	"Calm Turtle",
+	"Bright Hummingbird",
+	"Bold Tiger",
+	"Happy Dolphin",
+	"Witty Penguin",
+	"Lucky Rabbit",
+	"Cosy Bear",
+	"Keen Hawk",
+	"Merry Llama",
+	"Nimble Squirrel",
+	"Kind Elephant",
+	"Jolly Seal",
+	"Wise Badger",
+];
+
+/** The saved commenter name, or a random viewer name that is then remembered. */
+function savedName() {
+	try {
+		const stored = localStorage.getItem(NAME_KEY)?.trim();
+		if (stored) return stored;
+	} catch {
+		/* Storage can be disabled. */
+	}
+	const name = VIEWER_NAMES[Math.floor(Math.random() * VIEWER_NAMES.length)];
+	saveName(name);
+	return name;
+}
+
+function saveName(name: string) {
+	try {
+		localStorage.setItem(NAME_KEY, name);
+	} catch {
+		/* The name still works for this visit. */
+	}
+}
 
 /** True on phone-width screens, matching the page's phone layout. */
 function usePhoneWidth() {
@@ -62,6 +99,84 @@ function usePhoneWidth() {
 		},
 		() => window.matchMedia(phoneQuery).matches,
 		() => false,
+	);
+}
+
+let measureContext: CanvasRenderingContext2D | null = null;
+
+/** Whether the draft needs more than one line in the single-line comment box. */
+function needsMoreLines(box: HTMLElement | null, field: HTMLTextAreaElement | null, text: string) {
+	if (!text) return false;
+	if (text.includes("\n")) return true;
+	if (!box || !field) return false;
+	measureContext ??= document.createElement("canvas").getContext("2d");
+	if (!measureContext) return false;
+	const style = getComputedStyle(field);
+	measureContext.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+	// Box padding 4+4, send button 40, gap 4, text padding 12+12.
+	const room = box.clientWidth - 8 - 40 - 4 - 24;
+	return measureContext.measureText(text).width > room - 1;
+}
+
+function NameModal({
+	name,
+	open,
+	onClose,
+	onSave,
+}: {
+	name: string;
+	open: boolean;
+	onClose: () => void;
+	onSave: (name: string) => void;
+}) {
+	const [draft, setDraft] = useState(name);
+	useEffect(() => {
+		if (open) setDraft(name);
+	}, [open, name]);
+	const trimmed = draft.trim();
+	function save(event?: FormEvent) {
+		event?.preventDefault();
+		if (trimmed) onSave(trimmed.slice(0, 100));
+	}
+	return (
+		<Modal
+			isOpen={open}
+			onOpenChange={(isOpen) => {
+				if (!isOpen) onClose();
+			}}
+		>
+			<Modal.Backdrop className="name-modal-backdrop">
+				<Modal.Container placement="center">
+					<Modal.Dialog className="name-modal" aria-labelledby="name-modal-title">
+						<form onSubmit={save} className="name-modal-form">
+							<div className="name-modal-heading">
+								<h2 id="name-modal-title">Your name</h2>
+								<p>
+									Shown next to your comments on this recording. You can change it
+									any time.
+								</p>
+							</div>
+							<TextField
+								aria-label="Your name"
+								value={draft}
+								onChange={setDraft}
+								className="name-modal-field"
+							>
+								<Input maxLength={100} autoComplete="name" autoFocus />
+							</TextField>
+							<div className="name-modal-actions">
+								<Button variant="ghost" onPress={onClose}>
+									Cancel
+								</Button>
+								<Button type="submit" isDisabled={!trimmed}>
+									Save
+								</Button>
+							</div>
+						</form>
+					</Modal.Dialog>
+				</Modal.Container>
+			</Modal.Backdrop>
+		</Modal>
 	);
 }
 
@@ -77,14 +192,16 @@ export default function ShareFeedback({
 	setSelectedTab,
 }: Props) {
 	const [name, setName] = useState("");
+	const [naming, setNaming] = useState(false);
 	const [text, setText] = useState("");
 	const [lockedTime, setLockedTime] = useState<number | null>(null);
 	const [posting, setPosting] = useState(false);
 	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState("");
-	const [page, setPage] = useState(1);
-	const [total, setTotal] = useState(0);
-	const [moreLoading, setMoreLoading] = useState(false);
+	const [loadError, setLoadError] = useState("");
+	const [postError, setPostError] = useState("");
+	const error = postError || loadError;
+	const [multiline, setMultiline] = useState(false);
+	const commentBox = useRef<HTMLDivElement>(null);
 	// A draft is pinned to where typing began; jumping to another moment moves the pin there.
 	const lastTime = useRef(time);
 	useEffect(() => {
@@ -101,24 +218,44 @@ export default function ShareFeedback({
 		(found, comment, i) => (comment.timestamp <= time + 0.3 ? i : found),
 		-1,
 	);
+	const pinnedTime = lockedTime ?? time;
+
+	// Wrapping text turns the pill into a taller box with the send button below the text.
+	useLayoutEffect(() => {
+		const update = () =>
+			setMultiline(needsMoreLines(commentBox.current, composerRef.current, text));
+		update();
+		const box = commentBox.current;
+		if (!box) return;
+		const observer = new ResizeObserver(update);
+		observer.observe(box);
+		return () => observer.disconnect();
+	}, [text, composerRef]);
+	// The taller box grows with the text, up to a limit, then scrolls.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: re-measures whenever the text changes.
+	useLayoutEffect(() => {
+		const field = composerRef.current;
+		if (!field) return;
+		field.style.height = "";
+		if (!multiline) return;
+		field.style.height = "auto";
+		field.style.height = `${Math.min(field.scrollHeight, 140)}px`;
+	}, [text, multiline, composerRef]);
 
 	useEffect(() => {
-		try {
-			setName(localStorage.getItem("recordly-comment-name") || "");
-		} catch {
-			/* Storage can be disabled. */
-		}
+		setName(savedName());
 		let cancelled = false;
-		fetchComments(data.shareCode)
+		fetchAllComments(data.shareCode)
 			.then((result) => {
 				if (cancelled) return;
-				setComments([...result.comments].sort((a, b) => a.timestamp - b.timestamp));
-				setTotal(result.total);
+				setComments(
+					[...result.comments].sort((a, b) => a.timestamp - b.timestamp || a.id - b.id),
+				);
 				setLoading(false);
 			})
 			.catch(() => {
 				if (!cancelled) {
-					setError("Comments could not be loaded. Reload the page to try again.");
+					setLoadError("Comments could not be loaded. Reload to try again.");
 					setLoading(false);
 				}
 			});
@@ -127,31 +264,11 @@ export default function ShareFeedback({
 		};
 	}, [data.shareCode, setComments]);
 
-	async function loadMore() {
-		setMoreLoading(true);
-		try {
-			const result = await fetchComments(data.shareCode, page + 1);
-			setComments((current) =>
-				[
-					...new Map(
-						[...current, ...result.comments].map((comment) => [comment.id, comment]),
-					).values(),
-				].sort((a, b) => a.timestamp - b.timestamp || a.id - b.id),
-			);
-			setTotal(result.total);
-			setPage(page + 1);
-		} catch {
-			toast.danger("Could not load more comments. Try again.");
-		} finally {
-			setMoreLoading(false);
-		}
-	}
-
 	async function submit() {
 		if (posting || !name.trim() || !text.trim()) return;
-		const timestamp = lockedTime ?? time;
+		const timestamp = pinnedTime;
 		setPosting(true);
-		setError("");
+		setPostError("");
 		try {
 			const id = await postComment(data.shareCode, timestamp, name.trim(), text.trim());
 			setComments((current) =>
@@ -164,27 +281,27 @@ export default function ShareFeedback({
 						text: text.trim(),
 						created_at: new Date().toISOString().slice(0, 19),
 					},
-				].sort((a, b) => a.timestamp - b.timestamp),
+				].sort((a, b) => a.timestamp - b.timestamp || a.id - b.id),
 			);
-			setTotal(total + 1);
 			setText("");
 			setLockedTime(null);
-			try {
-				localStorage.setItem("recordly-comment-name", name.trim());
-			} catch {
-				/* Posting does not require storage. */
-			}
 			toast.success(`Comment posted at ${formatTimestamp(timestamp)}`);
 		} catch {
-			setError("Could not post your comment. Your draft is saved here—please try again.");
+			setPostError("Could not post your comment. Please try again.");
 		} finally {
 			setPosting(false);
 		}
 	}
 
+	const canSend = Boolean(name.trim() && text.trim()) && !posting;
+
 	return (
 		<Card className="feedback-card">
-			{!tabbed && <h2 className="feedback-title">Comments</h2>}
+			{!tabbed && (
+				<div className="feedback-header">
+					<h2 className="feedback-title">Comments</h2>
+				</div>
+			)}
 			<Tabs
 				selectedKey={tabbed ? selectedTab : "comments"}
 				onSelectionChange={(key) => setSelectedTab(String(key))}
@@ -195,9 +312,11 @@ export default function ShareFeedback({
 					<Tabs.List aria-label="Recording feedback">
 						<Tabs.Tab
 							id="comments"
-							aria-label={total > 0 ? `Comments, ${total}` : "Comments"}
+							aria-label={
+								comments.length > 0 ? `Comments, ${comments.length}` : "Comments"
+							}
 						>
-							<ChatCenteredIcon size={18} />
+							<ChatCenteredTextIcon size={18} />
 							<Tabs.Indicator />
 						</Tabs.Tab>
 						{showTranscript && (
@@ -214,157 +333,142 @@ export default function ShareFeedback({
 						)}
 					</Tabs.List>
 				</Tabs.ListContainer>
-				<Tabs.Panel id="comments">
-					<PagedPanel label="Comments">
-						{loading ? (
-							<div className="empty-feedback">
-								<Spinner aria-label="Loading comments" />
-							</div>
-						) : !comments.length ? (
-							<div className="empty-feedback">
-								<ChatCircleIcon size={28} />
-								<h2>Start the conversation</h2>
-								<p>Leave feedback at the exact moment you’re watching.</p>
-							</div>
-						) : (
-							comments.map((comment, i) => (
-								<article
-									className="comment-item"
-									data-active={i === activeIndex}
-									key={comment.id}
-								>
-									<div className="comment-heading">
-										<Avatar size="sm">
-											<Avatar.Fallback>
-												{comment.author_name.slice(0, 2).toUpperCase()}
-											</Avatar.Fallback>
-										</Avatar>
-										<strong>{comment.author_name}</strong>
-										<Button
-											size="sm"
-											variant="ghost"
-											aria-label={`Jump to ${formatTimestamp(comment.timestamp)}`}
-											onPress={() => seek(comment.timestamp)}
-										>
-											<span className="timestamp">
-												{formatTimestamp(comment.timestamp)}
-											</span>
-										</Button>
-									</div>
-									<p>
-										{timestampParts(comment.text, duration).map((part, n) =>
-											part.time === undefined ? (
-												part.text
-											) : (
-												<Button
-													key={n}
-													size="sm"
-													variant="ghost"
-													className="inline-timestamp timestamp"
-													onPress={() => seek(part.time!)}
-												>
-													{part.text}
-												</Button>
-											),
-										)}
-									</p>
-									<span className="comment-date">
-										{formatDate(comment.created_at)}
-									</span>
-								</article>
-							))
-						)}
-						{comments.length < total && (
-							<Button
-								size="sm"
-								variant="ghost"
-								isPending={moreLoading}
-								onPress={() => void loadMore()}
+				<Tabs.Panel id="comments" aria-label="Comments">
+					{loading ? (
+						<div className="empty-feedback">
+							<Spinner label="Loading comments" />
+						</div>
+					) : !comments.length ? (
+						<div className="empty-feedback">
+							<ChatCircleIcon size={28} />
+							<h2>Start the conversation</h2>
+							<p>Leave feedback at the exact moment you’re watching.</p>
+						</div>
+					) : (
+						comments.map((comment, i) => (
+							<article
+								className="comment-item"
+								data-active={i === activeIndex}
+								key={comment.id}
 							>
-								Load more comments
-							</Button>
-						)}
-					</PagedPanel>
+								<div className="comment-heading">
+									<Avatar size="sm">
+										<Avatar.Fallback>
+											{comment.author_name.slice(0, 2).toUpperCase()}
+										</Avatar.Fallback>
+									</Avatar>
+									<strong>{comment.author_name}</strong>
+									<Button
+										size="sm"
+										variant="ghost"
+										aria-label={`Jump to ${formatTimestamp(comment.timestamp)}`}
+										onPress={() => seek(comment.timestamp)}
+									>
+										<span className="timestamp">
+											{formatTimestamp(comment.timestamp)}
+										</span>
+									</Button>
+								</div>
+								<p>
+									{timestampParts(comment.text, duration).map((part, n) =>
+										part.time === undefined ? (
+											part.text
+										) : (
+											<Button
+												key={n}
+												size="sm"
+												variant="ghost"
+												className="inline-timestamp timestamp"
+												onPress={() => seek(part.time!)}
+											>
+												{part.text}
+											</Button>
+										),
+									)}
+								</p>
+								<span className="comment-date">
+									{formatDate(comment.created_at)}
+								</span>
+							</article>
+						))
+					)}
 				</Tabs.Panel>
 				{showTranscript && (
-					<Tabs.Panel id="transcript">
-						<PagedPanel label="Transcript">
-							{data.segments.map((segment, i) => (
-								<article
-									key={i}
-									className="transcript-item"
-									data-active={
-										time >= segment.start_time && time < segment.end_time
-									}
-								>
-									<div className="transcript-heading">
-										<Button
-											size="sm"
-											variant="ghost"
-											onPress={() => seek(segment.start_time)}
-										>
-											<span className="timestamp">
-												{formatTimestamp(segment.start_time)}
-											</span>
-										</Button>
-										{segment.speaker && <span>{segment.speaker}</span>}
-										<Button
-											size="sm"
-											variant="ghost"
-											isIconOnly
-											className="copy-timestamp"
-											aria-label={`Copy link to ${formatTimestamp(segment.start_time)}`}
-											onPress={() => void copyLink(segment.start_time)}
-										>
-											<LinkSimpleIcon size={15} />
-										</Button>
-									</div>
+					<Tabs.Panel id="transcript" aria-label="Transcript">
+						{data.segments.map((segment, i) => (
+							<article
+								key={i}
+								className="transcript-item"
+								data-active={time >= segment.start_time && time < segment.end_time}
+							>
+								<div className="transcript-heading">
 									<Button
+										size="sm"
 										variant="ghost"
-										className="transcript-seek"
 										onPress={() => seek(segment.start_time)}
 									>
-										{segment.text}
+										<span className="timestamp">
+											{formatTimestamp(segment.start_time)}
+										</span>
 									</Button>
-								</article>
-							))}
-						</PagedPanel>
+									{segment.speaker && (
+										<span className="transcript-speaker">
+											{segment.speaker}
+										</span>
+									)}
+									<Button
+										size="sm"
+										variant="ghost"
+										isIconOnly
+										className="copy-timestamp"
+										aria-label={`Copy link to ${formatTimestamp(segment.start_time)}`}
+										onPress={() => void copyLink(segment.start_time)}
+									>
+										<LinkSimpleIcon size={16} />
+									</Button>
+								</div>
+								<Button
+									variant="ghost"
+									className="transcript-seek"
+									onPress={() => seek(segment.start_time)}
+								>
+									{segment.text}
+								</Button>
+							</article>
+						))}
 					</Tabs.Panel>
 				)}
 				{showDetails && (
-					<Tabs.Panel id="details">
-						<PagedPanel label="Details">
+					<Tabs.Panel id="details" aria-label="Details" className="details-panel">
+						<section className="recording-details">
+							<h2>Recording</h2>
+							<p>{data.video.title}</p>
+						</section>
+						{data.video.summary && (
 							<section className="recording-details">
-								<h2>Recording</h2>
-								<p>{data.video.title}</p>
+								<h2>Summary</h2>
+								<p>{data.video.summary}</p>
 							</section>
-							{data.video.summary && (
-								<section className="recording-details">
-									<h2>Summary</h2>
-									<p>{data.video.summary}</p>
-								</section>
-							)}
-							{data.chapters.length > 0 && (
-								<section className="recording-details">
-									<h2>Chapters</h2>
-									<div className="chapter-list">
-										{data.chapters.map((chapter, index) => (
-											<Button
-												key={index}
-												size="sm"
-												variant="ghost"
-												onPress={() => seek(chapter.timestamp)}
-											>
-												<span className="timestamp">
-													{formatTimestamp(chapter.timestamp)}
-												</span>
-												{chapter.title}
-											</Button>
-										))}
-									</div>
-								</section>
-							)}
-						</PagedPanel>
+						)}
+						{data.chapters.length > 0 && (
+							<section className="recording-details">
+								<h2>Chapters</h2>
+								<div className="chapter-list">
+									{data.chapters.map((chapter, index) => (
+										<Button
+											key={index}
+											variant="ghost"
+											onPress={() => seek(chapter.timestamp)}
+										>
+											<span className="timestamp">
+												{formatTimestamp(chapter.timestamp)}
+											</span>
+											{chapter.title}
+										</Button>
+									))}
+								</div>
+							</section>
+						)}
 					</Tabs.Panel>
 				)}
 			</Tabs>
@@ -376,54 +480,77 @@ export default function ShareFeedback({
 					void submit();
 				}}
 			>
-				{error && <Notice>{error}</Notice>}
-				<TextField
-					name="author"
-					aria-label="Name"
-					value={name}
-					onChange={setName}
-					isRequired
-					isDisabled={posting}
+				{error && (
+					<p className="composer-error" role="alert">
+						{error}
+					</p>
+				)}
+				{/* The send button sits inside the comment field. */}
+				<div
+					ref={commentBox}
+					className="comment-box"
+					data-multiline={multiline}
+					data-disabled={posting}
 				>
-					<Input maxLength={100} autoComplete="name" placeholder="Name" />
-				</TextField>
-				{/* The send button sits inside the comment field and shows the time the comment is pinned to. */}
-				<div className="comment-box">
-					<TextField
+					<textarea
+						ref={composerRef}
 						name="comment"
 						aria-label="Comment"
+						rows={1}
+						maxLength={2000}
+						placeholder="Share your thoughts…"
 						value={text}
-						onChange={(value) => {
+						disabled={posting}
+						onChange={(e) => {
+							const value = e.currentTarget.value;
 							setText(value);
+							if (postError) setPostError("");
 							setLockedTime(value.trim() ? (lockedTime ?? time) : null);
 						}}
-						isRequired
-						isDisabled={posting}
-					>
-						<TextArea
-							ref={composerRef}
-							maxLength={2000}
-							placeholder="Share your thoughts…"
-							onKeyDown={(e) => {
-								if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-									e.preventDefault();
-									void submit();
-								}
-							}}
-						/>
-					</TextField>
+						onKeyDown={(e) => {
+							if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+								e.preventDefault();
+								void submit();
+							}
+						}}
+					/>
 					<Button
 						type="submit"
-						size="sm"
-						aria-label={`Post comment at ${formatTimestamp(lockedTime ?? time)}`}
-						isPending={posting}
-						isDisabled={!name.trim() || !text.trim() || posting}
+						isIconOnly
+						className="send-button"
+						aria-label={`Post comment at ${formatTimestamp(pinnedTime)}`}
+						isDisabled={!canSend}
 					>
-						<span className="timestamp">{formatTimestamp(lockedTime ?? time)}</span>
-						<PaperPlaneTiltIcon size={15} />
+						<ArrowUpIcon size={16} />
 					</Button>
 				</div>
+				<div className="composer-meta">
+					<span>
+						as{" "}
+						<button
+							type="button"
+							className="composer-name"
+							aria-label={`Commenting as ${name}. Change name`}
+							onClick={() => setNaming(true)}
+						>
+							{name}
+						</button>
+					</span>
+					<span>
+						at <span className="composer-time">{formatTimestamp(pinnedTime)}</span>
+					</span>
+				</div>
 			</form>
+			<NameModal
+				name={name}
+				open={naming}
+				onClose={() => setNaming(false)}
+				onSave={(value) => {
+					setName(value);
+					saveName(value);
+					setNaming(false);
+				}}
+			/>
 		</Card>
 	);
 }

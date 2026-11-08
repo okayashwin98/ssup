@@ -1,23 +1,30 @@
-import ThemeToggle from "./ThemeToggle";
 import { Button, Input, Label, Skeleton, TextField, toast } from "@heroui/react";
-import { LockKeyIcon, ArrowClockwiseIcon } from "@phosphor-icons/react";
+import { ArrowClockwiseIcon } from "@phosphor-icons/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-	fetchShareData,
-	fetchReactions,
-	postReaction,
-	verifyPassword,
-	isShareData,
-	isPasswordRequired,
-	isExpired,
-	formatTimestamp,
-	type ShareData,
 	type Comment,
+	fetchReactions,
+	fetchShareData,
+	formatTimestamp,
+	isExpired,
+	isPasswordRequired,
+	isShareData,
+	postReaction,
 	type Reaction,
+	type ShareData,
+	verifyPassword,
 } from "../scripts/api";
-import SharePlayer from "./SharePlayer";
 import ShareFeedback from "./ShareFeedback";
-import { CenteredCard, Notice, CopyButton, Notifications } from "./ShareUI";
+import SharePlayer from "./SharePlayer";
+import {
+	CenteredCard,
+	CopyButton,
+	Notifications,
+	type Owner,
+	OwnerAvatar,
+	OwnerBrand,
+} from "./ShareUI";
+import ThemeToggle from "./ThemeToggle";
 
 const reactions = [
 	{ emoji: "👍", label: "Like" },
@@ -28,24 +35,6 @@ const reactions = [
 	{ emoji: "👏", label: "Applause" },
 ];
 
-/** The owner's photo, or their initials until one is set. */
-function CreatorAvatar({ creator }: { creator: ShareData["creator"] }) {
-	if (creator?.avatarUrl) return <img className="viewer-avatar" src={creator.avatarUrl} alt="" />;
-	if (!creator?.name) return null;
-	const initials = creator.name
-		.split(/\s+/)
-		.filter(Boolean)
-		.slice(0, 2)
-		.map((part) => part[0])
-		.join("")
-		.toUpperCase();
-	return (
-		<span className="viewer-avatar viewer-avatar-initials" aria-hidden="true">
-			{initials}
-		</span>
-	);
-}
-
 function Recording({ data }: { data: ShareData }) {
 	const videoRef = useRef<HTMLVideoElement>(null);
 	const composerRef = useRef<HTMLTextAreaElement>(null);
@@ -53,10 +42,6 @@ function Recording({ data }: { data: ShareData }) {
 	const [duration, setDuration] = useState(data.video.duration);
 	const [comments, setComments] = useState<Comment[]>([]);
 	const [reactionEvents, setReactionEvents] = useState<Reaction[]>([]);
-	const counts = reactionEvents.reduce<Record<string, number>>((result, item) => {
-		result[item.emoji] = (result[item.emoji] || 0) + 1;
-		return result;
-	}, {});
 	const [reacting, setReacting] = useState<string | null>(null);
 	const [selectedTab, setSelectedTab] = useState("comments");
 	const seek = useCallback((value: number) => {
@@ -74,7 +59,7 @@ function Recording({ data }: { data: ShareData }) {
 				if (!cancelled) setReactionEvents((current) => [...items, ...current]);
 			})
 			.catch(() => {
-				/* Feedback remains available if counts fail to load. */
+				/* Feedback remains available if reactions fail to load. */
 			});
 		return () => {
 			cancelled = true;
@@ -105,7 +90,7 @@ function Recording({ data }: { data: ShareData }) {
 			<div className="share-workspace">
 				<main className="recording-column">
 					<div className="recording-heading viewer-heading">
-						<CreatorAvatar creator={data.creator} />
+						<OwnerAvatar owner={data.creator} />
 						<h1 className="viewer-crumb" title={video.title}>
 							{data.creator?.name && (
 								<span className="viewer-crumb-owner">{data.creator.name} / </span>
@@ -135,12 +120,11 @@ function Recording({ data }: { data: ShareData }) {
 									key={emoji}
 									size="sm"
 									variant="ghost"
-									aria-label={`${label}${counts[emoji] ? `, ${counts[emoji]} ${counts[emoji] === 1 ? "reaction" : "reactions"}` : ""}`}
+									aria-label={label}
 									isDisabled={reacting !== null}
 									onPress={() => void react(emoji)}
 								>
 									<span aria-hidden="true">{emoji}</span>
-									{counts[emoji] > 0 && <span>{counts[emoji]}</span>}
 								</Button>
 							))}
 						</div>
@@ -170,6 +154,7 @@ export default function SharePage() {
 		"loading",
 	);
 	const [title, setTitle] = useState("Protected recording");
+	const [owner, setOwner] = useState<Owner | null>(null);
 	const [password, setPassword] = useState("");
 	const [unlocking, setUnlocking] = useState(false);
 	const [error, setError] = useState("");
@@ -185,6 +170,7 @@ export default function SharePage() {
 			} else if (isPasswordRequired(result)) {
 				setView("password");
 				setTitle(result.title);
+				setOwner(result.creator?.name ? result.creator : null);
 				document.title = `${result.title} — SuperShare`;
 			} else if (isShareData(result)) {
 				setData(result);
@@ -237,10 +223,11 @@ export default function SharePage() {
 			) : view === "recording" && data ? (
 				<Recording data={data} />
 			) : (
-				<CenteredCard>
+				<CenteredCard
+					header={view === "password" && owner ? <OwnerBrand owner={owner} /> : undefined}
+				>
 					{view === "password" ? (
 						<>
-							<LockKeyIcon size={28} />
 							<h1>{title}</h1>
 							<p>This recording is password protected.</p>
 							<form
@@ -255,6 +242,7 @@ export default function SharePage() {
 									onChange={setPassword}
 									isRequired
 									isDisabled={unlocking}
+									className="gate-field"
 								>
 									<Label>Password</Label>
 									<Input
@@ -262,8 +250,12 @@ export default function SharePage() {
 										autoComplete="current-password"
 										autoFocus
 									/>
+									{error && (
+										<p className="field-error-text" role="alert">
+											{error}
+										</p>
+									)}
 								</TextField>
-								{error && <Notice>{error}</Notice>}
 								<Button
 									type="submit"
 									isPending={unlocking}

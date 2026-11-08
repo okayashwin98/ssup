@@ -1,39 +1,29 @@
 // Adapted from Voom (MIT), Copyright (c) 2026 Aritro Paul.
 // See ../../../LICENSE and ../../../../../THIRD_PARTY_NOTICES.md.
+import { Button, Card, Dropdown, Label, Link, Slider, Tooltip, toast } from "@heroui/react";
 import {
-	Button,
-	Card,
-	Dropdown,
-	Label,
-	Link,
-	Slider,
-	Spinner,
-	Tooltip,
-	toast,
-} from "@heroui/react";
-import {
-	ArrowsOutIcon,
 	ArrowCounterClockwiseIcon,
+	ArrowsOutSimpleIcon,
+	ChatCircleIcon,
+	ClockClockwiseIcon,
+	ClockCounterClockwiseIcon,
 	ClosedCaptioningIcon,
+	GearSixIcon,
 	PauseIcon,
 	PictureInPictureIcon,
 	PlayIcon,
 	SpeakerHighIcon,
 	SpeakerSlashIcon,
-	ChatCircleIcon,
-	GearSixIcon,
-	ClockCounterClockwiseIcon,
-	ClockClockwiseIcon,
 } from "@phosphor-icons/react";
 import {
+	type CSSProperties,
+	type ReactNode,
+	type RefObject,
 	useCallback,
 	useEffect,
 	useLayoutEffect,
 	useRef,
 	useState,
-	type CSSProperties,
-	type ReactNode,
-	type RefObject,
 } from "react";
 import type { Comment, Reaction, ShareData } from "../scripts/api";
 import { formatDate, formatTimestamp } from "../scripts/api";
@@ -46,7 +36,9 @@ function formatCoverDuration(seconds: number) {
 	const total = Math.max(1, Math.round(seconds));
 	return total < 60 ? `${total}s` : formatTimestamp(total);
 }
+
 import { clusterTimeline, type TimelineItem } from "../scripts/shareModel";
+import { Spinner } from "./ShareUI";
 
 interface Props {
 	data: ShareData;
@@ -86,7 +78,7 @@ function SpeedMenu({
 	return (
 		<Dropdown onOpenChange={onOpenChange}>
 			{trigger}
-			<Dropdown.Popover className="speed-menu">
+			<Dropdown.Popover className={`speed-menu${captions ? " settings-menu" : ""}`}>
 				<Dropdown.Menu
 					aria-label={captions ? "Player settings" : "Playback speed"}
 					selectionMode="single"
@@ -354,7 +346,7 @@ export default function SharePlayer({
 		>
 			<Card
 				ref={shell}
-				className={`video-shell${controlsShown ? " controls-shown" : ""}${started && !controlsShown ? " controls-hidden" : ""}`}
+				className={`video-shell${controlsShown ? " controls-shown" : ""}${started && !controlsShown ? " controls-hidden" : ""}${started ? " is-started" : ""}${ended ? " is-ended" : ""}`}
 				onPointerMove={wakeControls}
 				onPointerDown={(event) => {
 					tapIsPhoneTouch.current =
@@ -441,6 +433,7 @@ export default function SharePlayer({
 							<button
 								type="button"
 								className="video-cover"
+								data-ended={ended}
 								aria-label={`${ended ? "Replay" : "Play"} ${data.video.title}`}
 								onClick={() => {
 									if (ended) seek(0);
@@ -474,7 +467,7 @@ export default function SharePlayer({
 					</div>
 					{waiting && playing && (
 						<div className="video-play-overlay">
-							<Spinner aria-label="Buffering video" />
+							<Spinner label="Buffering video" />
 						</div>
 					)}
 					{error && (
@@ -554,7 +547,7 @@ export default function SharePlayer({
 								}
 								trigger={
 									<Button isIconOnly variant="ghost" aria-label="Settings">
-										<GearSixIcon size={26} />
+										<GearSixIcon size={20} />
 									</Button>
 								}
 							/>
@@ -564,7 +557,7 @@ export default function SharePlayer({
 								aria-label="Back 5 seconds"
 								onPress={() => seek(time - 5)}
 							>
-								<ClockCounterClockwiseIcon size={28} />
+								<ClockCounterClockwiseIcon size={20} />
 							</Button>
 							<Button
 								isIconOnly
@@ -574,9 +567,9 @@ export default function SharePlayer({
 								onPress={() => void togglePlay()}
 							>
 								{playing ? (
-									<PauseIcon size={34} weight="fill" />
+									<PauseIcon size={20} weight="fill" />
 								) : (
-									<PlayIcon size={34} weight="fill" />
+									<PlayIcon size={20} weight="fill" />
 								)}
 							</Button>
 							<Button
@@ -585,7 +578,7 @@ export default function SharePlayer({
 								aria-label="Forward 5 seconds"
 								onPress={() => seek(time + 5)}
 							>
-								<ClockClockwiseIcon size={28} />
+								<ClockClockwiseIcon size={20} />
 							</Button>
 							<Button
 								isIconOnly
@@ -593,7 +586,7 @@ export default function SharePlayer({
 								aria-label="Fullscreen"
 								onPress={() => void fullscreen()}
 							>
-								<ArrowsOutIcon size={26} />
+								<ArrowsOutSimpleIcon size={20} />
 							</Button>
 						</div>
 						<span className="touch-time">
@@ -651,7 +644,7 @@ export default function SharePlayer({
 									) : cluster.members[0].kind === "reaction" ? (
 										<span aria-hidden="true">{cluster.members[0].emoji}</span>
 									) : cluster.members[0].kind === "comment" ? (
-										<ChatCircleIcon size={12} />
+										<ChatCircleIcon size={16} />
 									) : (
 										"•"
 									)}
@@ -693,9 +686,9 @@ export default function SharePlayer({
 							onPress={() => void togglePlay()}
 						>
 							{playing ? (
-								<PauseIcon size={18} weight="fill" />
+								<PauseIcon size={16} weight="fill" />
 							) : (
-								<PlayIcon size={18} weight="fill" />
+								<PlayIcon size={16} weight="fill" />
 							)}
 						</Button>
 						<Button
@@ -706,7 +699,7 @@ export default function SharePlayer({
 							aria-label="Back 5 seconds"
 							onPress={() => seek(time - 5)}
 						>
-							<ClockCounterClockwiseIcon size={18} />
+							<ClockCounterClockwiseIcon size={16} />
 						</Button>
 						<Button
 							isIconOnly
@@ -716,7 +709,7 @@ export default function SharePlayer({
 							aria-label="Forward 5 seconds"
 							onPress={() => seek(time + 5)}
 						>
-							<ClockClockwiseIcon size={18} />
+							<ClockClockwiseIcon size={16} />
 						</Button>
 						{/* The volume bar slides out while the speaker button or bar is hovered. */}
 						<div className="volume-group">
@@ -728,9 +721,9 @@ export default function SharePlayer({
 								onPress={toggleMute}
 							>
 								{muted || volume === 0 ? (
-									<SpeakerSlashIcon size={18} />
+									<SpeakerSlashIcon size={16} />
 								) : (
-									<SpeakerHighIcon size={18} />
+									<SpeakerHighIcon size={16} />
 								)}
 							</Button>
 							<Slider
@@ -767,7 +760,7 @@ export default function SharePlayer({
 								aria-pressed={captions}
 								onPress={() => setCaptions(!captions)}
 							>
-								<ClosedCaptioningIcon size={18} />
+								<ClosedCaptioningIcon size={16} />
 							</Button>
 						)}
 						<SpeedMenu
@@ -778,6 +771,7 @@ export default function SharePlayer({
 								<Button
 									size="sm"
 									variant="ghost"
+									className="speed-control"
 									aria-label={`Playback speed: ${speed}×`}
 								>
 									{speed}×
@@ -793,7 +787,7 @@ export default function SharePlayer({
 								aria-label="Picture in picture"
 								onPress={() => void pictureInPicture()}
 							>
-								<PictureInPictureIcon size={18} />
+								<PictureInPictureIcon size={16} />
 							</Button>
 						)}
 						<Button
@@ -803,7 +797,7 @@ export default function SharePlayer({
 							aria-label="Fullscreen"
 							onPress={() => void fullscreen()}
 						>
-							<ArrowsOutIcon size={18} />
+							<ArrowsOutSimpleIcon size={16} />
 						</Button>
 					</div>
 				</div>

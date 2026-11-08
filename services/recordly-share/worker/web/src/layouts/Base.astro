@@ -1,6 +1,7 @@
 ---
 export interface Props {
 	title: string;
+	bodyClass?: string;
 }
 import "../styles/global.css";
 ---
@@ -36,7 +37,7 @@ import "../styles/global.css";
   <title>{Astro.props.title}</title>
   <slot name="head" />
 </head>
-<body>
+<body class={Astro.props.bodyClass}>
   <slot />
 </body>
 </html>
