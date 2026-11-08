@@ -471,6 +471,10 @@
 .composer[hidden] {
 	display: none;
 }
+/* No line when nothing scrolls behind the comment box. */
+.composer:not([data-overflowing]) {
+	border-top-color: transparent;
+}
 .composer-error {
 	font-size: 12px;
 	font-weight: 500;
@@ -759,6 +763,10 @@
 		rgba(0, 0, 0, 0.35) 55%,
 		rgba(0, 0, 0, 0.05)
 	);
+}
+/* At the end only the replay button shows, so no shade for the title. */
+.video-cover[data-ended="true"] {
+	background: none;
 }
 .video-cover-play {
 	position: absolute;
@@ -1303,6 +1311,10 @@
 	.recording-app .viewer-heading .copy-link-label {
 		display: none;
 	}
+	/* Phones show the owner's photo and the title; the name and slash need the room. */
+	.viewer-crumb-owner {
+		display: none;
+	}
 	/* Finger-sized round buttons in the header. */
 	.viewer-heading-actions .button {
 		width: 44px;
@@ -1468,11 +1480,6 @@
 	}
 	.video-cover-play {
 		width: 40px;
-	}
-	.video-cover[data-ended="true"] .video-cover-text {
-		left: 20px;
-		right: 20px;
-		bottom: 20px;
 	}
 	.video-cover-title {
 		font-size: clamp(16px, 4.6cqw, 22px);

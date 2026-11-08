@@ -202,6 +202,27 @@ export default function ShareFeedback({
 	const error = postError || loadError;
 	const [multiline, setMultiline] = useState(false);
 	const commentBox = useRef<HTMLDivElement>(null);
+	// The line above the comment box shows only once the comments scroll (the panel on desktop, the page on phones).
+	const composerForm = useRef<HTMLFormElement>(null);
+	const [overflowing, setOverflowing] = useState(false);
+	useEffect(() => {
+		const form = composerForm.current;
+		const panel = form?.previousElementSibling?.querySelector<HTMLElement>(".tabs__panel");
+		if (!form || !panel) return;
+		const app = form.closest<HTMLElement>(".recording-app");
+		const scrolls = (el: HTMLElement | null) => !!el && el.scrollHeight > el.clientHeight + 1;
+		const update = () => setOverflowing(scrolls(panel) || scrolls(app));
+		update();
+		const resize = new ResizeObserver(update);
+		resize.observe(panel);
+		if (app) resize.observe(app);
+		const content = new MutationObserver(update);
+		content.observe(panel, { childList: true, subtree: true, characterData: true });
+		return () => {
+			resize.disconnect();
+			content.disconnect();
+		};
+	}, [selectedTab, loading]);
 	// A draft is pinned to where typing began; jumping to another moment moves the pin there.
 	const lastTime = useRef(time);
 	useEffect(() => {
@@ -473,7 +494,9 @@ export default function ShareFeedback({
 				)}
 			</Tabs>
 			<form
+				ref={composerForm}
 				className="composer"
+				data-overflowing={overflowing || undefined}
 				hidden={tabbed && selectedTab !== "comments"}
 				onSubmit={(e) => {
 					e.preventDefault();

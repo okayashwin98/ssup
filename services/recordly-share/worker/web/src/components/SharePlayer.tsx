@@ -427,8 +427,7 @@ export default function SharePlayer({
 								/>
 							)}
 						</video>
-						{/* The title cover shows before the first play, and again at the end with a replay
-            button in place of play. */}
+						{/* The title cover shows before the first play; at the end only the replay button stays. */}
 						{((!started && !error) || (ended && !error && !cta)) && (
 							<button
 								type="button"
@@ -447,6 +446,7 @@ export default function SharePlayer({
 										<PlayIcon size={44} weight="fill" />
 									)}
 								</span>
+								{!ended && (
 								<span className="video-cover-text">
 									<span className="video-cover-title">{data.video.title}</span>
 									<span className="video-cover-meta">
@@ -462,6 +462,7 @@ export default function SharePlayer({
 										</span>
 									</span>
 								</span>
+								)}
 							</button>
 						)}
 					</div>
