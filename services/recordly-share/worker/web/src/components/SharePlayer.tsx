@@ -298,19 +298,24 @@ export default function SharePlayer({
 	useEffect(() => {
 		function keyboard(e: KeyboardEvent) {
 			const target = e.target as HTMLElement;
+			// Typing, dialogs and open menus keep every key.
 			if (
 				e.defaultPrevented ||
 				e.metaKey ||
 				e.ctrlKey ||
 				e.altKey ||
 				target.closest(
-					'input, textarea, select, button, a, [role="slider"], [role="tab"], [role="menuitem"], [contenteditable="true"]',
+					'input:not([type="range"]), textarea, select, [contenteditable="true"], [role="dialog"], [role="menu"], [role="listbox"]',
 				)
 			)
 				return;
+			const key = e.key.toLowerCase();
+			// A focused control keeps Space and Enter; sliders and tabs also keep the arrows.
+			if ((key === " " || key === "enter") && target.closest("button, a, [role='tab']")) return;
+			if (key.startsWith("arrow") && target.closest('[role="slider"], [role="tab"], input[type="range"]')) return;
 			const video = videoRef.current;
 			if (!video) return;
-			switch (e.key.toLowerCase()) {
+			switch (key) {
 				case " ":
 				case "k":
 					e.preventDefault();
@@ -676,6 +681,17 @@ export default function SharePlayer({
 							value={Math.min(time, duration || 0)}
 							disabled={!duration}
 							onChange={(event) => seek(Number(event.currentTarget.value))}
+							onKeyDown={(event) => {
+								// Arrows jump 5s here too, not one 0.1s step; Space plays and pauses.
+								if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+									event.preventDefault();
+									const video = videoRef.current;
+									if (video) seek(video.currentTime + (event.key === "ArrowLeft" ? -5 : 5));
+								} else if (event.key === " ") {
+									event.preventDefault();
+									void togglePlay();
+								}
+							}}
 						/>
 					</div>
 					<div className="video-controls">

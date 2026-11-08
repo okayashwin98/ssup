@@ -226,14 +226,20 @@ export default function SharePage() {
 						aria-label="Loading recording"
 						aria-busy="true"
 					>
-						<div className="recording-column">
-							<div>
+						{/* Same shapes as the page: header, video, reactions, comments. */}
+						<div className="recording-column loading-column">
+							<div className="loading-heading">
+								<Skeleton className="loading-avatar" />
 								<Skeleton className="loading-title" />
-								<Skeleton className="loading-meta" />
 							</div>
 							<Skeleton className="loading-video" />
+							<div className="loading-rail">
+								<Skeleton className="loading-reactions" />
+							</div>
 						</div>
-						<Skeleton className="loading-sidebar" />
+						<aside className="loading-aside">
+							<Skeleton className="loading-sidebar" />
+						</aside>
 					</div>
 				</div>
 			) : view === "recording" && data ? (

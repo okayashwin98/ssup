@@ -682,21 +682,75 @@
 }
 
 /* ---------- Loading skeleton ---------- */
-.loading-title {
-	width: 48%;
-	height: 26px;
+.loading-column {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	min-height: 0;
 }
-.loading-meta {
-	width: 35%;
-	height: 14px;
-	margin-top: 12px;
+.loading-heading {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	height: 48px;
+	flex-shrink: 0;
+}
+.loading-avatar {
+	width: 28px;
+	height: 28px;
+	border-radius: 999px;
+}
+.loading-title {
+	width: min(40%, 320px);
+	height: 18px;
+	border-radius: 6px;
 }
 .loading-video {
-	width: 100%;
-	aspect-ratio: 16 / 9;
+	flex: 1;
+	min-height: 0;
+	border-radius: 16px;
+}
+.loading-rail {
+	display: flex;
+	justify-content: center;
+	flex-shrink: 0;
+}
+.loading-reactions {
+	width: 260px;
+	height: 44px;
+	border-radius: 12px;
+}
+.loading-aside {
+	display: flex;
+	min-height: 0;
 }
 .loading-sidebar {
-	height: 440px;
+	flex: 1;
+	border-radius: 16px;
+}
+@media (max-width: 760px) {
+	.loading-column {
+		gap: 0;
+	}
+	.loading-heading {
+		height: 52px;
+		padding: 0 12px;
+	}
+	.loading-video {
+		flex: none;
+		aspect-ratio: 16 / 9;
+		border-radius: 0;
+	}
+	.loading-rail {
+		height: 63px;
+		align-items: center;
+	}
+	.recording-app .share-workspace > .loading-aside {
+		flex: 1 0 auto;
+	}
+	.loading-sidebar {
+		border-radius: 0;
+	}
 }
 
 /* ---------- Player ---------- */
