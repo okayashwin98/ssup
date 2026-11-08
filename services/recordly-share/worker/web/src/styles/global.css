@@ -774,7 +774,7 @@
 	top: 50%;
 	display: grid;
 	place-items: center;
-	width: clamp(40px, 14cqmin, 104px);
+	width: 52px;
 	aspect-ratio: 1;
 	border-radius: 999px;
 	transform: translate(-50%, -50%);
@@ -785,8 +785,9 @@
 		background 160ms ease;
 }
 .video-cover-play svg {
-	width: 42%;
-	height: 42%;
+	width: 24px;
+	height: 24px;
+	--icon-outline: 0.5px;
 }
 /* Hover styles only where there is a pointer; on touch screens :hover sticks after a tap. */
 @media (hover: hover) {
@@ -1240,11 +1241,36 @@
 	height: 1px;
 	background: var(--separator);
 }
-.share-body .toast {
-	border-radius: 12px;
+/* Messages: dark with white icon and text in both themes, so they stand out. */
+.toast-region--bottom {
+	bottom: var(--toast-bottom, 16px);
+	transition: bottom 200ms ease;
 }
-.share-body .toast__indicator {
+.toast {
+	align-items: center;
+	border-radius: 12px;
+	background: #18181b;
+	box-shadow:
+		0 8px 24px rgb(0 0 0 / 0.24),
+		0 0 0 1px rgb(255 255 255 / 0.06);
+}
+:root.dark .toast,
+:root[data-theme="dark"] .toast {
+	background: #2b2b30;
+}
+.toast .toast__indicator,
+.toast .toast__title,
+.toast .toast__description {
+	color: #fff;
+}
+.toast .toast__indicator {
 	padding: 0;
+	height: 20px;
+}
+.toast .toast__close-button {
+	color: #fff;
+	background: #3f3f46;
+	border-color: transparent;
 }
 .share-body .modal__backdrop {
 	background: var(--backdrop);
@@ -1326,6 +1352,7 @@
 	.viewer-heading-actions .button svg {
 		width: 18px;
 		height: 18px;
+		--icon-outline: 0.6875px;
 	}
 	/* Full width at the top, the recording's own shape, no card corners. */
 	.video-area {
@@ -1441,6 +1468,7 @@
 	.touch-controls .button svg {
 		width: 20px;
 		height: 20px;
+		--icon-outline: 0.625px;
 	}
 	.touch-controls .touch-play {
 		background: rgb(0 0 0 / 0.45);
@@ -1477,9 +1505,6 @@
 		right: 14px;
 		bottom: 12px;
 		gap: 6px;
-	}
-	.video-cover-play {
-		width: 40px;
 	}
 	.video-cover-title {
 		font-size: clamp(16px, 4.6cqw, 22px);
@@ -1573,4 +1598,53 @@
 	.comment-box textarea {
 		font-size: 16px;
 	}
+}
+
+/* ---------- Icons ----------
+   Line icons are 1.25px thick at every size. They are drawn in Phosphor's thin weight
+   (1/32 of the icon size), then outlined by the rest: 1.25px minus size/32. */
+.share-body svg[viewBox="0 0 256 256"]:not(.icon-solid) :is(path, circle, line, polyline, rect, ellipse) {
+	stroke: currentColor;
+	stroke-width: var(--icon-outline, 0.75px);
+	stroke-linejoin: round;
+	vector-effect: non-scaling-stroke;
+}
+.share-body svg[width="12"],
+.share-body svg.size-3 {
+	--icon-outline: 0.875px;
+}
+.share-body svg[width="14"] {
+	--icon-outline: 0.8125px;
+}
+.share-body svg[width="18"] {
+	--icon-outline: 0.6875px;
+}
+.share-body svg[width="20"] {
+	--icon-outline: 0.625px;
+}
+.share-body svg[width="24"] {
+	--icon-outline: 0.5px;
+}
+.share-body svg[width="28"] {
+	--icon-outline: 0.375px;
+}
+/* Inside buttons HeroUI sets the icon size: 16px, or 20px on screens under 640px wide. */
+.share-body .button svg {
+	--icon-outline: 0.75px;
+}
+@media (max-width: 639.98px) {
+	.share-body .button svg {
+		--icon-outline: 0.625px;
+	}
+}
+.share-body .button svg.size-\[18px\] {
+	--icon-outline: 0.6875px;
+}
+@media (max-width: 760px) {
+	.share-body .viewer-heading-actions .button svg {
+		--icon-outline: 0.6875px;
+	}
+}
+.share-body .touch-controls .button svg {
+	--icon-outline: 0.625px;
 }

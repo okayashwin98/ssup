@@ -1,5 +1,5 @@
 import { Button, Input, Label, Skeleton, TextField, toast } from "@heroui/react";
-import { ArrowClockwiseIcon } from "@phosphor-icons/react";
+import { ArrowClockwiseIcon, IconContext } from "@phosphor-icons/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	type Comment,
@@ -25,6 +25,9 @@ import {
 	OwnerBrand,
 } from "./ShareUI";
 import ThemeToggle from "./ThemeToggle";
+
+// Line icons are drawn thin and thickened to 1.25px in CSS (see "Icons" in global.css).
+const LINE_ICONS = { weight: "thin" } as const;
 
 const reactions = [
 	{ emoji: "👍", label: "Like" },
@@ -201,7 +204,7 @@ export default function SharePage() {
 	}
 
 	return (
-		<>
+		<IconContext.Provider value={LINE_ICONS}>
 			<Notifications />
 			{view === "loading" ? (
 				<div className="recording-app">
@@ -285,6 +288,6 @@ export default function SharePage() {
 					)}
 				</CenteredCard>
 			)}
-		</>
+		</IconContext.Provider>
 	);
 }

@@ -1,6 +1,6 @@
 import { Alert, Button, Card, Toast, toast } from "@heroui/react";
 import { LinkSimpleIcon, WarningCircleIcon } from "@phosphor-icons/react";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
 
 export function Brand() {
 	return (
@@ -100,6 +100,44 @@ export function CopyButton({ time = 0, code }: { time?: number; code?: string })
 	);
 }
 
+const TOAST_GAP = 16;
+const TOAST_ROOM = 64;
+
+/** Messages sit at the bottom, lifted to 4px above the comment box whenever they would cover it. */
 export function Notifications() {
+	useEffect(() => {
+		const root = document.documentElement;
+		let frame = 0;
+		const place = () => {
+			cancelAnimationFrame(frame);
+			frame = requestAnimationFrame(() => {
+				const viewport = window.innerHeight;
+				let bottom = TOAST_GAP;
+				const composer = document.querySelector<HTMLElement>(".composer:not([hidden])");
+				const box = composer?.getBoundingClientRect();
+				const region = document.querySelector(".toast-region")?.getBoundingClientRect();
+				const left = region?.width ? region.left : TOAST_GAP;
+				const right = region?.width ? region.right : window.innerWidth - TOAST_GAP;
+				const sideBySide = !box || box.right <= left || box.left >= right;
+				const inToastBand = box && box.top < viewport - TOAST_GAP && box.bottom > viewport - TOAST_GAP - TOAST_ROOM;
+				if (box && !sideBySide && inToastBand) bottom = Math.max(TOAST_GAP, viewport - box.top + 4);
+				root.style.setProperty("--toast-bottom", `${Math.round(bottom)}px`);
+			});
+		};
+		place();
+		const changes = new MutationObserver(place);
+		changes.observe(document.body, { childList: true, subtree: true });
+		const sizes = new ResizeObserver(place);
+		sizes.observe(document.body);
+		window.addEventListener("resize", place);
+		document.addEventListener("scroll", place, { capture: true, passive: true });
+		return () => {
+			cancelAnimationFrame(frame);
+			changes.disconnect();
+			sizes.disconnect();
+			window.removeEventListener("resize", place);
+			document.removeEventListener("scroll", place, { capture: true });
+		};
+	}, []);
 	return <Toast.Provider placement="bottom" />;
 }

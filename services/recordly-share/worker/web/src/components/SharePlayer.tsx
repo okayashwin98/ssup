@@ -441,9 +441,9 @@ export default function SharePlayer({
 							>
 								<span className="video-cover-play" aria-hidden="true">
 									{ended ? (
-										<ArrowCounterClockwiseIcon size={40} weight="bold" />
+										<ArrowCounterClockwiseIcon size={24} />
 									) : (
-										<PlayIcon size={44} weight="fill" />
+										<PlayIcon size={24} weight="fill" className="icon-solid" />
 									)}
 								</span>
 								{!ended && (
@@ -568,9 +568,9 @@ export default function SharePlayer({
 								onPress={() => void togglePlay()}
 							>
 								{playing ? (
-									<PauseIcon size={20} weight="fill" />
+									<PauseIcon size={20} weight="fill" className="icon-solid" />
 								) : (
-									<PlayIcon size={20} weight="fill" />
+									<PlayIcon size={20} weight="fill" className="icon-solid" />
 								)}
 							</Button>
 							<Button
@@ -687,9 +687,9 @@ export default function SharePlayer({
 							onPress={() => void togglePlay()}
 						>
 							{playing ? (
-								<PauseIcon size={16} weight="fill" />
+								<PauseIcon size={16} weight="fill" className="icon-solid" />
 							) : (
-								<PlayIcon size={16} weight="fill" />
+								<PlayIcon size={16} weight="fill" className="icon-solid" />
 							)}
 						</Button>
 						<Button
