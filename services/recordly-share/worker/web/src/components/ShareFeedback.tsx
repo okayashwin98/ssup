@@ -1,4 +1,4 @@
-import { Avatar, Button, Card, Input, Modal, Tabs, TextField, toast } from "@heroui/react";
+import { Avatar, Button, Card, Input, Modal, Tabs, TextField } from "@heroui/react";
 import {
 	ArrowUpIcon,
 	ChatCenteredTextIcon,
@@ -27,7 +27,7 @@ import {
 	type ShareData,
 } from "../scripts/api";
 import { timestampParts } from "../scripts/shareModel";
-import { copyLink, Spinner } from "./ShareUI";
+import { copyLink, notify, Spinner } from "./ShareUI";
 
 interface Props {
 	data: ShareData;
@@ -309,7 +309,7 @@ export default function ShareFeedback({
 			);
 			setText("");
 			setLockedTime(null);
-			toast.success(`Comment posted at ${formatTimestamp(timestamp)}`);
+			notify.success(`Comment posted at ${formatTimestamp(timestamp)}`);
 		} catch {
 			setPostError("Could not post your comment. Please try again.");
 		} finally {

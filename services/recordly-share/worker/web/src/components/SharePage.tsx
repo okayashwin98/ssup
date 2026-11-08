@@ -1,4 +1,4 @@
-import { Button, Input, Label, Skeleton, TextField, toast } from "@heroui/react";
+import { Button, Input, Label, Skeleton, TextField } from "@heroui/react";
 import { ArrowClockwiseIcon, IconContext } from "@phosphor-icons/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -20,6 +20,7 @@ import {
 	CenteredCard,
 	CopyButton,
 	Notifications,
+	notify,
 	type Owner,
 	OwnerAvatar,
 	OwnerBrand,
@@ -79,9 +80,9 @@ function Recording({ data }: { data: ShareData }) {
 				...current,
 				{ timestamp, emoji, created_at: new Date().toISOString() },
 			]);
-			toast.success(`${emoji} Reaction at ${formatTimestamp(timestamp)}`);
+			notify.success(`${emoji} Reaction at ${formatTimestamp(timestamp)}`);
 		} catch {
-			toast.danger("Could not add your reaction. Try again.");
+			notify.danger("Could not add your reaction. Try again.");
 		} finally {
 			setReacting(null);
 		}

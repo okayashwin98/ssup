@@ -1,5 +1,5 @@
 import { Alert, Button, Card, Toast, toast } from "@heroui/react";
-import { LinkSimpleIcon, WarningCircleIcon } from "@phosphor-icons/react";
+import { CheckCircleIcon, LinkSimpleIcon, WarningCircleIcon } from "@phosphor-icons/react";
 import { type ReactNode, useEffect } from "react";
 
 export function Brand() {
@@ -73,14 +73,20 @@ export function CenteredCard({ children, header }: { children: ReactNode; header
 	);
 }
 
+/** Messages with the page's own 1.25px line icons. */
+export const notify = {
+	success: (message: ReactNode) => toast.success(message, { indicator: <CheckCircleIcon size={16} /> }),
+	danger: (message: ReactNode) => toast.danger(message, { indicator: <WarningCircleIcon size={16} /> }),
+};
+
 export async function copyLink(time = 0, code?: string) {
 	const url = new URL(code ? `/s/${code}` : window.location.pathname, window.location.origin);
 	if (time > 0) url.searchParams.set("t", String(Math.floor(time)));
 	try {
 		await navigator.clipboard.writeText(url.href);
-		toast.success("Link copied");
+		notify.success("Link copied");
 	} catch {
-		toast.danger("Could not copy the link. Copy the address from your browser.");
+		notify.danger("Could not copy the link. Copy the address from your browser.");
 	}
 }
 

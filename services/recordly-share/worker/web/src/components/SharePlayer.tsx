@@ -1,6 +1,6 @@
 // Adapted from Voom (MIT), Copyright (c) 2026 Aritro Paul.
 // See ../../../LICENSE and ../../../../../THIRD_PARTY_NOTICES.md.
-import { Button, Card, Dropdown, Label, Link, Slider, Tooltip, toast } from "@heroui/react";
+import { Button, Card, Dropdown, Label, Link, Slider, Tooltip } from "@heroui/react";
 import {
 	ArrowCounterClockwiseIcon,
 	ArrowsOutSimpleIcon,
@@ -38,7 +38,7 @@ function formatCoverDuration(seconds: number) {
 }
 
 import { clusterTimeline, type TimelineItem } from "../scripts/shareModel";
-import { Spinner } from "./ShareUI";
+import { notify, Spinner } from "./ShareUI";
 
 interface Props {
 	data: ShareData;
@@ -224,7 +224,7 @@ export default function SharePlayer({
 			try {
 				await video.play();
 			} catch {
-				toast.danger("Playback could not start. Try again.");
+				notify.danger("Playback could not start. Try again.");
 			}
 	}, [videoRef]);
 	const setRate = useCallback(
@@ -276,14 +276,14 @@ export default function SharePlayer({
 			video.webkitEnterFullscreen();
 			return;
 		}
-		toast.danger("Fullscreen is unavailable in this browser.");
+		notify.danger("Fullscreen is unavailable in this browser.");
 	}, [captions, videoRef]);
 	async function pictureInPicture() {
 		try {
 			if (document.pictureInPictureElement) await document.exitPictureInPicture();
 			else await videoRef.current?.requestPictureInPicture();
 		} catch {
-			toast.danger("Picture in picture is unavailable for this recording.");
+			notify.danger("Picture in picture is unavailable for this recording.");
 		}
 	}
 

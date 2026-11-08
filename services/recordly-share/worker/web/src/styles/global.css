@@ -1302,8 +1302,13 @@
 	bottom: var(--toast-bottom, 16px);
 	transition: bottom 200ms ease;
 }
+/* Hugs its text, centred; the region's width (screen width on phones) is the most it grows, then it wraps. */
 .toast {
-	align-items: center;
+	width: fit-content;
+	max-width: 100%;
+	margin-inline: auto;
+	/* The icon lines up with the first line when the text wraps. */
+	align-items: flex-start;
 	border-radius: 12px;
 	background: #18181b;
 	box-shadow:
@@ -1322,6 +1327,14 @@
 .toast .toast__indicator {
 	padding: 0;
 	height: 20px;
+}
+/* Messages fade in and out where they sit, without sliding. */
+.toast[data-entering="true"] {
+	--toast-enter: 0%;
+	opacity: 0;
+}
+.toast[data-exiting="true"][data-frontmost="true"] {
+	--toast-enter: 0%;
 }
 .toast .toast__close-button {
 	color: #fff;
