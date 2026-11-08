@@ -2,7 +2,7 @@
 // See ../../LICENSE and ../../../../THIRD_PARTY_NOTICES.md for attribution.
 
 import { generateSalt, sha256Hex, timingSafeEqual, hashRecordingPassword } from "./crypto.js";
-import { errorResponse, jsonResponse, parseCookies } from "./http.js";
+import { errorResponse, jsonResponse, parseCookies, parseStoredDate } from "./http.js";
 
 export async function isAuthorized(request, env) {
 	const auth = request.headers.get("Authorization");
@@ -207,7 +207,7 @@ export async function handleVerifyPassword(request, env, shareCode) {
 
 	// Issue an HMAC session token (never the stored hash).
 	const authToken = await generateAuthToken(shareCode, video.expires_at, env.API_SECRET);
-	const expires = new Date(video.expires_at + "Z");
+	const expires = parseStoredDate(video.expires_at);
 
 	return new Response(JSON.stringify({ ok: true }), {
 		status: 200,

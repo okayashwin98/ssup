@@ -20,3 +20,15 @@ export function parseCookies(cookieStr) {
 	});
 	return cookies;
 }
+
+/** Reads a stored date. New rows keep the "Z" (UTC) suffix; older SQLite-style ones have none. */
+export function parseStoredDate(value) {
+	const text = String(value ?? "");
+	return new Date(/(?:Z|[+-]\d\d:?\d\d)$/i.test(text) ? text : `${text.replace(" ", "T")}Z`);
+}
+
+/** True once a stored expiry date has passed. An unreadable date counts as not expired. */
+export function isPastDate(value) {
+	const date = parseStoredDate(value);
+	return !Number.isNaN(date.getTime()) && date < new Date();
+}

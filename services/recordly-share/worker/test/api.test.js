@@ -317,6 +317,17 @@ describe("password protection", () => {
 		).toBe(200);
 	});
 
+	it("reports a link as expired once its stored expiry (ISO, with Z) has passed", async () => {
+		const { shareCode } = await createShare();
+		await completeUpload(shareCode);
+		await env.DB.prepare("UPDATE videos SET expires_at = ? WHERE share_code = ?")
+			.bind(new Date(Date.now() - 60_000).toISOString(), shareCode)
+			.run();
+		const res = await SELF.fetch(`${BASE}/s/${shareCode}/data`);
+		expect(res.status).toBe(404);
+		expect(await res.json()).toEqual({ expired: true });
+	});
+
 	it("rejects password attempts on expired videos", async () => {
 		const shareCode = await protectedShare();
 		await env.DB.prepare(
@@ -353,6 +364,8 @@ describe("password protection", () => {
 		expect(cookie).toContain(`voom_auth_${shareCode}=`);
 		expect(cookie).toContain("HttpOnly");
 		expect(cookie).toContain("Secure");
+		expect(cookie).toMatch(/Expires=[A-Z][a-z]{2}, \d{2} [A-Z][a-z]{2} \d{4}/);
+		expect(cookie).not.toContain("Invalid Date");
 
 		const authed = await SELF.fetch(`${BASE}/s/${shareCode}/data`, {
 			headers: { Cookie: cookie.split(";")[0] },

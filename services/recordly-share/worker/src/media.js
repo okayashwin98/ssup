@@ -2,7 +2,7 @@
 // See ../../LICENSE and ../../../../THIRD_PARTY_NOTICES.md for attribution.
 
 import { verifyPasswordAuth } from "./auth.js";
-import { jsonResponse } from "./http.js";
+import { isPastDate, jsonResponse, parseStoredDate } from "./http.js";
 import { getCreatorProfile } from "./profile.js";
 import { finiteNonnegative } from "./video.js";
 
@@ -15,7 +15,7 @@ function formatDuration(seconds) {
 }
 
 function formatDate(isoString) {
-	const d = new Date(isoString + "Z");
+	const d = parseStoredDate(isoString);
 	return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
@@ -184,7 +184,7 @@ export async function handleShareData(request, env, shareCode) {
 
 	if (!video) return jsonResponse({ expired: true }, 404);
 
-	const isExpired = new Date(video.expires_at + "Z") < new Date();
+	const isExpired = isPastDate(video.expires_at);
 	if (isExpired) return jsonResponse({ expired: true }, 404);
 
 	if (video.password_hash) {
@@ -245,7 +245,7 @@ async function loadOGVideo(env, shareCode) {
 		.bind(shareCode)
 		.first();
 	if (!video) return null;
-	if (new Date(video.expires_at + "Z") < new Date()) return null;
+	if (isPastDate(video.expires_at)) return null;
 	return video;
 }
 
