@@ -1270,20 +1270,23 @@
 		padding: 0;
 		gap: 0;
 	}
+	/* The comments card always reaches the bottom of the screen, even with few comments. */
 	.recording-app .share-workspace > aside {
 		display: flex;
 		flex-direction: column;
+		flex: 1 0 auto;
 		padding: 0;
 	}
 	/* Edge to edge, no card corners; the list grows and the page scrolls. */
 	.recording-app .share-workspace > aside > .feedback-card {
+		flex: 1 0 auto;
 		height: auto;
 		padding-top: 12px;
 		border-radius: 0;
 		box-shadow: none;
 	}
 	.feedback-tabs .tabs__panel {
-		flex: none;
+		flex: 1 0 auto;
 		overflow: visible;
 	}
 	.recording-app .recording-column {
