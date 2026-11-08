@@ -93,14 +93,20 @@ export async function fetchShareData(shareCode: string): Promise<ShareResponse> 
 	return res.json();
 }
 
-export async function verifyPassword(shareCode: string, password: string): Promise<boolean> {
+export type UnlockResult = "unlocked" | "wrong" | "too-many" | "gone" | "failed";
+
+export async function verifyPassword(shareCode: string, password: string): Promise<UnlockResult> {
 	const res = await fetch(`/s/${shareCode}/verify-password`, {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
 		credentials: "include",
 		body: JSON.stringify({ password }),
 	});
-	return res.ok;
+	if (res.ok) return "unlocked";
+	if (res.status === 403) return "wrong";
+	if (res.status === 429) return "too-many";
+	if (res.status === 404) return "gone";
+	return "failed";
 }
 
 export async function fetchReactions(shareCode: string): Promise<Reaction[]> {

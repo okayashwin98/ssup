@@ -162,7 +162,7 @@ export default function SharePage() {
 	const [unlocking, setUnlocking] = useState(false);
 	const [error, setError] = useState("");
 
-	const load = useCallback(async () => {
+	const load = useCallback(async (): Promise<typeof view> => {
 		setView("loading");
 		try {
 			const code = location.pathname.split("/").filter(Boolean).pop() || "";
@@ -170,19 +170,26 @@ export default function SharePage() {
 			if (isExpired(result)) {
 				setView("expired");
 				document.title = "Recording unavailable — SuperShare";
-			} else if (isPasswordRequired(result)) {
+				return "expired";
+			}
+			if (isPasswordRequired(result)) {
 				setView("password");
 				setTitle(result.title);
 				setOwner(result.creator?.name ? result.creator : null);
 				document.title = `${result.title} — SuperShare`;
-			} else if (isShareData(result)) {
+				return "password";
+			}
+			if (isShareData(result)) {
 				setData(result);
 				setView("recording");
 				document.title = `${result.video.title} — SuperShare`;
-			} else setView("error");
+				return "recording";
+			}
 		} catch {
-			setView("error");
+			// Shown as the error view below.
 		}
+		setView("error");
+		return "error";
 	}, []);
 	useEffect(() => {
 		void load();
@@ -194,8 +201,14 @@ export default function SharePage() {
 		setError("");
 		try {
 			const code = location.pathname.split("/").filter(Boolean).pop() || "";
-			if (await verifyPassword(code, password)) await load();
-			else setError("That password didn’t match. Please try again.");
+			const result = await verifyPassword(code, password);
+			if (result === "unlocked" || result === "gone") {
+				// A correct password that still lands on the gate means the browser refused the unlock cookie.
+				if ((await load()) === "password")
+					setError("Your browser blocked the unlock. Allow cookies for this site and try again.");
+			} else if (result === "wrong") setError("That password didn’t match. Please try again.");
+			else if (result === "too-many") setError("Too many tries. Wait a few minutes, then try again.");
+			else setError("Could not unlock the recording. Please try again.");
 		} catch {
 			setError("Could not unlock the recording. Please try again.");
 		} finally {

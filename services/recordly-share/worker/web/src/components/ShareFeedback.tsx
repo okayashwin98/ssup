@@ -269,9 +269,12 @@ export default function ShareFeedback({
 		fetchAllComments(data.shareCode)
 			.then((result) => {
 				if (cancelled) return;
-				setComments(
-					[...result.comments].sort((a, b) => a.timestamp - b.timestamp || a.id - b.id),
-				);
+				// Keep any comment posted while the list was still loading.
+				setComments((current) => {
+					const byId = new Map(result.comments.map((c) => [c.id, c]));
+					for (const c of current) if (!byId.has(c.id)) byId.set(c.id, c);
+					return [...byId.values()].sort((a, b) => a.timestamp - b.timestamp || a.id - b.id);
+				});
 				setLoading(false);
 			})
 			.catch(() => {
@@ -359,7 +362,7 @@ export default function ShareFeedback({
 						<div className="empty-feedback">
 							<Spinner label="Loading comments" />
 						</div>
-					) : !comments.length ? (
+					) : !comments.length && !loadError ? (
 						<div className="empty-feedback">
 							<ChatCircleIcon size={28} />
 							<h2>Start the conversation</h2>
