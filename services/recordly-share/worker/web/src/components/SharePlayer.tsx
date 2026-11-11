@@ -54,6 +54,12 @@ interface Props {
 
 const SPEEDS = [0.5, 1, 1.25, 1.5, 2];
 
+// Comments pop up in the bottom-right corner at their moment and stay for 4 seconds of
+// video, newest on top; phones show only the newest.
+const COMMENT_SECONDS = 4;
+const COMMENT_FADE = 0.6;
+const MAX_COMMENT_CARDS = 3;
+
 /** The playback speed menu: the "1.5×" button on desktop, a gear on phones. */
 /** Speed choices; given `captions`, a Subtitles on/off row sits above them (phones). */
 function SpeedMenu({
@@ -163,6 +169,24 @@ export default function SharePlayer({
 		};
 	}, [data.shareCode]);
 	const markers = useRef<HTMLDivElement>(null);
+	const seekTrack = useRef<HTMLDivElement>(null);
+	// How far above the bottom the comment cards sit while the seek bar shows: 8px over it.
+	useEffect(() => {
+		const box = shell.current;
+		const track = seekTrack.current;
+		const bar = track?.closest(".video-toolbar");
+		if (!box || !track || !bar) return;
+		const update = () =>
+			box.style.setProperty(
+				"--seek-lift",
+				`${Math.round(box.getBoundingClientRect().bottom - track.getBoundingClientRect().top + 8)}px`,
+			);
+		update();
+		const observer = new ResizeObserver(update);
+		observer.observe(bar);
+		observer.observe(box);
+		return () => observer.disconnect();
+	}, []);
 	const [trackWidth, setTrackWidth] = useState(500);
 	const [playing, setPlaying] = useState(false);
 	// The title cover shows until the viewer first presses play.
@@ -213,6 +237,16 @@ export default function SharePlayer({
 		return () => cancelAnimationFrame(frame);
 	}, [playing, paintProgress, videoRef]);
 	const caption = data.segments.find((s) => time >= s.start_time && time < s.end_time);
+	// One extra card is kept while it fades out, so the stack slides down instead of jumping.
+	const commentCards =
+		started && !ended && !error
+			? comments
+					.filter(
+						(c) => time >= c.timestamp && time < c.timestamp + COMMENT_SECONDS + COMMENT_FADE,
+					)
+					.sort((a, b) => a.timestamp - b.timestamp || a.id - b.id)
+					.slice(-(MAX_COMMENT_CARDS + 1))
+			: [];
 	const cta =
 		data.video.cta_url && /^https?:\/\//i.test(data.video.cta_url) ? data.video.cta_url : null;
 
@@ -600,6 +634,29 @@ export default function SharePlayer({
 						</span>
 					</div>
 				)}
+				{commentCards.length > 0 && (
+					<div className="comment-cards" aria-hidden="true">
+						{commentCards
+							.map((comment, i) => (
+								<div
+									className="comment-card-slot"
+									data-leaving={
+										time >= comment.timestamp + COMMENT_SECONDS ||
+										i < commentCards.length - MAX_COMMENT_CARDS
+									}
+									key={comment.id}
+								>
+									<div className="comment-card-clip">
+										<div className="comment-card">
+											<strong>{comment.author_name}</strong>
+											<p>{comment.text}</p>
+										</div>
+									</div>
+								</div>
+							))
+							.reverse()}
+					</div>
+				)}
 				<div className="video-toolbar">
 					<div
 						ref={markers}
@@ -667,7 +724,7 @@ export default function SharePlayer({
 						))}
 					</div>
 					<div className="video-progress">
-						<div className="seek-track" aria-hidden="true">
+						<div ref={seekTrack} className="seek-track" aria-hidden="true">
 							<div ref={seekFill} className="seek-fill" />
 						</div>
 						<input

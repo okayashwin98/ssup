@@ -1160,6 +1160,86 @@
 	cursor: pointer;
 	margin: 0;
 }
+/* Comments pop up bottom-right, 8px in from the corner, and rise 8px over the seek bar when it shows. */
+.comment-cards {
+	position: absolute;
+	right: 8px;
+	bottom: 8px;
+	z-index: 3;
+	width: min(280px, calc(100% - 16px));
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	pointer-events: none;
+	transition: bottom 200ms ease;
+}
+.video-shell.controls-shown .comment-cards,
+.video-shell:has(.video-toolbar:focus-within) .comment-cards {
+	bottom: var(--seek-lift, 8px);
+}
+@media (hover: hover) {
+	.video-shell:has(.video-toolbar:hover) .comment-cards {
+		bottom: var(--seek-lift, 8px);
+	}
+}
+/* A leaving card folds away, so the cards above slide down. */
+.comment-card-slot {
+	display: grid;
+	grid-template-rows: 1fr;
+	max-width: 100%;
+	opacity: 1;
+	transition:
+		grid-template-rows 200ms ease,
+		opacity 200ms ease;
+	animation: comment-card-in 200ms ease;
+}
+.comment-card-slot[data-leaving="true"] {
+	grid-template-rows: 0fr;
+	opacity: 0;
+}
+.comment-card-clip {
+	min-height: 0;
+	overflow: hidden;
+}
+.comment-card {
+	margin-top: 6px;
+	padding: 8px 10px;
+	border-radius: 10px;
+	background: rgb(24 24 27 / 0.86);
+	-webkit-backdrop-filter: blur(8px);
+	backdrop-filter: blur(8px);
+	color: #fff;
+	font-size: 13px;
+	line-height: 18px;
+}
+.comment-card strong {
+	display: block;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 16px;
+	color: rgb(255 255 255 / 0.7);
+}
+.comment-card p {
+	margin: 0;
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	line-clamp: 2;
+	overflow: hidden;
+	overflow-wrap: anywhere;
+}
+@keyframes comment-card-in {
+	from {
+		opacity: 0;
+	}
+}
+/* Subtitles keep clear of the cards. */
+.video-shell:has(.comment-card-slot) .video-caption {
+	right: calc(min(280px, 100% - 16px) + 16px);
+}
 .timestamp-reactions {
 	position: absolute;
 	inset: 0;
@@ -1490,6 +1570,29 @@
 	.video-toolbar .video-controls,
 	.video-toolbar .timeline-markers {
 		display: none;
+	}
+	/* The seek bar always shows on phones, so the one card sits over it. */
+	.comment-cards {
+		width: min(200px, calc(100% - 16px));
+	}
+	.video-shell.is-started .comment-cards {
+		bottom: var(--seek-lift, 8px);
+	}
+	.comment-card-slot:not(:first-child) {
+		display: none;
+	}
+	.comment-card {
+		padding: 6px 8px;
+		border-radius: 8px;
+		font-size: 12px;
+		line-height: 16px;
+	}
+	.comment-card strong {
+		font-size: 11px;
+		line-height: 14px;
+	}
+	.video-shell:has(.comment-card-slot) .video-caption {
+		right: calc(min(200px, 100% - 16px) + 16px);
 	}
 	.video-time {
 		margin: 0 4px;
