@@ -1,10 +1,9 @@
 // Adapted from Voom (MIT), Copyright (c) 2026 Aritro Paul.
 // See ../../../LICENSE and ../../../../../THIRD_PARTY_NOTICES.md.
-import { Button, Card, Dropdown, Label, Link, Slider, Tooltip } from "@heroui/react";
+import { Button, Card, Dropdown, Label, Link, Slider } from "@heroui/react";
 import {
 	ArrowCounterClockwiseIcon,
 	ArrowsOutSimpleIcon,
-	ChatCircleIcon,
 	ClockClockwiseIcon,
 	ClockCounterClockwiseIcon,
 	ClosedCaptioningIcon,
@@ -37,7 +36,6 @@ function formatCoverDuration(seconds: number) {
 	return total < 60 ? `${total}s` : formatTimestamp(total);
 }
 
-import { clusterTimeline, type TimelineItem } from "../scripts/shareModel";
 import { notify, Spinner } from "./ShareUI";
 
 interface Props {
@@ -168,7 +166,6 @@ export default function SharePlayer({
 			image.onerror = null;
 		};
 	}, [data.shareCode]);
-	const markers = useRef<HTMLDivElement>(null);
 	const seekTrack = useRef<HTMLDivElement>(null);
 	// How far above the bottom the comment cards sit while the seek bar shows: 8px over it.
 	useEffect(() => {
@@ -187,7 +184,6 @@ export default function SharePlayer({
 		observer.observe(box);
 		return () => observer.disconnect();
 	}, []);
-	const [trackWidth, setTrackWidth] = useState(500);
 	const [playing, setPlaying] = useState(false);
 	// The title cover shows until the viewer first presses play.
 	const [started, setStarted] = useState(false);
@@ -209,16 +205,16 @@ export default function SharePlayer({
 	controlsShownNow.current = controlsShown;
 	// The seek bar is painted every frame while playing; timeupdate alone only
 	// fires a few times a second and makes it tick.
-	const seekFill = useRef<HTMLDivElement>(null);
 	const paintProgress = useCallback(
 		(current: number) => {
-			const fill = seekFill.current;
-			if (!fill) return;
+			const track = seekTrack.current;
+			if (!track) return;
 			const length = videoRef.current?.duration;
 			const total = length && Number.isFinite(length) ? length : duration;
-			fill.style.width = total
-				? `${Math.min(100, Math.max(0, (current / total) * 100))}%`
-				: "0%";
+			track.style.setProperty(
+				"--progress",
+				total ? String(Math.min(1, Math.max(0, current / total))) : "0",
+			);
 		},
 		[duration, videoRef],
 	);
@@ -237,6 +233,25 @@ export default function SharePlayer({
 		return () => cancelAnimationFrame(frame);
 	}, [playing, paintProgress, videoRef]);
 	const caption = data.segments.find((s) => time >= s.start_time && time < s.end_time);
+	// Chapters split the seek bar into parts with a small gap between them.
+	const total = duration || data.video.duration;
+	const cuts = total
+		? [...new Set(data.chapters.map((c) => c.timestamp / total))]
+				.filter((at) => at > 0.002 && at < 0.998)
+				.sort((a, b) => a - b)
+		: [];
+	const edges = [0, ...cuts, 1];
+	const seekParts = edges.slice(1).map((end, i) => ({ start: edges[i], end }));
+	// Comments and reactions show as white dots on the seek bar, one per spot.
+	const seekDots = total
+		? [
+				...new Set(
+					[...comments, ...reactions].map((item) =>
+						Math.round(Math.min(100, Math.max(0, (item.timestamp / total) * 100)) * 10),
+					),
+				),
+			].map((at) => at / 10)
+		: [];
 	// One extra card is kept while it fades out, so the stack slides down instead of jumping.
 	const commentCards =
 		started && !ended && !error
@@ -323,10 +338,6 @@ export default function SharePlayer({
 
 	useEffect(() => {
 		setPip(!!document.pictureInPictureEnabled);
-		if (!markers.current) return;
-		const observer = new ResizeObserver(([entry]) => setTrackWidth(entry.contentRect.width));
-		observer.observe(markers.current);
-		return () => observer.disconnect();
 	}, []);
 
 	useEffect(() => {
@@ -658,74 +669,29 @@ export default function SharePlayer({
 					</div>
 				)}
 				<div className="video-toolbar">
-					<div
-						ref={markers}
-						className="timeline-markers"
-						aria-label="Comments and reactions on the timeline"
-					>
-						{clusterTimeline(
-							[
-								...comments.map(
-									(item): TimelineItem => ({
-										timestamp: item.timestamp,
-										kind: "comment",
-										label: `${item.author_name}: ${item.text}`,
-									}),
-								),
-								...reactions.map(
-									(item): TimelineItem => ({
-										timestamp: item.timestamp,
-										kind: "reaction",
-										emoji: item.emoji,
-										label: `${item.emoji} reaction`,
-									}),
-								),
-								...data.chapters.map(
-									(item): TimelineItem => ({
-										timestamp: item.timestamp,
-										kind: "chapter",
-										label: `Chapter: ${item.title}`,
-									}),
-								),
-							],
-							duration,
-							trackWidth,
-						).map((cluster, index) => (
-							<Tooltip key={`timeline-${index}`}>
-								<Button
-									size="sm"
-									variant={cluster.members.length > 1 ? "primary" : "ghost"}
-									className="timeline-marker"
-									style={{
-										left: `${duration ? Math.max(2, Math.min(98, (cluster.time / duration) * 100)) : 2}%`,
-									}}
-									aria-label={`${cluster.members.length > 1 ? `${cluster.members.length} items` : cluster.members[0].label} at ${formatTimestamp(cluster.time)}`}
-									onPress={() => seek(cluster.members[0].timestamp)}
-								>
-									{cluster.members.length > 1 ? (
-										cluster.members.length
-									) : cluster.members[0].kind === "reaction" ? (
-										<span aria-hidden="true">{cluster.members[0].emoji}</span>
-									) : cluster.members[0].kind === "comment" ? (
-										<ChatCircleIcon size={16} />
-									) : (
-										"•"
-									)}
-								</Button>
-								<Tooltip.Content>
-									{cluster.members
-										.map(
-											(item) =>
-												`${formatTimestamp(item.timestamp)} ${item.label}`,
-										)
-										.join(" · ")}
-								</Tooltip.Content>
-							</Tooltip>
-						))}
-					</div>
 					<div className="video-progress">
 						<div ref={seekTrack} className="seek-track" aria-hidden="true">
-							<div ref={seekFill} className="seek-fill" />
+							{seekParts.map((part) => (
+								<div
+									key={part.start}
+									className="seek-part"
+									style={
+										{
+											"--start": part.start,
+											"--end": part.end,
+											left: `calc(${part.start * 100}% + ${part.start > 0 ? 1 : 0}px)`,
+											right: `calc(${(1 - part.end) * 100}% + ${part.end < 1 ? 1 : 0}px)`,
+										} as CSSProperties
+									}
+								>
+									<div className="seek-fill" />
+								</div>
+							))}
+						</div>
+						<div className="seek-dots" aria-hidden="true">
+							{seekDots.map((at) => (
+								<span key={at} className="seek-dot" style={{ left: `${at}%` }} />
+							))}
 						</div>
 						<input
 							className="video-seek-input"
