@@ -720,6 +720,16 @@ export default function SharePlayer({
 										time >= comment.timestamp + COMMENT_SECONDS ||
 										i < commentCards.length - MAX_COMMENT_CARDS
 									}
+									// Arrives while an earlier card is up, so it rises from underneath it.
+									data-stacked={comments.some(
+										(other) =>
+											(other.timestamp < comment.timestamp ||
+												(other.timestamp === comment.timestamp &&
+													other.id < comment.id)) &&
+											comment.timestamp < other.timestamp + COMMENT_SECONDS,
+									)}
+									// Older cards sit above newer ones, which slide out from under them.
+									style={{ zIndex: commentCards.length - i }}
 									key={comment.id}
 								>
 									<div className="comment-card-clip">

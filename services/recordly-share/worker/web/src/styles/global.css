@@ -1184,6 +1184,7 @@
 }
 /* A leaving card folds away, so the cards above slide down. */
 .comment-card-slot {
+	position: relative;
 	display: grid;
 	grid-template-rows: 1fr;
 	max-width: 100%;
@@ -1191,7 +1192,6 @@
 	transition:
 		grid-template-rows 200ms ease,
 		opacity 200ms ease;
-	animation: comment-card-in 200ms ease;
 }
 .comment-card-slot[data-leaving="true"] {
 	grid-template-rows: 0fr;
@@ -1199,7 +1199,16 @@
 }
 .comment-card-clip {
 	min-height: 0;
+}
+.comment-card-slot[data-leaving="true"] .comment-card-clip {
 	overflow: hidden;
+}
+/* A card rises a little as it fades in; one that joins a stack slides up from under the card below. */
+.comment-card-slot .comment-card {
+	animation: comment-card-rise 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.comment-card-slot[data-stacked="true"] .comment-card {
+	animation-name: comment-card-from-under;
 }
 .comment-card {
 	margin-top: 6px;
@@ -1231,7 +1240,24 @@
 	overflow: hidden;
 	overflow-wrap: anywhere;
 }
-@keyframes comment-card-in {
+@keyframes comment-card-rise {
+	from {
+		opacity: 0;
+		transform: translateY(8px);
+	}
+}
+@keyframes comment-card-from-under {
+	from {
+		opacity: 0;
+		transform: translateY(calc(100% + 6px));
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.comment-card-slot .comment-card {
+		animation: comment-card-fade 200ms ease both;
+	}
+}
+@keyframes comment-card-fade {
 	from {
 		opacity: 0;
 	}
@@ -1589,6 +1615,10 @@
 	}
 	.comment-card-slot:not(:first-child) {
 		display: none;
+	}
+	/* One card at a time: each one just rises in. */
+	.comment-card-slot[data-stacked="true"] .comment-card {
+		animation-name: comment-card-rise;
 	}
 	.comment-card {
 		padding: 6px 8px;
