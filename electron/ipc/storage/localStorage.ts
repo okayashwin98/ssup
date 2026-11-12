@@ -1,15 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-export interface LocalStorageUsage {
-	/** Size of the disk the app's files live on. */
-	totalBytes: number;
-	/** Space still free on that disk. */
-	freeBytes: number;
-	/** Space taken by the app itself and everything it stores. */
-	appBytes: number;
-}
-
 /** Bytes a folder or file takes on disk, like `du`. Missing paths count as 0. */
 export async function diskUsage(target: string): Promise<number> {
 	let stat: Awaited<ReturnType<typeof fs.lstat>>;
@@ -48,15 +39,8 @@ export function outermostPaths(paths: string[]): string[] {
 	);
 }
 
-export async function measureLocalStorage(
-	appPaths: string[],
-	diskPath: string,
-): Promise<LocalStorageUsage> {
-	const disk = await fs.statfs(diskPath);
-	const sizes = await Promise.all(outermostPaths(appPaths).map(diskUsage));
-	return {
-		totalBytes: disk.blocks * disk.bsize,
-		freeBytes: disk.bavail * disk.bsize,
-		appBytes: sizes.reduce((sum, size) => sum + size, 0),
-	};
+/** Total bytes on disk taken by the given folders, counting nested ones once. */
+export async function measureLocalStorage(paths: string[]): Promise<number> {
+	const sizes = await Promise.all(outermostPaths(paths).map(diskUsage));
+	return sizes.reduce((sum, size) => sum + size, 0);
 }

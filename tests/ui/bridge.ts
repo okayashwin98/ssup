@@ -135,12 +135,7 @@ export async function installDesktopBridge(
 				selectSource: success,
 				onSelectedSourceChanged: subscribe,
 				getRecordingsDirectory: async () => ({ success: true, path: "/recordings" }),
-				getLocalStorageUsage: async () => ({
-					success: true,
-					totalBytes: 500_000_000_000,
-					freeBytes: 200_000_000_000,
-					appBytes: 2_000_000_000,
-				}),
+				getLocalStorageUsage: async () => ({ success: true, bytes: 2_000_000_000 }),
 				getHudOverlayMousePassthroughSupported: async () => ({
 					success: true,
 					supported: true,

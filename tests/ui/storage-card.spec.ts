@@ -1,18 +1,11 @@
 import { expect, test } from "@playwright/test";
 import { installDesktopBridge, installDesktopBridgeOverrides } from "./bridge";
 
-test("sidebar shows this computer's storage: the app, everything else and free space", async ({
-	page,
-}) => {
+test("sidebar shows how much space the app's data takes on this computer", async ({ page }) => {
 	await installDesktopBridge(page);
 	await installDesktopBridgeOverrides(page, () => {
 		Object.assign(window.electronAPI, {
-			getLocalStorageUsage: async () => ({
-				success: true,
-				totalBytes: 994_662_584_320,
-				freeBytes: 197_320_437_760,
-				appBytes: 3_139_788_800,
-			}),
+			getLocalStorageUsage: async () => ({ success: true, bytes: 2_590_302_208 }),
 			cloudShareManage: async () => ({
 				success: true,
 				videos: [{ size: 1_200_000_000 }, { size: 300_000_000 }],
@@ -22,15 +15,7 @@ test("sidebar shows this computer's storage: the app, everything else and free s
 	await page.goto("/?windowType=editor");
 	await page.getByRole("button", { name: "Home", exact: true }).click();
 	const local = page.getByRole("region", { name: "Local storage" });
-	await expect(local).toContainText("994.7 GB");
-	await expect(local.getByRole("listitem")).toHaveText([
-		"SuperShare3.1 GB",
-		"Everything else794.2 GB",
-		"Free197.3 GB",
-	]);
-	await expect(local.getByRole("img")).toHaveAccessibleName(
-		"SuperShare 3.1 GB, everything else 794.2 GB, free 197.3 GB",
-	);
+	await expect(local).toHaveText("Local storage2.6 GB");
 	// When the cloud meter is on, both sit in one box with a line between them.
 	const cloud = page.getByRole("region", { name: "Cloud storage" });
 	if (await cloud.count()) {

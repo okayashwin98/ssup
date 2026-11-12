@@ -1140,8 +1140,7 @@ interface Window {
 		) => () => void;
 		openRecordingsFolder: () => Promise<{ success: boolean; error?: string; message?: string }>;
 		getLocalStorageUsage: () => Promise<
-			| { success: true; totalBytes: number; freeBytes: number; appBytes: number }
-			| { success: false; error: string }
+			{ success: true; bytes: number } | { success: false; error: string }
 		>;
 		getRecordingsDirectory: () => Promise<{
 			success: boolean;
