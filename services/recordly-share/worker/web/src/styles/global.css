@@ -825,7 +825,7 @@
 	top: 50%;
 	display: grid;
 	place-items: center;
-	width: 52px;
+	width: 72px;
 	aspect-ratio: 1;
 	border-radius: 999px;
 	transform: translate(-50%, -50%);
@@ -836,9 +836,8 @@
 		background 160ms ease;
 }
 .video-cover-play svg {
-	width: 24px;
-	height: 24px;
-	--icon-outline: 0.5px;
+	width: 32px;
+	height: 32px;
 }
 /* Hover styles only where there is a pointer; on touch screens :hover sticks after a tap. */
 @media (hover: hover) {
@@ -1862,4 +1861,22 @@
 }
 .share-body .touch-controls .button svg {
 	--icon-outline: 0.625px;
+}
+
+/* Play and replay: 72px with a 32px icon; phones keep 52px with a 24px icon, so the
+   button doesn't cover a third of the short video. Line thickness stays 1.25px. */
+.share-body .video-cover-play svg[width] {
+	--icon-outline: 0.25px;
+}
+@media (max-width: 760px) {
+	.video-cover-play {
+		width: 52px;
+	}
+	.video-cover-play svg {
+		width: 24px;
+		height: 24px;
+	}
+	.share-body .video-cover-play svg[width] {
+		--icon-outline: 0.5px;
+	}
 }
