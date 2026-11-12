@@ -1219,6 +1219,7 @@
 }
 .comment-card strong {
 	display: block;
+	margin-bottom: 4px;
 	overflow: hidden;
 	white-space: nowrap;
 	text-overflow: ellipsis;
@@ -1602,6 +1603,7 @@
 		line-height: 16px;
 	}
 	.comment-card strong {
+		margin-bottom: 3px;
 		font-size: 11px;
 		line-height: 14px;
 	}

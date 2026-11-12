@@ -66,12 +66,15 @@ function SpeedMenu({
 	onOpenChange,
 	trigger,
 	captions,
+	container,
 }: {
 	speed: number;
 	onSpeed: (rate: number) => void;
 	onOpenChange: (open: boolean) => void;
 	trigger: ReactNode;
 	captions?: { on: boolean; toggle: () => void };
+	/** Full screen shows only the player, so the menu has to open inside it. */
+	container?: Element;
 }) {
 	const speeds = SPEEDS.map((rate) => (
 		<Dropdown.Item key={rate} id={String(rate)} textValue={`${rate}×`}>
@@ -82,7 +85,10 @@ function SpeedMenu({
 	return (
 		<Dropdown onOpenChange={onOpenChange}>
 			{trigger}
-			<Dropdown.Popover className={`speed-menu${captions ? " settings-menu" : ""}`}>
+			<Dropdown.Popover
+				className={`speed-menu${captions ? " settings-menu" : ""}`}
+				UNSTABLE_portalContainer={container}
+			>
 				<Dropdown.Menu
 					aria-label={captions ? "Player settings" : "Playback speed"}
 					selectionMode="single"
@@ -199,6 +205,21 @@ export default function SharePlayer({
 	const savedVolume = useRef(1);
 	// The speed menu opens outside the player, so it keeps the controls up itself.
 	const [menuOpen, setMenuOpen] = useState(false);
+	// The element shown full screen, if any; menus open inside it so they stay visible.
+	const [fullscreenHost, setFullscreenHost] = useState<Element | undefined>();
+	useEffect(() => {
+		const page = document as Document & { webkitFullscreenElement?: Element | null };
+		const sync = () =>
+			setFullscreenHost(
+				document.fullscreenElement ?? page.webkitFullscreenElement ?? undefined,
+			);
+		document.addEventListener("fullscreenchange", sync);
+		document.addEventListener("webkitfullscreenchange", sync);
+		return () => {
+			document.removeEventListener("fullscreenchange", sync);
+			document.removeEventListener("webkitfullscreenchange", sync);
+		};
+	}, []);
 	const controlsShown = started && (menuOpen || (pointerInside && (!playing || pointerActive)));
 	// Read by the tap handler, which can run before the player re-renders.
 	const controlsShownNow = useRef(controlsShown);
@@ -257,7 +278,9 @@ export default function SharePlayer({
 		started && !ended && !error
 			? comments
 					.filter(
-						(c) => time >= c.timestamp && time < c.timestamp + COMMENT_SECONDS + COMMENT_FADE,
+						(c) =>
+							time >= c.timestamp &&
+							time < c.timestamp + COMMENT_SECONDS + COMMENT_FADE,
 					)
 					.sort((a, b) => a.timestamp - b.timestamp || a.id - b.id)
 					.slice(-(MAX_COMMENT_CARDS + 1))
@@ -356,8 +379,13 @@ export default function SharePlayer({
 				return;
 			const key = e.key.toLowerCase();
 			// A focused control keeps Space and Enter; sliders and tabs also keep the arrows.
-			if ((key === " " || key === "enter") && target.closest("button, a, [role='tab']")) return;
-			if (key.startsWith("arrow") && target.closest('[role="slider"], [role="tab"], input[type="range"]')) return;
+			if ((key === " " || key === "enter") && target.closest("button, a, [role='tab']"))
+				return;
+			if (
+				key.startsWith("arrow") &&
+				target.closest('[role="slider"], [role="tab"], input[type="range"]')
+			)
+				return;
 			const video = videoRef.current;
 			if (!video) return;
 			switch (key) {
@@ -497,21 +525,23 @@ export default function SharePlayer({
 									)}
 								</span>
 								{!ended && (
-								<span className="video-cover-text">
-									<span className="video-cover-title">{data.video.title}</span>
-									<span className="video-cover-meta">
-										<span className="video-cover-details">
-											{[
-												formatCoverDuration(
-													duration || data.video.duration,
-												),
-												formatDate(data.video.created_at),
-											]
-												.filter(Boolean)
-												.join(" / ")}
+									<span className="video-cover-text">
+										<span className="video-cover-title">
+											{data.video.title}
+										</span>
+										<span className="video-cover-meta">
+											<span className="video-cover-details">
+												{[
+													formatCoverDuration(
+														duration || data.video.duration,
+													),
+													formatDate(data.video.created_at),
+												]
+													.filter(Boolean)
+													.join(" / ")}
+											</span>
 										</span>
 									</span>
-								</span>
 								)}
 							</button>
 						)}
@@ -591,6 +621,7 @@ export default function SharePlayer({
 								speed={speed}
 								onSpeed={setRate}
 								onOpenChange={setMenuOpen}
+								container={fullscreenHost}
 								captions={
 									data.segments.length > 0
 										? { on: captions, toggle: () => setCaptions((on) => !on) }
@@ -709,7 +740,11 @@ export default function SharePlayer({
 								if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
 									event.preventDefault();
 									const video = videoRef.current;
-									if (video) seek(video.currentTime + (event.key === "ArrowLeft" ? -5 : 5));
+									if (video)
+										seek(
+											video.currentTime +
+												(event.key === "ArrowLeft" ? -5 : 5),
+										);
 								} else if (event.key === " ") {
 									event.preventDefault();
 									void togglePlay();
@@ -807,6 +842,7 @@ export default function SharePlayer({
 							speed={speed}
 							onSpeed={setRate}
 							onOpenChange={setMenuOpen}
+							container={fullscreenHost}
 							trigger={
 								<Button
 									size="sm"
