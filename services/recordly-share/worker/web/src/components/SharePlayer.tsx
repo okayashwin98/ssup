@@ -209,10 +209,11 @@ export default function SharePlayer({
 	const [fullscreenHost, setFullscreenHost] = useState<Element | undefined>();
 	useEffect(() => {
 		const page = document as Document & { webkitFullscreenElement?: Element | null };
-		const sync = () =>
-			setFullscreenHost(
-				document.fullscreenElement ?? page.webkitFullscreenElement ?? undefined,
-			);
+		const sync = () => {
+			const host = document.fullscreenElement ?? page.webkitFullscreenElement;
+			// A video shown on its own can't hold the menu; it has the browser's controls.
+			setFullscreenHost(host && !(host instanceof HTMLVideoElement) ? host : undefined);
+		};
 		document.addEventListener("fullscreenchange", sync);
 		document.addEventListener("webkitfullscreenchange", sync);
 		return () => {
@@ -325,15 +326,47 @@ export default function SharePlayer({
 			| (HTMLDivElement & { webkitRequestFullscreen?: () => void })
 			| null;
 		const video = videoRef.current as
-			| (HTMLVideoElement & { webkitEnterFullscreen?: () => void })
+			| (HTMLVideoElement & {
+					webkitEnterFullscreen?: () => void;
+					webkitDisplayingFullscreen?: boolean;
+			  })
 			| null;
+		const isFullscreen = () => !!(document.fullscreenElement ?? page.webkitFullscreenElement);
 		try {
 			if (document.fullscreenElement) return await document.exitFullscreen();
 			if (page.webkitFullscreenElement) return page.webkitExitFullscreen?.();
-			if (player?.requestFullscreen) return await player.requestFullscreen();
-			if (player?.webkitRequestFullscreen) return player.webkitRequestFullscreen();
+			const request = player?.requestFullscreen
+				? player.requestFullscreen()
+				: player?.webkitRequestFullscreen?.();
+			if (request !== undefined || player?.webkitRequestFullscreen) {
+				// Some in-app browsers (opened from Slack and the like) accept the request and
+				// never go full screen; give it a moment, then try the video on its own.
+				await Promise.race([request, new Promise((done) => window.setTimeout(done, 1000))]);
+				if (isFullscreen()) return;
+				await new Promise((done) => window.setTimeout(done, 150));
+				if (isFullscreen()) return;
+			}
 		} catch {
-			/* Falls back to the phone's own player below. */
+			/* Falls back to the video on its own below. */
+		}
+		// The video alone, with the browser's own controls since ours stay outside it.
+		if (video?.requestFullscreen) {
+			try {
+				video.controls = true;
+				await video.requestFullscreen();
+				if (isFullscreen()) {
+					const restore = () => {
+						if (isFullscreen()) return;
+						video.controls = false;
+						document.removeEventListener("fullscreenchange", restore);
+					};
+					document.addEventListener("fullscreenchange", restore);
+					return;
+				}
+			} catch {
+				/* Falls through to the phone's own player or the message below. */
+			}
+			video.controls = false;
 		}
 		// iPhones can only show the video itself full screen, in their own player, which draws
 		// the subtitles; it gets the viewer's subtitle choice while it is open.
@@ -346,7 +379,8 @@ export default function SharePlayer({
 				once: true,
 			});
 			video.webkitEnterFullscreen();
-			return;
+			await new Promise((done) => window.setTimeout(done, 1000));
+			if (video.webkitDisplayingFullscreen || isFullscreen()) return;
 		}
 		notify.danger("Fullscreen is unavailable in this browser.");
 	}, [captions, videoRef]);
