@@ -10,6 +10,7 @@ import { registerProjectHandlers } from "./register/project";
 import { registerRecordingHandlers } from "./register/recording";
 import { registerSettingsHandlers } from "./register/settings";
 import { registerSourceHandlers } from "./register/sources";
+import { registerStorageHandlers } from "./register/storage";
 import {
 	selectedSource,
 	setNativeScreenRecordingActive,
@@ -75,4 +76,5 @@ export function registerIpcHandlers(
 	registerCloudShareHandlers();
 	registerProjectHandlers();
 	registerSettingsHandlers();
+	registerStorageHandlers();
 }

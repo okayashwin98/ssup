@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 import { RecordNewButton } from "./RecordNewButton";
 import { SidebarCards } from "./SidebarCards";
 import { FolderRow } from "./FolderRow";
-import { CloudStorageMeter } from "../cloud/CloudStorageMeter";
+import { StorageCard } from "./StorageCard";
 import { CLOUD_SHARE_ENDPOINT, CLOUD_SHARE_PERSONAL_TOKEN } from "../cloud/endpoint";
 import { Cloud, File, GearSix, House, Plus, UserCircle } from "@/components/ui/icons";
 
@@ -151,12 +151,15 @@ export function DashboardSidebar({
 						Settings
 					</Button>
 					{CLOUD_SHARE_PERSONAL_TOKEN && CLOUD_SHARE_ENDPOINT && authToken ? (
-						<CloudStorageMeter token={authToken} />
+						<StorageCard token={authToken} />
 					) : (
-						<Button variant="ghost" className={navClass(false)} onClick={onSignIn}>
-							<UserCircle weight="fill" className="size-[18px] shrink-0" />
-							<span className="truncate">{accountLabel || "Sign in"}</span>
-						</Button>
+						<>
+							<Button variant="ghost" className={navClass(false)} onClick={onSignIn}>
+								<UserCircle weight="fill" className="size-[18px] shrink-0" />
+								<span className="truncate">{accountLabel || "Sign in"}</span>
+							</Button>
+							<StorageCard />
+						</>
 					)}
 				</div>
 			</aside>
