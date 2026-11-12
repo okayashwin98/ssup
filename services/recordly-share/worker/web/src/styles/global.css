@@ -346,11 +346,6 @@
 	text-overflow: ellipsis;
 	white-space: nowrap;
 }
-.comment-heading .avatar__fallback {
-	font-size: 12px;
-	font-weight: 500;
-	line-height: 18px;
-}
 .comment-heading .button {
 	margin-left: auto;
 }
@@ -1210,10 +1205,10 @@
 	margin-top: 6px;
 	padding: 8px 10px;
 	border-radius: 10px;
-	background: rgb(24 24 27 / 0.86);
-	-webkit-backdrop-filter: blur(8px);
-	backdrop-filter: blur(8px);
-	color: #fff;
+	/* Same white card and dark text as the comments list. */
+	background: var(--surface);
+	color: var(--foreground);
+	box-shadow: 0 2px 8px rgb(0 0 0 / 0.16);
 	font-size: 13px;
 	line-height: 18px;
 }
@@ -1224,9 +1219,8 @@
 	white-space: nowrap;
 	text-overflow: ellipsis;
 	font-size: 12px;
-	font-weight: 600;
+	font-weight: 700;
 	line-height: 16px;
-	color: rgb(255 255 255 / 0.7);
 }
 .comment-card p {
 	margin: 0;

@@ -1,4 +1,4 @@
-import { Avatar, Button, Card, Input, Modal, Tabs, TextField } from "@heroui/react";
+import { Button, Card, Input, Modal, Tabs, TextField } from "@heroui/react";
 import {
 	ArrowUpIcon,
 	ChatCenteredTextIcon,
@@ -376,11 +376,6 @@ export default function ShareFeedback({
 								key={comment.id}
 							>
 								<div className="comment-heading">
-									<Avatar size="sm">
-										<Avatar.Fallback>
-											{comment.author_name.slice(0, 2).toUpperCase()}
-										</Avatar.Fallback>
-									</Avatar>
 									<strong>{comment.author_name}</strong>
 									<Button
 										size="sm"
