@@ -1198,6 +1198,7 @@
 	opacity: 0;
 }
 .comment-card-clip {
+	min-width: 0;
 	min-height: 0;
 }
 .comment-card-slot[data-leaving="true"] .comment-card-clip {
@@ -1212,7 +1213,7 @@
 }
 .comment-card {
 	margin-top: 6px;
-	padding: 8px 10px;
+	padding: 12px;
 	border-radius: 10px;
 	/* Same white card and dark text as the comments list. */
 	background: var(--surface);
@@ -1228,7 +1229,7 @@
 	white-space: nowrap;
 	text-overflow: ellipsis;
 	font-size: 12px;
-	font-weight: 700;
+	font-weight: 600;
 	line-height: 16px;
 }
 .comment-card p {
@@ -1621,7 +1622,7 @@
 		animation-name: comment-card-rise;
 	}
 	.comment-card {
-		padding: 6px 8px;
+		padding: 8px 10px;
 		border-radius: 8px;
 		font-size: 12px;
 		line-height: 16px;
