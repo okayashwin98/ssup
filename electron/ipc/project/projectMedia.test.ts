@@ -28,6 +28,7 @@ async function makeRecording(stamp: string, webcamStamp?: string) {
 	await touch(video);
 	await touch(`${video}.cursor.json`);
 	await touch(path.join(recordings, `recording-${stamp}.mic.wav`));
+	await touch(path.join(recordings, `recording-${stamp}.mic.clean100-nofill.m4a`));
 	if (webcamStamp) {
 		const webcam = path.join(recordings, `recording-${webcamStamp}-webcam.mp4`);
 		await touch(webcam);
@@ -61,7 +62,7 @@ afterEach(async () => {
 });
 
 describe("project folders", () => {
-	it("moves a recording with its camera, cursor, audio and session files into the project folder", async () => {
+	it("moves a recording with its camera, cursor, audio, cleaned voice and session files into the project folder", async () => {
 		const { video, webcam } = await makeRecording("1792743586796", "1792743585994");
 		const imported = path.join(root, "Downloads-clip.mp4");
 		await touch(imported);
@@ -81,6 +82,7 @@ describe("project folders", () => {
 		const expected = [
 			"recording-1792743585994-webcam.mp4",
 			"recording-1792743585994-webcam.mp4.cursor.json",
+			"recording-1792743586796.mic.clean100-nofill.m4a",
 			"recording-1792743586796.mic.wav",
 			"recording-1792743586796.mp4",
 			"recording-1792743586796.mp4.cursor.json",

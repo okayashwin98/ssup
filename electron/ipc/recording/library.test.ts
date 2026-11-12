@@ -92,6 +92,26 @@ it("lists recordings, moves recordings and their companions to Trash with revers
 	await expect(setRecordingsRemoved(["/tmp/outside.mp4"], true)).rejects.toThrow("outside");
 });
 
+it("keeps cleaned voice copies out of Raw and removes them with their recording", async () => {
+	const video = path.join(state.root, "recording-1.mp4");
+	const mic = path.join(state.root, "recording-1.mic.m4a");
+	const cleaned = [
+		"recording-1.mic.clean100.m4a",
+		"recording-1.mic.nofill.m4a",
+		"recording-1.mic.clean55-nofill.m4a",
+	].map((name) => path.join(state.root, name));
+	const other = path.join(state.root, "recording-12.mic.clean100.m4a");
+	for (const file of [video, mic, ...cleaned, other]) await fs.writeFile(file, "fixture");
+	expect((await listRecordings(true)).map((entry) => entry.path).sort()).toEqual(
+		[video, mic].sort(),
+	);
+	await setRecordingsRemoved([video], true);
+	for (const file of [video, mic, ...cleaned]) await expect(fs.access(file)).rejects.toThrow();
+	expect(await fs.readFile(other, "utf8")).toBe("fixture");
+	await setRecordingsRemoved([video], false);
+	for (const file of cleaned) expect(await fs.readFile(file, "utf8")).toBe("fixture");
+});
+
 it("imports different-sized recordings with playable video, separate audio, stable offsets, and untouched originals", async () => {
 	const base = path.join(state.root, "recording-base.mp4");
 	const added = path.join(state.root, "recording-added.mp4");

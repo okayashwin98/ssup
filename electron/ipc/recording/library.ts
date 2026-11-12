@@ -6,7 +6,7 @@ import { buildMediaUrl, getMediaServerBaseUrl } from "../../mediaServer";
 import { rememberApprovedLocalReadPath } from "../project/manager";
 import { getRecordingsDir } from "../utils";
 import { getCachedMediaDurationMs } from "./mediaDuration";
-import { belongsToRecording } from "./recordingFiles";
+import { belongsToRecording, isCleanedVoiceCopy } from "./recordingFiles";
 import type { RecordingLibraryEntry } from "../../../src/types/recordingLibrary";
 
 let mutation = Promise.resolve();
@@ -34,7 +34,8 @@ export function listRecordings(includeSources = false): Promise<RecordingLibrary
 		const result: RecordingLibraryEntry[] = [];
 		const isListed = (name: string) =>
 			includeSources
-				? /\.(mp4|mov|webm|mkv|m4v|wav|m4a|mp3|ogg|flac)$/i.test(name)
+				? /\.(mp4|mov|webm|mkv|m4v|wav|m4a|mp3|ogg|flac)$/i.test(name) &&
+					!isCleanedVoiceCopy(name)
 				: isRecording(name);
 		// Loose files plus one level of project folders (never the Projects folder or hidden ones).
 		const locations: Array<{ dir: string; folder?: string }> = [{ dir: root }];
