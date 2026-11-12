@@ -325,7 +325,7 @@
 
 /* Comments */
 .comment-item {
-	padding: 10px 8px 8px;
+	padding: 8px 8px 8px 16px;
 	border-radius: 8px;
 }
 .comment-item[data-active="true"] {
@@ -340,7 +340,7 @@
 	line-height: 20px;
 }
 .comment-heading strong {
-	font-weight: 700;
+	font-weight: 600;
 	min-width: 0;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -350,7 +350,7 @@
 	margin-left: auto;
 }
 .comment-item p {
-	margin: 8px 0;
+	margin: 0 0 8px;
 	font-size: 13px;
 	line-height: 21.45px;
 	white-space: pre-wrap;
