@@ -4,8 +4,12 @@ import { cn } from "@/lib/utils";
 import { type TimelineRowLayer, useTimelineLayers } from "./timelineLayerContext";
 import { TIMELINE_CLIP_ROW_HEIGHT_PX, TIMELINE_ROW_MIN_HEIGHT_PX } from "./timelineLayout";
 
-/** Width of the column of row icons at the timeline's left. */
-export const TIMELINE_ROW_HEADER_WIDTH_PX = 36;
+/** Width the row icon is centred in. */
+const TIMELINE_ROW_ICON_SLOT_PX = 36;
+/** Breathing space between a row's icon and where its strip (time zero) starts. */
+const TIMELINE_ROW_ICON_GAP_PX = 12;
+/** Width of the column of row icons at the timeline's left, gap included. */
+export const TIMELINE_ROW_HEADER_WIDTH_PX = TIMELINE_ROW_ICON_SLOT_PX + TIMELINE_ROW_ICON_GAP_PX;
 
 interface RowProps extends RowDefinition {
 	embedded?: boolean;
@@ -85,7 +89,8 @@ export default function Row({
 		>
 			<div
 				ref={setSidebarRef}
-				className="flex shrink-0 items-center justify-center self-stretch"
+				// No padding here: the timeline measures this column's content width to place time zero.
+				className="flex shrink-0 items-center self-stretch"
 				style={{ ...rowSidebarStyle, width: TIMELINE_ROW_HEADER_WIDTH_PX }}
 			>
 				{layer && Icon && layers && (
@@ -95,6 +100,7 @@ export default function Row({
 						aria-pressed={on}
 						title={`${layer.label}: ${on ? "on" : "off"}`}
 						onClick={() => layers.toggle(layer.id)}
+						style={{ marginInline: (TIMELINE_ROW_ICON_SLOT_PX - 28) / 2 }}
 						className={cn(
 							"pointer-events-auto relative flex size-7 items-center justify-center rounded-lg transition-colors hover:bg-foreground/10",
 							on ? "text-foreground/70 hover:text-foreground" : "text-foreground/30",
