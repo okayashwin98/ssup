@@ -41,6 +41,7 @@ import { setPreviewLoop, usePreviewLoop } from "../videoPlayback/previewLoop";
 import { AnnotationToolbar } from "./AnnotationToolbar";
 import { AspectRatioPicker } from "./AspectRatioPicker";
 import { EditorVideoPreview } from "./EditorVideoPreview";
+import { InlineCropEditor } from "./InlineCropEditor";
 
 /** Annotation tools as a vertical strip beside the preview. Set to false to hide the strip
  *  and bring back Add Layer → Annotation in the bar under the preview. */
@@ -71,6 +72,10 @@ type Props = {
 	effectiveShowCursor: boolean;
 	isCropped: boolean;
 	handleOpenCropEditor: () => void;
+	/** Cropping happens in place of the preview; the crop is restored on cancel. */
+	isCropping: boolean;
+	onCancelCrop: () => void;
+	onDoneCrop: () => void;
 	handleSaveAutoCaptionEdit: (target: CaptionEditTarget, text: string) => void;
 	handleSelectAnnotation: (id: string | null) => void;
 	setDuration: Dispatch<SetStateAction<number>>;
@@ -115,6 +120,9 @@ export function EditorPreviewPanel(props: Props) {
 		effectiveShowCursor,
 		isCropped,
 		handleOpenCropEditor,
+		isCropping,
+		onCancelCrop,
+		onDoneCrop,
 		handleSaveAutoCaptionEdit,
 		handleSelectAnnotation,
 		setDuration,
@@ -136,7 +144,21 @@ export function EditorPreviewPanel(props: Props) {
 		<div className="editor-preview-panel flex min-h-0 min-w-0 flex-1 flex-col">
 			<div className="flex min-h-0 flex-1 flex-col">
 				<div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
-					<div className="flex h-10 shrink-0 items-center justify-center gap-3">
+					{isCropping && (
+						<InlineCropEditor
+							t={t}
+							videoElement={videoPlaybackRef.current?.video ?? null}
+							cropRegion={appearance.cropRegion}
+							onCropChange={appearance.setCropRegion}
+							onCancel={onCancelCrop}
+							onDone={onDoneCrop}
+							besideTools={SHOW_ANNOTATION_TOOLBAR}
+						/>
+					)}
+					<div
+						className={`flex h-10 shrink-0 items-center justify-center gap-3${isCropping ? " invisible opacity-0" : ""}`}
+						inert={isCropping}
+					>
 						<AspectRatioPicker
 							t={t}
 							value={aspectRatio}
@@ -163,8 +185,9 @@ export function EditorPreviewPanel(props: Props) {
 						</Button>
 					</div>
 					<div
-						className={`editor-preview-area relative flex min-h-0 w-full flex-1 items-stretch px-4 py-3${SHOW_ANNOTATION_TOOLBAR ? " editor-preview-area--tools" : ""}`}
+						className={`editor-preview-area relative flex min-h-0 w-full flex-1 items-stretch px-4 py-3${SHOW_ANNOTATION_TOOLBAR ? " editor-preview-area--tools" : ""}${isCropping ? " invisible opacity-0" : ""}`}
 						style={{ flex: "1 1 auto", margin: 0 }}
+						inert={isCropping}
 					>
 						{SHOW_ANNOTATION_TOOLBAR && (
 							<AnnotationToolbar

@@ -24,7 +24,6 @@ import type { useAppearanceState } from "../state/useAppearanceState";
 import type { useEditorUiState } from "../state/useEditorUiState";
 import type { useProjectState } from "../state/useProjectState";
 import type { useTimelineState } from "../state/useTimelineState";
-import { CropEditorDialog } from "./CropEditorDialog";
 import { EditorDialogs } from "./EditorDialogs";
 import { getStartupView } from "@/lib/startupView";
 import { HomeLoadingSkeleton } from "../dashboard/HomeLoadingSkeleton";
@@ -397,6 +396,9 @@ export function EditorShell(props: Props) {
 						effectiveShowCursor={effectiveShowCursor}
 						isCropped={ui.isCropped}
 						handleOpenCropEditor={ui.handleOpenCropEditor}
+						isCropping={ui.isCropping}
+						onCancelCrop={ui.handleCancelCropEditor}
+						onDoneCrop={ui.handleCloseCropEditor}
 						handleSaveAutoCaptionEdit={autoCaption.handleSaveAutoCaptionEdit}
 						handleSelectAnnotation={handleSelectAnnotation}
 						setDuration={ui.setDuration}
@@ -468,16 +470,6 @@ export function EditorShell(props: Props) {
 			/>
 			{editorDialogs}
 			{onboarding}
-			<CropEditorDialog
-				open={ui.showCropModal}
-				t={t}
-				videoElement={ui.videoPlaybackRef.current?.video ?? null}
-				cropRegion={appearance.cropRegion}
-				setCropRegion={appearance.setCropRegion}
-				aspectRatio={ui.aspectRatio}
-				onCancel={ui.handleCancelCropEditor}
-				onDone={ui.handleCloseCropEditor}
-			/>
 			<Toaster className="pointer-events-auto" />
 		</div>
 	);

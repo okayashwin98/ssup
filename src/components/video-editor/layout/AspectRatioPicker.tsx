@@ -65,6 +65,62 @@ const PLATFORMS: Array<{
 	},
 ];
 
+/** One choice in a grid of shapes: the outline drawn to scale, with its ratio underneath. */
+export function RatioTile({
+	ratio,
+	label,
+	name,
+	dashed = false,
+	selected,
+	onSelect,
+}: {
+	/** Width / height of the outline. */
+	ratio: number;
+	label: string;
+	/** What the shape is for, shown above the ratio. */
+	name?: string;
+	dashed?: boolean;
+	selected: boolean;
+	onSelect: () => void;
+}) {
+	return (
+		<button
+			type="button"
+			role="radio"
+			aria-checked={selected}
+			aria-label={name ? `${name} ${label}` : label}
+			onClick={onSelect}
+			className={cn(
+				"flex min-w-0 flex-col items-center gap-1.5 rounded-[10px] px-1 py-2 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-focus",
+				selected
+					? "bg-default/70 text-foreground"
+					: "text-muted hover:bg-default/40 hover:text-foreground",
+			)}
+		>
+			<span className="flex size-6 items-center justify-center" aria-hidden="true">
+				<span
+					className={cn(
+						"rounded-[3px] border-[1.5px]",
+						dashed && "border-dashed",
+						selected ? "border-accent" : "border-current",
+					)}
+					style={{
+						aspectRatio: ratio,
+						width: ratio >= 1 ? "100%" : undefined,
+						height: ratio < 1 ? "100%" : undefined,
+					}}
+				/>
+			</span>
+			<span className="flex max-w-full flex-col items-center text-[11px] leading-[14px]">
+				{name ? <span className="max-w-full truncate">{name}</span> : null}
+				<span className={cn("tabular-nums", name && "text-[10px] opacity-70")}>
+					{label}
+				</span>
+			</span>
+		</button>
+	);
+}
+
 type Props = {
 	t: ReturnType<typeof useI18n>["t"];
 	value: AspectRatio;
@@ -111,45 +167,16 @@ export function AspectRatioPicker({ t, value, onChange, getSourceSize }: Props) 
 	}
 
 	function tile(ratio: AspectRatio, key: string, name?: string) {
-		const numeric = getAspectRatioValue(ratio, source.width / source.height);
-		const selected = selectedKey === key;
-		const ratioLabel = ratio === "native" ? nativeLabel : ratio;
 		return (
-			<button
+			<RatioTile
 				key={key}
-				type="button"
-				role="radio"
-				aria-checked={selected}
-				aria-label={name ? `${name} ${ratioLabel}` : ratioLabel}
-				onClick={() => choose(ratio, key)}
-				className={cn(
-					"flex min-w-0 flex-col items-center gap-1.5 rounded-[10px] px-1 py-2 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-focus",
-					selected
-						? "bg-default/70 text-foreground"
-						: "text-muted hover:bg-default/40 hover:text-foreground",
-				)}
-			>
-				<span className="flex size-6 items-center justify-center" aria-hidden="true">
-					<span
-						className={cn(
-							"rounded-[3px] border-[1.5px]",
-							ratio === "native" && "border-dashed",
-							selected ? "border-accent" : "border-current",
-						)}
-						style={{
-							aspectRatio: numeric,
-							width: numeric >= 1 ? "100%" : undefined,
-							height: numeric < 1 ? "100%" : undefined,
-						}}
-					/>
-				</span>
-				<span className="flex max-w-full flex-col items-center text-[11px] leading-[14px]">
-					{name ? <span className="max-w-full truncate">{name}</span> : null}
-					<span className={cn("tabular-nums", name && "text-[10px] opacity-70")}>
-						{ratioLabel}
-					</span>
-				</span>
-			</button>
+				ratio={getAspectRatioValue(ratio, source.width / source.height)}
+				dashed={ratio === "native"}
+				label={ratio === "native" ? nativeLabel : ratio}
+				name={name}
+				selected={selectedKey === key}
+				onSelect={() => choose(ratio, key)}
+			/>
 		);
 	}
 

@@ -46,7 +46,7 @@ export function useEditorUiState(
 	const [previewVolume, setPreviewVolume] = useState(1);
 	const [aspectRatio, setAspectRatio] = useState<AspectRatio>(initialPreferences.aspectRatio);
 	const [activeEffectSection, setActiveEffectSection] = useState<EditorEffectSection>("scene");
-	const [showCropModal, setShowCropModal] = useState(false);
+	const [isCropping, setIsCropping] = useState(false);
 	const [previewVersion, setPreviewVersion] = useState(0);
 	const [isPreviewReady, setIsPreviewReady] = useState(false);
 	const [autoSuggestZoomsTrigger, setAutoSuggestZoomsTrigger] = useState(0);
@@ -99,12 +99,12 @@ export function useEditorUiState(
 	);
 	const handleOpenCropEditor = useCallback(() => {
 		cropSnapshotRef.current = { ...cropRegion };
-		setShowCropModal(true);
+		setIsCropping(true);
 	}, [cropRegion]);
-	const handleCloseCropEditor = useCallback(() => setShowCropModal(false), []);
+	const handleCloseCropEditor = useCallback(() => setIsCropping(false), []);
 	const handleCancelCropEditor = useCallback(() => {
 		if (cropSnapshotRef.current) setCropRegion(cropSnapshotRef.current);
-		setShowCropModal(false);
+		setIsCropping(false);
 	}, [setCropRegion]);
 	const isCropped = useMemo(() => {
 		const top = Math.round(cropRegion.y * 100);
@@ -145,7 +145,7 @@ export function useEditorUiState(
 		setAspectRatio,
 		activeEffectSection,
 		setActiveEffectSection,
-		showCropModal,
+		isCropping,
 		previewVersion,
 		setPreviewVersion,
 		isPreviewReady,
