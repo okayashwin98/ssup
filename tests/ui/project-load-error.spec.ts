@@ -112,3 +112,46 @@ test("an unreadable project says so and offers no Locate", async ({ page }) => {
 	await expect(screen.getByRole("button", { name: "Locate recording" })).toHaveCount(0);
 	if (shots) await page.screenshot({ path: `${shots}/project-error-corrupt-light.png` });
 });
+
+test("Locate recording reconnects through the app and reopens the project", async ({ page }) => {
+	const screen = await openBrokenProject(page, {
+		success: false,
+		code: "missing-recording",
+		message: "Project video file not found: /Users/me/Recordings/Demo/take.mp4",
+		projectPath: "/Users/me/Recordings/Demo/Demo.ssup",
+		recordingPath: "/Users/me/Recordings/Demo/take.mp4",
+	});
+	await page.evaluate(() => {
+		const results = [
+			{ success: false, canceled: true },
+			{ success: false, error: "This recording is too short for the saved edits." },
+			{ success: true, videoPath: "/Users/me/Recordings/Demo/take.mov", copied: [] },
+		];
+		window.electronAPI.relinkProjectRecording = async (projectPath) => {
+			const html = document.documentElement;
+			html.dataset.relinked = projectPath;
+			html.dataset.relinks = String(Number(html.dataset.relinks || 0) + 1);
+			return results.shift() as never;
+		};
+	});
+	const locate = screen.getByRole("button", { name: "Locate recording" });
+	await expect(locate).toBeVisible();
+	if (shots) await page.screenshot({ path: `${shots}/project-error-locate-light.png` });
+
+	await locate.click();
+	await expect(page.locator("html")).toHaveAttribute("data-relinks", "1");
+	await expect(page.locator("html")).toHaveAttribute(
+		"data-relinked",
+		"/Users/me/Recordings/Demo/Demo.ssup",
+	);
+	await expect(page.locator("html")).toHaveAttribute("data-opens", "1");
+
+	await locate.click();
+	await expect(page.getByText("This recording is too short for the saved edits.")).toBeVisible();
+	await expect(page.locator("html")).toHaveAttribute("data-opens", "1");
+
+	await locate.click();
+	await expect(page.locator("html")).toHaveAttribute("data-relinks", "3");
+	// After reconnecting, the project opens again.
+	await expect(page.locator("html")).toHaveAttribute("data-opens", "2");
+});

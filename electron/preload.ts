@@ -1041,6 +1041,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	listProjectFiles: () => {
 		return ipcRenderer.invoke("list-project-files");
 	},
+	relinkProjectRecording: (projectPath: string) =>
+		ipcRenderer.invoke("relink-project-recording", projectPath),
 	openProjectFileAtPath: (filePath: string) => {
 		return ipcRenderer.invoke("open-project-file-at-path", filePath);
 	},

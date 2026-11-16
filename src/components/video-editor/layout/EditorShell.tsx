@@ -8,7 +8,7 @@ import { RECORDING_DRAG_TYPE } from "@/types/recordingLibrary";
 import { Button } from "@/components/ui/button";
 import { useCallback, useMemo, useEffect, useRef, useState, type ComponentProps } from "react";
 import { EditorAnnouncementBanner } from "@/components/announcements/EditorAnnouncementBanner";
-import { Toaster } from "@/components/ui/toast";
+import { Toaster, toast } from "@/components/ui/toast";
 import type { useI18n } from "@/contexts/I18nContext";
 import type { useEditorExportController } from "../export/useEditorExportController";
 import type { useExportDimensions } from "../export/useExportDimensions";
@@ -155,6 +155,27 @@ export function EditorShell(props: Props) {
 		},
 		[openActions, project, remountRecoveredVideo],
 	);
+	/** Locate recording: copy the chosen file into the project's folder, then reopen. */
+	const locateRecording = useCallback(
+		async (projectPath: string) => {
+			setRetryingProject(true);
+			try {
+				const result = await window.electronAPI.relinkProjectRecording(projectPath);
+				if (!result.success) {
+					if (!result.canceled)
+						toast.error(result.error || "Couldn’t reconnect the recording.");
+					return;
+				}
+				if (await openActions.openProjectAtPath(projectPath))
+					toast.success("Recording reconnected", {
+						description: "A copy is now in the project’s folder.",
+					});
+			} finally {
+				setRetryingProject(false);
+			}
+		},
+		[openActions],
+	);
 	const dashboardSettingsContent = useMemo(
 		() => (
 			<SettingsPanel
@@ -233,6 +254,11 @@ export function EditorShell(props: Props) {
 					failure={failure}
 					busy={retryingProject}
 					onRetry={() => void retryFailedProject(failure.projectPath)}
+					onLocate={
+						failure.projectPath
+							? () => void locateRecording(failure.projectPath as string)
+							: undefined
+					}
 					onHome={() => {
 						// Home opens without saving: this render still has the error set.
 						project.setLoadFailure(null);

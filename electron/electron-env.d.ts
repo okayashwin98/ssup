@@ -1080,6 +1080,13 @@ interface Window {
 			recordingPath?: string;
 			driveName?: string;
 		}>;
+		/** Locate recording: pick a video, copy it and its sidecars into the project's folder, repoint the project. */
+		relinkProjectRecording: (
+			projectPath: string,
+		) => Promise<
+			| { success: true; videoPath: string; copied: string[] }
+			| { success: false; canceled?: boolean; error?: string }
+		>;
 		openProjectsDirectory: () => Promise<{
 			success: boolean;
 			path?: string;

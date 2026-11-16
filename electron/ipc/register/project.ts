@@ -3,6 +3,8 @@ import { getRenamedProjectPath, renameLibraryProject } from "../project/renameLi
 import { createUntitledProject } from "../project/createUntitledProject";
 import { buildRecordingProjectName } from "../project/recordingProjectName";
 import { trashLibraryProjects } from "../project/trashProjects";
+import { RELINK_VIDEO_EXTENSIONS, relinkProjectRecording } from "../project/relinkRecording";
+import { probeMediaDurationSeconds } from "../recording/diagnostics";
 import {
 	assertProjectFolderRenameAllowed,
 	getProjectFilePath,
@@ -13,6 +15,7 @@ import {
 	reconcileProjectFolder,
 	removeFolderIfEmpty,
 } from "../project/projectMedia";
+import { hasProjectFileExtension } from "../project/projectFileNames";
 import { getRecordingThumbnail } from "../recording/thumbnail";
 import { discardRecordingFiles } from "../recording/discardFiles";
 import { listRecordings, setRecordingsRemoved } from "../recording/library";
@@ -369,6 +372,43 @@ export function registerProjectHandlers() {
 			return { success: true, value: await getRecordingThumbnail(file) };
 		} catch (error) {
 			return { success: false, error: String(error) };
+		}
+	});
+	ipcMain.handle("relink-project-recording", async (event, projectPath: unknown) => {
+		try {
+			if (typeof projectPath !== "string" || !hasProjectFileExtension(projectPath))
+				throw new Error("Invalid project path");
+			const target = normalizePath(projectPath);
+			// Only a project the app lists (its library or recent projects) can be changed.
+			const { entries } = await listProjectLibraryEntries();
+			if (!entries.some((entry) => entry.path === target))
+				throw new Error("Project is not in the library");
+			const owner = BrowserWindow.fromWebContents(event.sender);
+			const result = await relinkProjectRecording(target, {
+				recordingsDir: await getRecordingsDir(),
+				chooseRecording: async (missingPath) => {
+					const options = {
+						title: "Locate Recording",
+						message: `Choose the recording for “${path.basename(target, path.extname(target))}”. A copy goes into the project’s folder.`,
+						defaultPath: path.dirname(missingPath),
+						buttonLabel: "Use Recording",
+						filters: [{ name: "Video Files", extensions: RELINK_VIDEO_EXTENSIONS }],
+						properties: ["openFile" as const],
+					};
+					const picked = owner
+						? await dialog.showOpenDialog(owner, options)
+						: await dialog.showOpenDialog(options);
+					return picked.canceled ? null : (picked.filePaths[0] ?? null);
+				},
+				probeDurationSeconds: probeMediaDurationSeconds,
+				writeProject: writeProjectFileAtomically,
+			});
+			return result;
+		} catch (error) {
+			return {
+				success: false,
+				error: error instanceof Error ? error.message : String(error),
+			};
 		}
 	});
 	ipcMain.handle("get-project-preview", async (_, projectPath: string) => {
