@@ -39,7 +39,12 @@ import type { useTimelineState } from "../state/useTimelineState";
 import type { TimelineEditorHandle } from "../timeline/TimelineEditor";
 import type { VideoPlaybackRef } from "../VideoPlayback";
 import { setPreviewLoop, usePreviewLoop } from "../videoPlayback/previewLoop";
+import { AnnotationToolbar } from "./AnnotationToolbar";
 import { EditorVideoPreview } from "./EditorVideoPreview";
+
+/** Annotation tools as a vertical strip beside the preview. Set to false to hide the strip
+ *  and bring back Add Layer → Annotation in the bar under the preview. */
+const SHOW_ANNOTATION_TOOLBAR = true;
 
 type Props = {
 	t: ReturnType<typeof useI18n>["t"];
@@ -120,6 +125,13 @@ export function EditorPreviewPanel(props: Props) {
 		setError,
 	} = props;
 
+	// Each new annotation gets its own timeline row, above the existing ones.
+	const nextAnnotationTrack = () =>
+		timeline.annotationRegions.reduce(
+			(next, region) => Math.max(next, (region.trackIndex ?? 0) + 1),
+			0,
+		);
+
 	return (
 		<div className="editor-preview-panel flex min-h-0 min-w-0 flex-1 flex-col">
 			<div className="flex min-h-0 flex-1 flex-col">
@@ -164,9 +176,17 @@ export function EditorPreviewPanel(props: Props) {
 						</Button>
 					</div>
 					<div
-						className="flex min-h-0 w-full flex-1 items-stretch px-4 py-3"
+						className={`editor-preview-area relative flex min-h-0 w-full flex-1 items-stretch px-4 py-3${SHOW_ANNOTATION_TOOLBAR ? " editor-preview-area--tools" : ""}`}
 						style={{ flex: "1 1 auto", margin: 0 }}
 					>
+						{SHOW_ANNOTATION_TOOLBAR && (
+							<AnnotationToolbar
+								disabled={!videoPath || !isPreviewReady}
+								onAdd={(type) =>
+									timelineRef.current?.addAnnotation(nextAnnotationTrack(), type)
+								}
+							/>
+						)}
 						<div
 							className="editor-preview-stage flex min-h-0 min-w-0 flex-1 items-center justify-center"
 							style={{ containerType: "size" }}
@@ -244,22 +264,16 @@ export function EditorPreviewPanel(props: Props) {
 							</Button>
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="start">
-							<DropdownMenuItem
-								onClick={() => {
-									const nextTrack =
-										timeline.annotationRegions.length > 0
-											? Math.max(
-													...timeline.annotationRegions.map(
-														(region) => region.trackIndex ?? 0,
-													),
-												) + 1
-											: 0;
-									timelineRef.current?.addAnnotation(nextTrack);
-								}}
-								className="cursor-pointer text-muted-foreground hover:bg-foreground/10 hover:text-foreground"
-							>
-								{t("timeline.annotation.label")}
-							</DropdownMenuItem>
+							{!SHOW_ANNOTATION_TOOLBAR && (
+								<DropdownMenuItem
+									onClick={() =>
+										timelineRef.current?.addAnnotation(nextAnnotationTrack())
+									}
+									className="cursor-pointer text-muted-foreground hover:bg-foreground/10 hover:text-foreground"
+								>
+									{t("timeline.annotation.label")}
+								</DropdownMenuItem>
+							)}
 							<DropdownMenuItem
 								onClick={() => {
 									const nextTrack =

@@ -201,3 +201,47 @@ test("playback bar stays on one row, compacting only when the preview is too nar
 		await expect(addLayer).toHaveAttribute("aria-label", "Add Layer");
 	}
 });
+
+test("annotation tools sit in a strip beside the preview and add each type directly", async ({
+	page,
+}) => {
+	await installDesktopBridge(page);
+	await page.setViewportSize({ width: 1440, height: 800 });
+	await page.goto("/?windowType=editor");
+	const tools = page.getByRole("toolbar", { name: "Annotation tools" });
+	await expect(tools.getByRole("button")).toHaveText(["", "", "", ""]);
+	await expect(tools.getByRole("button", { name: "Text", exact: true })).toBeEnabled({
+		timeout: 20000,
+	});
+	const type = page.getByRole("grid", { name: "Annotation type" });
+	for (const name of ["Text", "Image", "Arrow", "Blur"]) {
+		await tools.getByRole("button", { name, exact: true }).click();
+		await expect(type.getByRole("row", { name, exact: true })).toHaveAttribute(
+			"aria-selected",
+			"true",
+		);
+	}
+	await expect(page.locator('[data-variant="annotation"] .timeline-block')).toHaveCount(4);
+	// The strip replaces the Annotation entry under Add Layer.
+	await page.getByRole("button", { name: "Add Layer", exact: true }).click();
+	await expect(page.getByRole("menuitem")).toHaveText(["Audio"]);
+	await page.keyboard.press("Escape");
+	for (const [width, height] of [
+		[1440, 800],
+		[1000, 800],
+		[800, 600],
+	]) {
+		await page.setViewportSize({ width, height });
+		const frame = (await page.locator(".editor-preview-frame").boundingBox())!;
+		const strip = (await tools.boundingBox())!;
+		const area = (await page.locator(".editor-preview-area").boundingBox())!;
+		// The strip never covers the video and stays inside the preview area.
+		expect(frame.x + frame.width).toBeLessThanOrEqual(strip.x);
+		expect(strip.x + strip.width).toBeLessThanOrEqual(area.x + area.width);
+		expect(strip.y).toBeGreaterThanOrEqual(area.y);
+		expect(strip.y + strip.height).toBeLessThanOrEqual(area.y + area.height);
+		// With room to spare the video stays centred over the playback bar.
+		if (width > 952)
+			expect(Math.abs(frame.x + frame.width / 2 - (area.x + area.width / 2))).toBeLessThan(1);
+	}
+});

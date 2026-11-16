@@ -9,6 +9,21 @@ import {
 	type FigureData,
 } from "../types";
 
+/** Switches an annotation to another type, keeping what it held and filling that type's defaults. */
+function withAnnotationType(region: AnnotationRegion, type: AnnotationRegion["type"]) {
+	const updated = { ...region, type };
+	if (type === "text") updated.content = region.textContent || "Enter text...";
+	else if (type === "image") updated.content = region.imageContent || "";
+	else if (type === "figure") {
+		updated.content = "";
+		if (!region.figureData) updated.figureData = { ...DEFAULT_FIGURE_DATA };
+	} else if (type === "blur") {
+		updated.content = "";
+		if (region.blurIntensity === undefined) updated.blurIntensity = 20;
+	}
+	return updated;
+}
+
 interface UseAnnotationRegionCommandsParams {
 	onSelectAnnotation: (id: string | null) => void;
 	setAnnotationRegions: Dispatch<SetStateAction<AnnotationRegion[]>>;
@@ -29,9 +44,9 @@ export function useAnnotationRegionCommands({
 	nextAnnotationZIndexRef,
 }: UseAnnotationRegionCommandsParams) {
 	const handleAnnotationAdded = useCallback(
-		(span: Span, trackIndex = 0) => {
+		(span: Span, trackIndex = 0, type: AnnotationRegion["type"] = "text") => {
 			const id = `annotation-${nextAnnotationIdRef.current++}`;
-			const newRegion: AnnotationRegion = {
+			const textRegion: AnnotationRegion = {
 				id,
 				startMs: Math.round(span.start),
 				endMs: Math.round(span.end),
@@ -43,6 +58,7 @@ export function useAnnotationRegionCommands({
 				zIndex: nextAnnotationZIndexRef.current++,
 				trackIndex,
 			};
+			const newRegion = type === "text" ? textRegion : withAnnotationType(textRegion, type);
 			setAnnotationRegions((current) => [...current, newRegion]);
 			onSelectAnnotation(id);
 			setSelectedZoomId(null);
@@ -106,20 +122,9 @@ export function useAnnotationRegionCommands({
 	const handleAnnotationTypeChange = useCallback(
 		(id: string, type: AnnotationRegion["type"]) => {
 			setAnnotationRegions((current) =>
-				current.map((region) => {
-					if (region.id !== id) return region;
-					const updated = { ...region, type };
-					if (type === "text") updated.content = region.textContent || "Enter text...";
-					else if (type === "image") updated.content = region.imageContent || "";
-					else if (type === "figure") {
-						updated.content = "";
-						if (!region.figureData) updated.figureData = { ...DEFAULT_FIGURE_DATA };
-					} else if (type === "blur") {
-						updated.content = "";
-						if (region.blurIntensity === undefined) updated.blurIntensity = 20;
-					}
-					return updated;
-				}),
+				current.map((region) =>
+					region.id === id ? withAnnotationType(region, type) : region,
+				),
 			);
 		},
 		[setAnnotationRegions],

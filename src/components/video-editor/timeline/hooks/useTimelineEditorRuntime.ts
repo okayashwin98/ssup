@@ -48,7 +48,7 @@ interface UseTimelineEditorRuntimeParams {
 	selectedClipId?: string | null;
 	onSelectClip?: (id: string | null) => void;
 	annotationRegions: AnnotationRegion[];
-	onAnnotationAdded?: (span: Span, trackIndex?: number) => void;
+	onAnnotationAdded?: (span: Span, trackIndex?: number, type?: AnnotationRegion["type"]) => void;
 	onAnnotationSpanChange?: (id: string, span: Span, trackIndex?: number) => void;
 	onAnnotationDelete?: (id: string) => void;
 	selectedAnnotationId?: string | null;
@@ -242,7 +242,7 @@ export function useTimelineEditorRuntime({
 	});
 
 	const handleAddAnnotation = useCallback(
-		(trackIndex = 0) => {
+		(trackIndex = 0, type?: AnnotationRegion["type"]) => {
 			if (!videoDuration || videoDuration === 0 || totalMs === 0 || !onAnnotationAdded) {
 				return;
 			}
@@ -255,7 +255,7 @@ export function useTimelineEditorRuntime({
 			const latestStartPos = Math.max(0, totalMs - defaultDuration);
 			const startPos = Math.max(0, Math.min(currentTimeMs, latestStartPos));
 			const endPos = Math.min(startPos + defaultDuration, totalMs);
-			onAnnotationAdded({ start: startPos, end: endPos }, trackIndex);
+			onAnnotationAdded({ start: startPos, end: endPos }, trackIndex, type);
 		},
 		[videoDuration, totalMs, currentTimeMs, defaultRegionDurationMs, onAnnotationAdded],
 	);

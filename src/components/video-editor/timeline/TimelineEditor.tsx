@@ -57,7 +57,7 @@ export interface TimelineEditorProps {
 	selectedClipId?: string | null;
 	onSelectClip?: (id: string | null) => void;
 	annotationRegions?: AnnotationRegion[];
-	onAnnotationAdded?: (span: Span, trackIndex?: number) => void;
+	onAnnotationAdded?: (span: Span, trackIndex?: number, type?: AnnotationRegion["type"]) => void;
 	onAnnotationSpanChange?: (id: string, span: Span, trackIndex?: number) => void;
 	onAnnotationDelete?: (id: string) => void;
 	selectedAnnotationId?: string | null;
@@ -112,7 +112,7 @@ export interface TimelineEditorHandle {
 	addZoom: () => void;
 	suggestZooms: () => void;
 	splitClip: () => void;
-	addAnnotation: (trackIndex?: number) => void;
+	addAnnotation: (trackIndex?: number, type?: AnnotationRegion["type"]) => void;
 	addAudio: (trackIndex?: number) => Promise<void>;
 	keyframes: { id: string; time: number }[];
 }

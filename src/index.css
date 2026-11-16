@@ -211,6 +211,15 @@
 		display: none;
 	}
 }
+/* The annotation strip sits on the right edge; equal room on both sides keeps the preview centred. */
+.editor-preview-area--tools {
+	padding-inline: 60px;
+}
+@container editor-preview (max-width: 560px) {
+	.editor-preview-area--tools {
+		padding-inline: 16px 56px;
+	}
+}
 @container (max-width: 520px) {
 	.editor-playback-volume .slider {
 		display: none;
