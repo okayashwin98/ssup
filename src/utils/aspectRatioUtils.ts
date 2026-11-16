@@ -101,3 +101,62 @@ export function formatAspectRatioForCSS(
 	}
 	return aspectRatio.replace(":", "/");
 }
+
+/** Smallest and largest side accepted for a typed custom frame size, in pixels. */
+export const CUSTOM_SIZE_MIN = 128;
+export const CUSTOM_SIZE_MAX = 7680;
+
+function parseCustomSide(text: string): number | null {
+	if (!/^\d+$/.test(text.trim())) return null;
+	const side = Number(text.trim());
+	return side >= CUSTOM_SIZE_MIN && side <= CUSTOM_SIZE_MAX ? side : null;
+}
+
+export function isValidCustomSide(text: string): boolean {
+	return parseCustomSide(text) !== null;
+}
+
+/** A typed width and height as a saved ratio, or null unless both are whole pixels in range. */
+export function customSizeToAspectRatio(widthText: string, heightText: string): AspectRatio | null {
+	const width = parseCustomSide(widthText);
+	const height = parseCustomSide(heightText);
+	return width === null || height === null ? null : `${width}:${height}`;
+}
+
+/** The typed size behind a saved ratio, when it was entered as a width and height. */
+export function getCustomSize(aspectRatio: AspectRatio): { width: number; height: number } | null {
+	const [widthText, heightText, extra] = aspectRatio.split(":");
+	if (
+		extra !== undefined ||
+		customSizeToAspectRatio(widthText ?? "", heightText ?? "") === null
+	) {
+		return null;
+	}
+	return { width: Number(widthText), height: Number(heightText) };
+}
+
+/** Short name for the picker button: "Native", a typed size as "1280 × 720", else the ratio. */
+export function getAspectRatioShortLabel(aspectRatio: AspectRatio): string {
+	if (aspectRatio === "native") return "Native";
+	const size = getCustomSize(aspectRatio);
+	return size ? `${size.width} × ${size.height}` : aspectRatio;
+}
+
+/** The frame size a ratio gives for a source video: the long side is kept, as export does. */
+export function getAspectRatioFrameSize(
+	aspectRatio: AspectRatio,
+	sourceWidth: number,
+	sourceHeight: number,
+): { width: number; height: number } {
+	const width = sourceWidth > 0 ? sourceWidth : 1920;
+	const height = sourceHeight > 0 ? sourceHeight : 1080;
+	if (aspectRatio === "native") return { width, height };
+	const size = getCustomSize(aspectRatio);
+	if (size) return size;
+	const ratio = getAspectRatioValue(aspectRatio, width / height);
+	const longSide = Math.max(width, height);
+	return {
+		width: Math.round(longSide * Math.min(1, ratio)),
+		height: Math.round(longSide / Math.max(1, ratio)),
+	};
+}

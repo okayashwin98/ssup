@@ -2,7 +2,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
 import {
 	CaretDown,
-	Check,
 	Crop,
 	MagicWand,
 	MagnifyingGlassPlus,
@@ -27,7 +26,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { useI18n } from "@/contexts/I18nContext";
-import { ASPECT_RATIOS, type AspectRatio, getAspectRatioLabel } from "@/utils/aspectRatioUtils";
+import type { AspectRatio } from "@/utils/aspectRatioUtils";
 import type { useVideoEditorAudio } from "../audio/useVideoEditorAudio";
 import type { CaptionEditTarget } from "../captionEditing";
 import type { useAnnotationRegionCommands } from "../hooks/useAnnotationRegionCommands";
@@ -40,6 +39,7 @@ import type { TimelineEditorHandle } from "../timeline/TimelineEditor";
 import type { VideoPlaybackRef } from "../VideoPlayback";
 import { setPreviewLoop, usePreviewLoop } from "../videoPlayback/previewLoop";
 import { AnnotationToolbar } from "./AnnotationToolbar";
+import { AspectRatioPicker } from "./AspectRatioPicker";
 import { EditorVideoPreview } from "./EditorVideoPreview";
 
 /** Annotation tools as a vertical strip beside the preview. Set to false to hide the strip
@@ -137,30 +137,17 @@ export function EditorPreviewPanel(props: Props) {
 			<div className="flex min-h-0 flex-1 flex-col">
 				<div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
 					<div className="flex h-10 shrink-0 items-center justify-center gap-3">
-						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<Button variant="ghost" size="sm" className="gap-1 px-2 text-xs">
-									<span className="font-medium">
-										{getAspectRatioLabel(aspectRatio)}
-									</span>
-									<CaretDown className="h-3 w-3" />
-								</Button>
-							</DropdownMenuTrigger>
-							<DropdownMenuContent align="center">
-								{ASPECT_RATIOS.map((ratio) => (
-									<DropdownMenuItem
-										key={ratio}
-										onClick={() => setAspectRatio(ratio)}
-										className="flex cursor-pointer items-center justify-between gap-3 text-muted-foreground hover:bg-foreground/10 hover:text-foreground"
-									>
-										<span>{getAspectRatioLabel(ratio)}</span>
-										{aspectRatio === ratio ? (
-											<Check className="h-3 w-3 text-accent" />
-										) : null}
-									</DropdownMenuItem>
-								))}
-							</DropdownMenuContent>
-						</DropdownMenu>
+						<AspectRatioPicker
+							t={t}
+							value={aspectRatio}
+							onChange={setAspectRatio}
+							getSourceSize={() => {
+								const video = videoPlaybackRef.current?.video;
+								return video
+									? { width: video.videoWidth, height: video.videoHeight }
+									: null;
+							}}
+						/>
 						<div className="h-4 w-px bg-foreground/20" />
 						<Button
 							variant="ghost"
