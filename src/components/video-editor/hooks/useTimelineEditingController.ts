@@ -5,6 +5,7 @@ import { toast } from "@/components/ui/toast";
 import type { useI18n } from "@/contexts/I18nContext";
 import type { useShortcuts } from "@/contexts/ShortcutsContext";
 import { useVideoEditorAudio } from "../audio/useVideoEditorAudio";
+import { resolveSelectedClipIds } from "../clipMerge";
 import type { useAppearanceState } from "../state/useAppearanceState";
 import type { useTimelineState } from "../state/useTimelineState";
 import type { TimelineEditorHandle } from "../timeline/TimelineEditor";
@@ -187,6 +188,15 @@ export function useTimelineEditingController(input: Input) {
 		pendingFreshRecordingAutoSuggestTelemetryCountRef:
 			input.pendingFreshRecordingAutoSuggestTelemetryCountRef,
 	});
+	const selectedClipIds = useMemo(
+		() =>
+			resolveSelectedClipIds(
+				timeline.clipRegions,
+				timeline.selectedClipId,
+				timeline.clipRangeSelection,
+			),
+		[timeline.clipRegions, timeline.selectedClipId, timeline.clipRangeSelection],
+	);
 	const clipCommands = useClipRegionCommands({
 		setAnnotationRegions: timeline.setAnnotationRegions,
 		setAudioRegions: timeline.setAudioRegions,
@@ -197,6 +207,10 @@ export function useTimelineEditingController(input: Input) {
 		setZoomRegions: timeline.setZoomRegions,
 		selectedClipId: timeline.selectedClipId,
 		setSelectedClipId: timeline.setSelectedClipId,
+		selectedClipIds,
+		clipRangeSelection: timeline.clipRangeSelection,
+		setClipRangeSelection: timeline.setClipRangeSelection,
+		getSourceAudioTrackSettingsForClip: audio.getSourceAudioTrackSettingsForClip,
 		setSelectedZoomId: timeline.setSelectedZoomId,
 		setSelectedAnnotationId: timeline.setSelectedAnnotationId,
 		setSelectedAudioId: timeline.setSelectedAudioId,

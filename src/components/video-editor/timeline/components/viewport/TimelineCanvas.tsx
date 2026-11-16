@@ -74,7 +74,7 @@ interface TimelineCanvasProps {
 	onSeek?: (time: number) => void;
 	canPlaceZoomAtMs?: (startMs: number) => boolean;
 	onSelectZoom?: (id: string | null) => void;
-	onSelectClip?: (id: string | null) => void;
+	onSelectClip?: (id: string | null, extend?: boolean) => void;
 	onSelectAnnotation?: (id: string | null) => void;
 	onSelectAudio?: (id: string | null) => void;
 	onSelectCaption?: (id: string | null) => void;
@@ -86,6 +86,8 @@ interface TimelineCanvasProps {
 	captionQuickAddEnabled?: boolean;
 	selectedZoomId: string | null;
 	selectedClipId?: string | null;
+	/** Every selected clip, when a range is selected with Shift. */
+	selectedClipIds?: readonly string[];
 	selectedAnnotationId?: string | null;
 	selectedAudioId?: string | null;
 	selectedCaptionId?: string | null;
@@ -423,11 +425,13 @@ interface TimelineCanvasRowsProps {
 	selectAllBlocksActive: boolean;
 	selectedZoomId: string | null;
 	selectedClipId?: string | null;
+	/** Every selected clip, when a range is selected with Shift. */
+	selectedClipIds?: readonly string[];
 	selectedAnnotationId?: string | null;
 	selectedAudioId?: string | null;
 	selectedCaptionId?: string | null;
 	onSelectZoom?: (id: string | null) => void;
-	onSelectClip?: (id: string | null) => void;
+	onSelectClip?: (id: string | null, extend?: boolean) => void;
 	onSelectAnnotation?: (id: string | null) => void;
 	onSelectAudio?: (id: string | null) => void;
 	onSelectCaption?: (id: string | null) => void;
@@ -503,6 +507,7 @@ const TimelineCanvasRows = memo(function TimelineCanvasRows({
 	selectAllBlocksActive,
 	selectedZoomId,
 	selectedClipId,
+	selectedClipIds,
 	selectedAnnotationId,
 	selectedAudioId,
 	selectedCaptionId,
@@ -736,7 +741,10 @@ const TimelineCanvasRows = memo(function TimelineCanvasRows({
 						key={item.id}
 						rowId={item.rowId}
 						span={item.span}
-						isSelected={item.id === selectedClipId}
+						isSelected={
+							item.id === selectedClipId ||
+							Boolean(selectedClipIds?.includes(item.id))
+						}
 						onSelectId={onSelectClip}
 						variant="clip"
 						displaySpan={item.displaySpan}
@@ -797,7 +805,10 @@ const TimelineCanvasRows = memo(function TimelineCanvasRows({
 									rowId={`${SOURCE_AUDIO_ROW_ID}-${track.id}`}
 									span={liveSpanPreviewById?.[item.id] ?? item.span}
 									disabled
-									isSelected={item.id === selectedClipId}
+									isSelected={
+										item.id === selectedClipId ||
+										Boolean(selectedClipIds?.includes(item.id))
+									}
 									onSelect={() => onSelectClip?.(item.id)}
 									variant="audio"
 									waveformPeaks={track.peaks}
@@ -960,6 +971,7 @@ export default function TimelineCanvas({
 	onSelectCaption,
 	selectedZoomId,
 	selectedClipId,
+	selectedClipIds,
 	selectedAnnotationId,
 	selectedAudioId,
 	selectedCaptionId,
@@ -1235,6 +1247,7 @@ export default function TimelineCanvas({
 					selectAllBlocksActive={selectAllBlocksActive}
 					selectedZoomId={selectedZoomId}
 					selectedClipId={selectedClipId}
+					selectedClipIds={selectedClipIds}
 					selectedAnnotationId={selectedAnnotationId}
 					selectedAudioId={selectedAudioId}
 					selectedCaptionId={selectedCaptionId}

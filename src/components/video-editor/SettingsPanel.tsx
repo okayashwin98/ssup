@@ -5,7 +5,12 @@ import { SettingsSections, SettingsCategory } from "./SettingsSections";
 import { Card, RadioGroup, Radio, Label, Description } from "@heroui/react";
 import { ProgressBar } from "@heroui/react";
 import { ColorControl, ColorPalette } from "@/components/ui/color-picker";
-import { Palette, Trash as Trash2, UploadSimple as Upload } from "@/components/ui/icons";
+import {
+	ArrowsMerge,
+	Palette,
+	Trash as Trash2,
+	UploadSimple as Upload,
+} from "@/components/ui/icons";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MAX_CAPTION_GLOSSARY_LENGTH } from "@/lib/captionGlossary";
@@ -456,6 +461,10 @@ interface SettingsPanelProps {
 	voiceCleanupStatus?: VoiceCleanupStatus | null;
 	onRetryVoiceCleanup?: () => void;
 	onClipDelete?: (id: string) => void;
+	/** How many clips are selected; more than one offers Merge clips. */
+	selectedClipCount?: number;
+	canMergeClips?: boolean;
+	onMergeClips?: () => void;
 	selectedAudioId?: string | null;
 	selectedAudioVolume?: number | null;
 	selectedAudioNormalize?: boolean | null;
@@ -942,6 +951,9 @@ export function SettingsPanel({
 	voiceCleanupStatus,
 	onRetryVoiceCleanup,
 	onClipDelete,
+	selectedClipCount = 0,
+	canMergeClips = false,
+	onMergeClips,
 	selectedAudioId,
 	selectedAudioVolume,
 	selectedAudioNormalize,
@@ -3456,6 +3468,30 @@ export function SettingsPanel({
 					})() && "hidden",
 				)}
 			>
+				{activeEffectSection === "clip" && selectedClipId && selectedClipCount > 1 && (
+					<div className="mb-2 flex flex-col gap-2">
+						<Button
+							onClick={onMergeClips}
+							disabled={!canMergeClips}
+							variant="secondary"
+							size="sm"
+							className="h-9 w-full gap-2 text-xs"
+						>
+							<ArrowsMerge className="h-3 w-3" />
+							{tSettings("clip.merge", "Merge {{count}} clips", {
+								count: selectedClipCount,
+							})}
+						</Button>
+						{!canMergeClips && (
+							<p className="text-xs text-muted-foreground" role="status">
+								{tSettings(
+									"clip.mergeUnavailable",
+									"Merge requires continuous footage with matching speed and audio settings.",
+								)}
+							</p>
+						)}
+					</div>
+				)}
 				{activeEffectSection === "clip" && selectedClipId && (
 					<Button
 						onClick={() => {

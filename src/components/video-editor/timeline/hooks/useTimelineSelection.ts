@@ -19,7 +19,7 @@ interface UseTimelineSelectionParams {
 	onAudioDelete?: (id: string) => void;
 	onCaptionDelete?: (id: string) => void;
 	onSelectZoom: (id: string | null) => void;
-	onSelectClip?: (id: string | null) => void;
+	onSelectClip?: (id: string | null, extend?: boolean) => void;
 	onSelectAnnotation?: (id: string | null) => void;
 	onSelectAudio?: (id: string | null) => void;
 	onSelectCaption?: (id: string | null) => void;
@@ -155,10 +155,10 @@ export function useTimelineSelection({
 	);
 
 	const handleSelectClip = useCallback(
-		(id: string | null) => {
+		(id: string | null, extend?: boolean) => {
 			setSelectAllBlocksActive(false);
 			setSelectedKeyframeId(null);
-			onSelectClip?.(id);
+			onSelectClip?.(id, extend);
 		},
 		[onSelectClip],
 	);

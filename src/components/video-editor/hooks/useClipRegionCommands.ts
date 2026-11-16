@@ -1,6 +1,8 @@
 import type { ClipSequenceSpan } from "../timeline/core/timelineTypes";
 import { type Dispatch, type MutableRefObject, type SetStateAction, useCallback } from "react";
 import { toast } from "@/components/ui/toast";
+import type { SourceAudioTrackSettings } from "../audio/audioTypes";
+import { type ClipRangeSelection, planClipMerge, selectClipRange } from "../clipMerge";
 import { changeClipSpan } from "../clipSpanChange";
 import {
 	packClipSequence,
@@ -29,6 +31,11 @@ interface UseClipRegionCommandsParams {
 	setZoomRegions: Dispatch<SetStateAction<ZoomRegion[]>>;
 	selectedClipId: string | null;
 	setSelectedClipId: Dispatch<SetStateAction<string | null>>;
+	/** Every selected clip: one, or a Shift-selected range. */
+	selectedClipIds: string[];
+	clipRangeSelection: ClipRangeSelection | null;
+	setClipRangeSelection: Dispatch<SetStateAction<ClipRangeSelection | null>>;
+	getSourceAudioTrackSettingsForClip: (clipId: string | null) => SourceAudioTrackSettings;
 	setSelectedZoomId: Dispatch<SetStateAction<string | null>>;
 	setSelectedAnnotationId: Dispatch<SetStateAction<string | null>>;
 	setSelectedAudioId: Dispatch<SetStateAction<string | null>>;
@@ -47,6 +54,10 @@ export function useClipRegionCommands({
 	setZoomRegions,
 	selectedClipId,
 	setSelectedClipId,
+	selectedClipIds,
+	clipRangeSelection,
+	setClipRangeSelection,
+	getSourceAudioTrackSettingsForClip,
 	setSelectedZoomId,
 	setSelectedAnnotationId,
 	setSelectedAudioId,
@@ -67,7 +78,21 @@ export function useClipRegionCommands({
 	);
 
 	const handleSelectClip = useCallback(
-		(id: string | null) => {
+		(id: string | null, extend = false) => {
+			// Shift-click selects every clip from where the selection started to this one.
+			if (id && extend && selectedClipId) {
+				const anchorId =
+					selectedClipIds.length > 1 && clipRangeSelection
+						? clipRangeSelection.anchorId
+						: selectedClipId;
+				setClipRangeSelection({
+					anchorId,
+					ids: selectClipRange(clipRegions, anchorId, id),
+					clips: clipRegions,
+				});
+			} else {
+				setClipRangeSelection(null);
+			}
 			setSelectedClipId(id);
 			if (id) {
 				setActiveEffectSection("clip");
@@ -80,6 +105,11 @@ export function useClipRegionCommands({
 			}
 		},
 		[
+			clipRegions,
+			selectedClipId,
+			selectedClipIds,
+			clipRangeSelection,
+			setClipRangeSelection,
 			setActiveEffectSection,
 			setSelectedAnnotationId,
 			setSelectedAudioId,
@@ -221,7 +251,31 @@ export function useClipRegionCommands({
 		[clipRegions, selectedClipId, applySequence, setSelectedClipId],
 	);
 
+	const canMergeSelectedClips =
+		planClipMerge(clipRegions, selectedClipIds, getSourceAudioTrackSettingsForClip) !== null;
+	/** Joins the selected range into its first clip; one step in the undo history. */
+	const handleMergeSelectedClips = useCallback(() => {
+		const next = planClipMerge(
+			clipRegions,
+			selectedClipIds,
+			getSourceAudioTrackSettingsForClip,
+		);
+		const merged = next?.find((clip) => selectedClipIds.includes(clip.id));
+		if (!next || !merged) return;
+		setClipRegions(next);
+		handleSelectClip(merged.id);
+	}, [
+		clipRegions,
+		selectedClipIds,
+		getSourceAudioTrackSettingsForClip,
+		setClipRegions,
+		handleSelectClip,
+	]);
+
 	return {
+		selectedClipIds,
+		canMergeSelectedClips,
+		handleMergeSelectedClips,
 		handleSelectClip,
 		handleClipSplit,
 		handleClipSpanChange,

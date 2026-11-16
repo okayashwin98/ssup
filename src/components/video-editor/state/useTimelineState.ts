@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { SourceAudioTrackSettings } from "../audio/audioTypes";
+import type { ClipRangeSelection } from "../clipMerge";
 import type {
 	AnnotationRegion,
 	AudioRegion,
@@ -21,6 +22,7 @@ export function useTimelineState() {
 	const [trimRegions, setTrimRegions] = useState<TrimRegion[]>([]);
 	const [clipRegions, setClipRegions] = useState<ClipRegion[]>([]);
 	const [selectedClipId, setSelectedClipId] = useState<string | null>(null);
+	const [clipRangeSelection, setClipRangeSelection] = useState<ClipRangeSelection | null>(null);
 	const [speedRegions, setSpeedRegions] = useState<SpeedRegion[]>([]);
 	const [annotationRegions, setAnnotationRegions] = useState<AnnotationRegion[]>([]);
 	const [selectedAnnotationId, setSelectedAnnotationId] = useState<string | null>(null);
@@ -54,6 +56,8 @@ export function useTimelineState() {
 		setClipRegions,
 		selectedClipId,
 		setSelectedClipId,
+		clipRangeSelection,
+		setClipRangeSelection,
 		speedRegions,
 		setSpeedRegions,
 		annotationRegions,

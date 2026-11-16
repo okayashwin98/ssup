@@ -108,6 +108,9 @@ export function useEditorSettingsPanelProps(input: Input): ComponentProps<typeof
 		voiceCleanupStatus: input.voiceCleanupStatus,
 		onRetryVoiceCleanup: input.onRetryVoiceCleanup,
 		onClipDelete: clipCommands.handleClipDelete,
+		selectedClipCount: clipCommands.selectedClipIds.length,
+		canMergeClips: clipCommands.canMergeSelectedClips,
+		onMergeClips: clipCommands.handleMergeSelectedClips,
 		selectedAudioId: timeline.selectedAudioId,
 		selectedAudioVolume: selectedAudio?.volume ?? null,
 		selectedAudioNormalize:

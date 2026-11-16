@@ -55,7 +55,10 @@ export interface TimelineEditorProps {
 	onClipSpanChange?: (id: string, span: ClipSequenceSpan) => void;
 	onClipDelete?: (id: string) => void;
 	selectedClipId?: string | null;
-	onSelectClip?: (id: string | null) => void;
+	/** `extend` is true for a Shift-click, which selects the range up to that clip. */
+	onSelectClip?: (id: string | null, extend?: boolean) => void;
+	/** Every selected clip, when a range is selected with Shift. */
+	selectedClipIds?: readonly string[];
 	annotationRegions?: AnnotationRegion[];
 	onAnnotationAdded?: (span: Span, trackIndex?: number, type?: AnnotationRegion["type"]) => void;
 	onAnnotationSpanChange?: (id: string, span: Span, trackIndex?: number) => void;
@@ -143,6 +146,7 @@ const TimelineEditor = forwardRef<TimelineEditorHandle, TimelineEditorProps>(
 			onClipDelete,
 			selectedClipId,
 			onSelectClip,
+			selectedClipIds,
 			annotationRegions = [],
 			onAnnotationAdded,
 			onAnnotationSpanChange,
@@ -508,6 +512,7 @@ const TimelineEditor = forwardRef<TimelineEditorHandle, TimelineEditorProps>(
 							onSelectCaption={handleSelectCaption}
 							selectedZoomId={selectedZoomId}
 							selectedClipId={selectedClipId}
+							selectedClipIds={selectedClipIds}
 							selectedAnnotationId={selectedAnnotationId}
 							selectedAudioId={selectedAudioId}
 							selectedCaptionId={selectedCaptionId}

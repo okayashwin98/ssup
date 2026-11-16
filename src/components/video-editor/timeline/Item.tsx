@@ -39,7 +39,8 @@ interface ItemProps {
 	isSelected?: boolean;
 	onSelect?: () => void;
 	onDoubleClick?: () => void;
-	onSelectId?: (id: string) => void;
+	/** `extend` is true when Shift was held, to select a range. */
+	onSelectId?: (id: string, extend?: boolean) => void;
 	zoomDepth?: number;
 	zoomMode?: "auto" | "manual";
 	speedValue?: number;
@@ -253,9 +254,9 @@ export default function Item({
 							: glassStyles.glassYellow;
 
 	const MIN_ITEM_PX = 6;
-	const handleSelect = () => {
+	const handleSelect = (event: React.PointerEvent) => {
 		onSelect?.();
-		onSelectId?.(id);
+		onSelectId?.(id, event.shiftKey);
 	};
 	const safeItemStyle = {
 		...itemStyle,

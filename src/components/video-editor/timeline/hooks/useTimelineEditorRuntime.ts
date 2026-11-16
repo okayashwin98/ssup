@@ -46,7 +46,7 @@ interface UseTimelineEditorRuntimeParams {
 	onClipSpanChange?: (id: string, span: ClipSequenceSpan) => void;
 	onClipDelete?: (id: string) => void;
 	selectedClipId?: string | null;
-	onSelectClip?: (id: string | null) => void;
+	onSelectClip?: (id: string | null, extend?: boolean) => void;
 	annotationRegions: AnnotationRegion[];
 	onAnnotationAdded?: (span: Span, trackIndex?: number, type?: AnnotationRegion["type"]) => void;
 	onAnnotationSpanChange?: (id: string, span: Span, trackIndex?: number) => void;
