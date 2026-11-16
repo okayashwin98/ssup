@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { LibrarySkeleton } from "./LibrarySkeleton";
 import { SharedRecordings } from "../cloud/SharedRecordings";
 import { CLOUD_SHARE_ENDPOINT } from "../cloud/endpoint";
@@ -14,6 +15,7 @@ import { ProjectCard } from "./ProjectCard";
 import type { DashboardProps } from "./types";
 
 import type { DashboardModel } from "./useDashboardModel";
+import { useScrollEdgeFade } from "./useScrollEdgeFade";
 
 export function DashboardGrid({
 	onImportFile,
@@ -75,6 +77,10 @@ export function DashboardGrid({
 	| "deleteEntries"
 	| "run"
 >) {
+	const scroller = useRef<HTMLElement>(null);
+	const topFade = useRef<HTMLDivElement>(null);
+	const bottomFade = useRef<HTMLDivElement>(null);
+	useScrollEdgeFade(scroller, topFade, bottomFade);
 	// Raw shows one card per project folder, which opens in Finder, then the loose files.
 	const folderOf = (entry: (typeof visible)[number]) => entry.rawSource?.folder ?? null;
 	const rawFolders = new Map<string, typeof visible>();
@@ -110,9 +116,11 @@ export function DashboardGrid({
 		/>
 	);
 	return (
-		<>
+		// The fades take the card's own colour and stay clear of the scrollbar.
+		<div className="relative flex min-h-0 flex-1 flex-col bg-inherit">
 			{/* Gap above the grid sits inside the scroller, so hover lifts are not clipped. */}
 			<main
+				ref={scroller}
 				className={`custom-scrollbar min-h-0 flex-1 overflow-y-auto px-7 pb-10 lg:px-10 ${section === "settings" || section === "shared" ? "" : "pt-7"}`}
 			>
 				{error && (
@@ -200,6 +208,16 @@ export function DashboardGrid({
 				)}
 				<RawPreview entry={rawPreview} onClose={() => setRawPreview(null)} />
 			</main>
-		</>
+			<div
+				ref={topFade}
+				aria-hidden="true"
+				className="pointer-events-none absolute left-0 right-3 top-0 z-10 h-6 bg-inherit opacity-0 [mask-image:linear-gradient(to_bottom,#000,transparent)]"
+			/>
+			<div
+				ref={bottomFade}
+				aria-hidden="true"
+				className="pointer-events-none absolute bottom-0 left-0 right-3 z-10 h-6 bg-inherit opacity-0 [mask-image:linear-gradient(to_top,#000,transparent)]"
+			/>
+		</div>
 	);
 }
