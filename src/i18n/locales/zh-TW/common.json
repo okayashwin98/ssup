@@ -4,7 +4,8 @@
 		"editorTitle": "SuperShare 編輯器",
 		"subtitle": "螢幕錄製與編輯",
 		"language": "語言",
-		"manageRecordings": "打開錄製影像文件夾"
+		"manageRecordings": "打開錄製影像文件夾",
+		"website": "example.com"
 	},
 	"actions": {
 		"cancel": "取消",

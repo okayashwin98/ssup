@@ -4,7 +4,8 @@
 		"editorTitle": "SuperShare Editor",
 		"subtitle": "Enregistrement et édition d’écran",
 		"language": "Langue",
-		"manageRecordings": "Ouvrir le dossier des enregistrements"
+		"manageRecordings": "Ouvrir le dossier des enregistrements",
+		"website": "example.com"
 	},
 	"actions": {
 		"cancel": "Annuler",
