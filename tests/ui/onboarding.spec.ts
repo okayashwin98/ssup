@@ -51,6 +51,8 @@ test("first launch opens the permissions welcome, never sign-in, and persists co
 	await expect(tour.getByPlaceholder("you@example.com")).toHaveCount(0);
 	await expect(page.getByText(/sign in/i)).toHaveCount(0);
 	await expect(tour.locator("[data-permissions-confetti]")).toBeVisible();
+	// The first-launch intro plays over the welcome; a click would only skip it.
+	await expect(page.locator("[data-onboarding-intro]")).toHaveCount(0, { timeout: 4000 });
 	await tour.getByRole("button", { name: "Start recording", exact: true }).click();
 	await expect
 		.poll(() => page.evaluate(() => localStorage.getItem("recordly.onboarding.v1.seen")))

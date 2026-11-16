@@ -414,6 +414,8 @@ function CursorClickEffectCards({
 
 interface SettingsPanelProps {
 	onShowOnboarding?: () => void;
+	/** Settings → Show onboarding: the intro, then the welcome. */
+	onReplayIntro?: () => void;
 	advanced?: boolean;
 	panelMode?: "editor" | "background";
 	activeEffectSection?: EditorEffectSection;
@@ -926,6 +928,7 @@ function CursorStylePreview({
 
 export function SettingsPanel({
 	onShowOnboarding,
+	onReplayIntro,
 	advanced = false,
 	panelMode = "editor",
 	activeEffectSection: activeEffectSectionProp,
@@ -2336,7 +2339,11 @@ export function SettingsPanel({
 				<SettingsCategory category="general">
 					{onShowOnboarding && (
 						<SettingsRow title="Onboarding">
-							<Button variant="secondary" size="sm" onClick={onShowOnboarding}>
+							<Button
+								variant="secondary"
+								size="sm"
+								onClick={onReplayIntro ?? onShowOnboarding}
+							>
 								Show onboarding
 							</Button>
 						</SettingsRow>

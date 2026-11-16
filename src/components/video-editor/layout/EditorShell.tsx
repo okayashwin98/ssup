@@ -61,6 +61,8 @@ type Props = {
 export function EditorShell(props: Props) {
 	const [onboardingRequest, setOnboardingRequest] = useState(0);
 	const showOnboarding = useCallback(() => setOnboardingRequest((value) => value + 1), []);
+	const [introRequest, setIntroRequest] = useState(0);
+	const replayIntro = useCallback(() => setIntroRequest((value) => value + 1), []);
 	const [shareRequestNonce, setShareRequestNonce] = useState(0);
 	const shareToken = CLOUD_SHARE_PERSONAL_TOKEN;
 	const {
@@ -181,16 +183,21 @@ export function EditorShell(props: Props) {
 			<SettingsPanel
 				{...settingsPanelProps}
 				onShowOnboarding={showOnboarding}
+				onReplayIntro={replayIntro}
 				activeEffectSection="settings"
 				selectedAnnotationId={null}
 				selectedClipId={null}
 				advanced
 			/>
 		),
-		[settingsPanelProps, showOnboarding],
+		[settingsPanelProps, showOnboarding, replayIntro],
 	);
 	const onboarding = (
-		<OnboardingController requestNonce={onboardingRequest} ready={!project.loading} />
+		<OnboardingController
+			requestNonce={onboardingRequest}
+			introRequestNonce={introRequest}
+			ready={!project.loading}
+		/>
 	);
 	const editorDialogs = (
 		<DashboardSettingsContext.Provider value={dashboardSettingsContent}>
@@ -379,6 +386,7 @@ export function EditorShell(props: Props) {
 						settingsPanelProps={{
 							...settingsPanelProps,
 							onShowOnboarding: showOnboarding,
+							onReplayIntro: replayIntro,
 						}}
 					/>
 					<EditorPreviewPanel
