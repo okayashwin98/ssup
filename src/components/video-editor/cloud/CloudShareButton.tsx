@@ -15,6 +15,7 @@ import { useI18n } from "@/contexts/I18nContext";
 import { copyText } from "@/lib/copyText";
 import { loadLocalProfile } from "@/lib/localProfile";
 import { CLOUD_SHARE_ENDPOINT as DEFAULT_CLOUD_ENDPOINT } from "./endpoint";
+import { PublishedVideoPreview } from "./PublishedVideoPreview";
 import { saveProjectShareLink } from "./projectShareLinks";
 import { SharedRecordings } from "./SharedRecordings";
 import {
@@ -242,10 +243,22 @@ export function CloudShareButton({
 	const form = (
 		<>
 			{shareUrl ? (
-				<Button type="button" variant="accent" onClick={copyShareUrl} className="w-full">
-					{copied ? <Check className="h-4 w-4" /> : <LinkSimple className="h-4 w-4" />}
-					{copied ? t("editor.cloud.copied") : "Copy link"}
-				</Button>
+				<div className="space-y-3">
+					<PublishedVideoPreview key={shareUrl} url={shareUrl} />
+					<Button
+						type="button"
+						variant="accent"
+						onClick={copyShareUrl}
+						className="w-full"
+					>
+						{copied ? (
+							<Check className="h-4 w-4" />
+						) : (
+							<LinkSimple className="h-4 w-4" />
+						)}
+						{copied ? t("editor.cloud.copied") : "Copy link"}
+					</Button>
+				</div>
 			) : (
 				<div className="space-y-4">
 					{!uploading && (

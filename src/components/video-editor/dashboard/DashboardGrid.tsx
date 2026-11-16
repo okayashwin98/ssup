@@ -1,17 +1,15 @@
 import { useRef } from "react";
-import { LibrarySkeleton } from "./LibrarySkeleton";
-import { SharedRecordings } from "../cloud/SharedRecordings";
-import { CLOUD_SHARE_ENDPOINT } from "../cloud/endpoint";
-import { RecordNewButton } from "./RecordNewButton";
-import { RawPreview } from "./RawRecordings";
-import { Cloud, ImageSquare } from "@/components/ui/icons";
-import { RawFolderCard } from "./RawFolderCard";
-
 import { Button } from "@/components/ui/button";
-
+import { Cloud, ImageSquare } from "@/components/ui/icons";
+import { CLOUD_SHARE_ENDPOINT } from "../cloud/endpoint";
+import { SharedRecordings } from "../cloud/SharedRecordings";
 import { DashboardSettings } from "./DashboardSettings";
-
+import { LibrarySkeleton } from "./LibrarySkeleton";
 import { ProjectCard } from "./ProjectCard";
+import { RawFolderCard } from "./RawFolderCard";
+import { RawPreview } from "./RawRecordings";
+import { RecentSharedVideos } from "./RecentSharedVideos";
+import { RecordNewButton } from "./RecordNewButton";
 import type { DashboardProps } from "./types";
 
 import type { DashboardModel } from "./useDashboardModel";
@@ -28,6 +26,7 @@ export function DashboardGrid({
 	refreshRaw,
 	error,
 	section,
+	setSection,
 	shareToken,
 	onShareProject,
 	visible,
@@ -57,6 +56,7 @@ export function DashboardGrid({
 	| "refreshRaw"
 	| "error"
 	| "section"
+	| "setSection"
 	| "shareToken"
 	| "onShareProject"
 	| "visible"
@@ -127,6 +127,18 @@ export function DashboardGrid({
 						{error}
 					</p>
 				)}
+				{/* Only with a share key; without one there is no row and no prompt. */}
+				{section === "projects" &&
+					!hasActiveFilters &&
+					shareToken &&
+					CLOUD_SHARE_ENDPOINT && (
+						<RecentSharedVideos
+							key={shareToken}
+							token={shareToken}
+							endpoint={CLOUD_SHARE_ENDPOINT}
+							onViewAll={() => setSection("shared")}
+						/>
+					)}
 				{section === "settings" ? (
 					<DashboardSettings onImportFile={onImportFile} />
 				) : section === "shared" ? (
