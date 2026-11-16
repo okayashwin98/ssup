@@ -1,7 +1,8 @@
 import { constants as fsConstants } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { getReferencedPaths, moveProjectMediaIntoFolder } from "./projectMedia";
+import { moveProjectMediaIntoFolder } from "./projectMedia";
+import { findUnusedRecordings } from "./unusedRecordings";
 
 const MARKER = ".project-folders";
 // A recording this fresh may still be waiting for its project to be saved.
@@ -84,7 +85,11 @@ export async function migrateRecordingsIntoProjectFolders(options: Options) {
 	};
 }
 
-/** Loose recordings (and their sidecars) that no project uses go to Trash once old enough. */
+/**
+ * The launch sweep: loose recordings (with their companion files) that no project uses go to
+ * Trash once old enough. Same rules as Home's "Free up space"; if any project can't be read,
+ * nothing moves.
+ */
 export async function trashOrphanRecordings(options: {
 	recordingsDir: string;
 	projectFiles: string[];
@@ -92,24 +97,17 @@ export async function trashOrphanRecordings(options: {
 	minAgeMs: number;
 	now?: number;
 }) {
-	const referenced = new Set<string>();
-	for (const project of options.projectFiles) {
-		const data = await fs
-			.readFile(project, "utf8")
-			.then((text) => JSON.parse(text))
-			.catch(() => null);
-		for (const file of getReferencedPaths(data)) referenced.add(file);
+	let unused: Awaited<ReturnType<typeof findUnusedRecordings>>;
+	try {
+		unused = await findUnusedRecordings({ ...options, looseOnly: true });
+	} catch (error) {
+		console.warn("[project-folders] Unused recordings kept:", String(error));
+		return [];
 	}
 	const trashed: string[] = [];
-	const now = options.now ?? Date.now();
-	for (const entry of await fs.readdir(options.recordingsDir, { withFileTypes: true })) {
-		if (!entry.isFile() || !/^recording-\d+/.test(entry.name)) continue;
-		const file = path.join(options.recordingsDir, entry.name);
-		if (referenced.has(file)) continue;
-		const stat = await fs.stat(file);
-		if (now - stat.mtimeMs < options.minAgeMs) continue;
-		await options.trash(file);
-		trashed.push(file);
+	for (const file of unused.flatMap((group) => group.files)) {
+		await options.trash(file.path);
+		trashed.push(file.path);
 	}
 	return trashed;
 }

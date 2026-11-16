@@ -577,6 +577,10 @@ function getHudEditorMode() {
 		hudOverlayRecordingActive || hudRecordingRestarting,
 	);
 }
+/** True while a take is recording, paused or restarting. */
+export function isHudRecordingInProgress(): boolean {
+	return hudOverlayRecordingActive || hudRecordingRestarting;
+}
 export function isHudRecordingRestarting(): boolean {
 	return hudRecordingRestarting;
 }

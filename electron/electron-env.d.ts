@@ -1227,6 +1227,19 @@ interface Window {
 		getLocalStorageUsage: () => Promise<
 			{ success: true; bytes: number } | { success: false; error: string }
 		>;
+		/** Recordings no saved project uses, with their companion files, for "Free up space". */
+		findUnusedRecordings: () => Promise<
+			| { success: true; value: import("../src/types/recordingLibrary").UnusedRecording[] }
+			| { success: false; error: string }
+		>;
+		/** Moves the chosen recordings to the Trash after checking again; never deletes for good. */
+		trashUnusedRecordings: (paths: string[]) => Promise<
+			| {
+					success: true;
+					value: { trashed: string[]; kept: string[]; failed: string[]; bytes: number };
+			  }
+			| { success: false; error: string }
+		>;
 		getRecordingsDirectory: () => Promise<{
 			success: boolean;
 			path: string;

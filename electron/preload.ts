@@ -1237,6 +1237,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	getLocalStorageUsage: () => {
 		return ipcRenderer.invoke("get-local-storage-usage");
 	},
+	findUnusedRecordings: () => {
+		return ipcRenderer.invoke("find-unused-recordings");
+	},
+	trashUnusedRecordings: (paths: string[]) => {
+		return ipcRenderer.invoke("trash-unused-recordings", paths);
+	},
 	chooseRecordingsDirectory: () => {
 		return ipcRenderer.invoke("choose-recordings-directory");
 	},
