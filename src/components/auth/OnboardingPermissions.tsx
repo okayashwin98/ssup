@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { Button } from "@heroui/react";
-import { ArrowRight, Check, Cursor, Monitor } from "@phosphor-icons/react";
+import { Button } from "@/components/ui/button";
+import { ArrowRight, Check, Cursor, MonitorIcon } from "@/components/ui/icons";
 import { OnboardingBody, OnboardingFooter, OnboardingHeader } from "./OnboardingLayout";
 import { PermissionsConfetti } from "./PermissionsConfetti";
 
@@ -83,11 +83,12 @@ export function OnboardingPermissions({ onFinish }: { onFinish: () => void }) {
 		}
 	};
 
+	const allGranted = screenGranted && accessibilityGranted;
+	const checkAgain = () => void refresh().catch((error) => setError(String(error)));
+
 	return (
 		<div className="onboarding-permissions relative flex min-h-0 flex-col">
-			<PermissionsConfetti
-				ready={platform === "mac" && screenGranted && accessibilityGranted && !error}
-			/>
+			<PermissionsConfetti ready={platform === "mac" && allGranted && !error} />
 			<OnboardingBody scrollable={false}>
 				{platform === "checking" ? (
 					<p role="status" className="py-12 text-center text-sm text-muted">
@@ -99,13 +100,13 @@ export function OnboardingPermissions({ onFinish }: { onFinish: () => void }) {
 							title="Allow SuperShare to record"
 							description={
 								platform === "mac"
-									? "Enable these permissions in macOS System Settings."
+									? "Turn on these two permissions in macOS System Settings."
 									: "Your screen is captured only when you start a recording. Microphone and camera access are requested when you use them."
 							}
 						/>
 						{platform === "mac" && (
 							<>
-								<div className="space-y-3">
+								<div className="divide-y divide-separator border-y border-separator">
 									{[
 										{
 											key: "screen" as const,
@@ -113,7 +114,7 @@ export function OnboardingPermissions({ onFinish }: { onFinish: () => void }) {
 											description:
 												"Capture a screen, window or selected area.",
 											granted: screenGranted,
-											icon: Monitor,
+											icon: MonitorIcon,
 										},
 										{
 											key: "accessibility" as const,
@@ -123,28 +124,27 @@ export function OnboardingPermissions({ onFinish }: { onFinish: () => void }) {
 											icon: Cursor,
 										},
 									].map(({ key, name, description, granted, icon: Icon }) => (
-										<div
-											key={key}
-											className="onboarding-permission-row flex items-center gap-3 rounded-2xl border border-separator p-4"
-										>
-											<div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-surface-secondary text-accent">
-												<Icon size={22} aria-hidden="true" />
-											</div>
-											<div className="min-w-0 flex-1">
-												<h3 className="text-sm font-semibold">{name}</h3>
-												<p className="mt-1 text-xs leading-relaxed text-muted">
+										<div key={key} className="flex items-center gap-3 py-3">
+											<Icon
+												size={20}
+												aria-hidden="true"
+												className="shrink-0 text-muted"
+											/>
+											<div className="flex min-w-0 flex-1 flex-col gap-1">
+												<h3 className="text-[13px] font-medium">{name}</h3>
+												<p className="text-xs leading-relaxed text-muted">
 													{description}
 												</p>
 											</div>
 											{granted ? (
-												<span className="flex shrink-0 items-center gap-1.5 text-xs font-medium text-success">
-													<Check size={16} aria-hidden="true" />
+												<span className="flex h-8 shrink-0 items-center gap-1.5 text-xs font-medium text-success">
+													<Check size={14} aria-hidden="true" />
 													Allowed
 												</span>
 											) : (
 												<Button
 													variant="secondary"
-													className="shrink-0 "
+													className="shrink-0"
 													isDisabled={Boolean(busy)}
 													onPress={() => void allow(key)}
 													aria-label={`Allow ${name}`}
@@ -155,30 +155,8 @@ export function OnboardingPermissions({ onFinish }: { onFinish: () => void }) {
 										</div>
 									))}
 								</div>
-								<div className="onboarding-permission-help flex items-center gap-3">
-									<p className="flex-1 text-xs leading-relaxed text-muted">
-										{screenGranted && accessibilityGranted
-											? "Your screen is captured only when you start recording. Microphone and camera access are requested when you use them."
-											: "Return after enabling access. macOS may require restarting SuperShare."}
-									</p>
-									{(!screenGranted || !accessibilityGranted) && (
-										<Button
-											variant="ghost"
-											size="sm"
-											className="shrink-0"
-											isDisabled={Boolean(busy)}
-											onPress={() =>
-												void refresh().catch((error) =>
-													setError(String(error)),
-												)
-											}
-										>
-											Check again
-										</Button>
-									)}
-								</div>
 								{error && (
-									<p role="alert" className="text-sm text-danger">
+									<p role="alert" className="text-xs text-danger">
 										{error}
 									</p>
 								)}
@@ -188,16 +166,35 @@ export function OnboardingPermissions({ onFinish }: { onFinish: () => void }) {
 				)}
 			</OnboardingBody>
 			<OnboardingFooter>
+				<p className="min-w-0 flex-1 text-xs leading-relaxed text-muted">
+					{platform === "mac" &&
+						(allGranted ? (
+							"Your screen is captured only when you start recording. Microphone and camera access are requested when you use them."
+						) : (
+							<>
+								Allow both, then come back here. macOS may ask you to restart
+								SuperShare.{" "}
+								<Button
+									variant="link"
+									className="inline text-xs font-medium text-foreground"
+									isDisabled={Boolean(busy)}
+									onPress={checkAgain}
+								>
+									Check again
+								</Button>
+							</>
+						))}
+				</p>
 				<Button
-					className="ml-auto button--accent"
+					variant="accent"
+					className="shrink-0"
 					isDisabled={
 						platform === "checking" ||
-						(platform === "mac" &&
-							(!screenGranted || !accessibilityGranted || Boolean(busy)))
+						(platform === "mac" && (!allGranted || Boolean(busy)))
 					}
 					onPress={onFinish}
 				>
-					Start recording <ArrowRight size={16} />
+					Start recording <ArrowRight />
 				</Button>
 			</OnboardingFooter>
 		</div>

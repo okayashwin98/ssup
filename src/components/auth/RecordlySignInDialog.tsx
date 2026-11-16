@@ -212,7 +212,6 @@ export function RecordlySignInDialog({
 						{onboarding ? (
 							<OnboardingHeader
 								centered={!user}
-								showBrand={Boolean(user)}
 								title={
 									user ? (
 										"Your account"
@@ -452,7 +451,7 @@ export function RecordlySignInDialog({
 						}
 						className={
 							onboarding
-								? "h-auto max-h-[calc(100dvh-32px)] min-h-0 w-full max-w-[720px] gap-0 overflow-hidden rounded-3xl p-0"
+								? "h-auto max-h-[calc(100dvh-32px)] min-h-0 w-full max-w-[600px] gap-0 overflow-hidden p-0"
 								: `h-auto min-h-0 w-full max-h-[calc(100dvh-48px)] gap-0 overflow-y-auto rounded-[32px] p-2 ${wide ? "max-w-[1120px] md:grid md:grid-cols-2 md:aspect-[28/19]" : "max-w-[600px]"}`
 						}
 					>

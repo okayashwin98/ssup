@@ -3,7 +3,9 @@ import { completeSupabaseSignIn } from "./auth";
 import { installDesktopBridge } from "./bridge";
 import { openDashboardSettings } from "./settings";
 
-test("settings opens permissions and the carousel banner adapts to each page", async ({ page }) => {
+test("settings opens the permissions welcome and Start recording opens the recorder", async ({
+	page,
+}) => {
 	await page.emulateMedia({ reducedMotion: "reduce" });
 	await installDesktopBridge(page);
 	await page.goto("/?windowType=editor");
@@ -23,73 +25,6 @@ test("settings opens permissions and the carousel banner adapts to each page", a
 				.evaluate((element) => element.scrollHeight - element.clientHeight),
 		)
 		.toBeLessThanOrEqual(1);
-	const pages = tour.getByRole("navigation", { name: "Onboarding pages" });
-	await expect(pages.getByRole("button", { name: "Permissions", exact: true })).toHaveAttribute(
-		"aria-current",
-		"page",
-	);
-	await expect(pages.getByRole("button")).toHaveCount(2);
-	await expect(tour.getByRole("listitem")).toHaveCount(0);
-	await expect(pages).toBeInViewport();
-	await expect(page.locator(".modal__container").last()).not.toHaveAttribute(
-		"data-entering",
-		"true",
-	);
-	const permissionBounds = (await tour.boundingBox())!;
-	const banner = tour.locator("[data-onboarding-artwork]");
-	const bannerBounds = (await banner.boundingBox())!;
-	await expect(banner.locator('img[src$="login-banner.png"]')).toBeVisible();
-	await expect
-		.poll(() =>
-			banner
-				.locator('img[src$="login-banner.png"]')
-				.evaluate((image: HTMLImageElement) => image.naturalWidth),
-		)
-		.toBeGreaterThan(0);
-	const startBounds = (await tour
-		.getByRole("button", { name: "Start recording", exact: true })
-		.boundingBox())!;
-	await expect(tour.getByRole("button", { name: "Continue", exact: true })).toHaveCount(0);
-	await pages.getByRole("button", { name: "Account", exact: true }).click();
-	await expect(tour).toHaveAttribute("data-onboarding-state", "login");
-	await expect(pages.getByRole("button", { name: "Account", exact: true })).toHaveAttribute(
-		"aria-current",
-		"page",
-	);
-	await expect(tour.getByText("test@email.com", { exact: true })).toBeVisible();
-	const loginHeading = (await tour.getByRole("heading", { level: 2 }).boundingBox())!;
-	const brand = tour.locator("[data-onboarding-brand]");
-	const brandBounds = (await brand.boundingBox())!;
-	const accountBannerBounds = (await banner.boundingBox())!;
-	expect(accountBannerBounds.height).toBeGreaterThan(bannerBounds.height);
-	expect(accountBannerBounds.width).toBe(bannerBounds.width);
-	expect(brandBounds.y).toBeGreaterThanOrEqual(
-		accountBannerBounds.y + accountBannerBounds.height,
-	);
-	expect(brandBounds.y + brandBounds.height).toBeLessThan(loginHeading.y);
-	await expect(banner.locator('img[src$="recordly-128.png"]')).toHaveCount(0);
-	expect(await tour.boundingBox()).toEqual(permissionBounds);
-	expect(await banner.boundingBox()).toEqual(accountBannerBounds);
-	await page.screenshot({ path: "test-results/onboarding-login.png", animations: "disabled" });
-	await pages.getByRole("button", { name: "Permissions", exact: true }).focus();
-	await page.keyboard.press("Enter");
-	await expect(tour).toHaveAttribute("data-onboarding-state", "permissions");
-	await expect(tour.getByRole("heading", { name: "Allow SuperShare to record" })).toBeVisible();
-	expect(await tour.boundingBox()).toEqual(permissionBounds);
-	expect(await banner.boundingBox()).toEqual(bannerBounds);
-	const permissionHeading = (await tour.getByRole("heading", { level: 2 }).boundingBox())!;
-	expect(permissionHeading.x).toBe(loginHeading.x);
-	const permissionBrandBounds = (await brand.boundingBox())!;
-	expect(permissionBrandBounds.y + permissionBrandBounds.height).toBeLessThan(
-		permissionHeading.y,
-	);
-	expect(permissionBrandBounds.width).toBe(brandBounds.width);
-	expect(permissionBrandBounds.height).toBe(brandBounds.height);
-	const navigationBounds = (await pages.boundingBox())!;
-	expect(navigationBounds.y).toBeGreaterThan(startBounds.y + startBounds.height);
-	expect(
-		await tour.getByRole("button", { name: "Start recording", exact: true }).boundingBox(),
-	).toEqual(startBounds);
 	await tour.getByRole("button", { name: "Start recording", exact: true }).click();
 	await expect(tour).not.toBeVisible();
 	await expect(page.locator("html")).toHaveAttribute("data-hud-opened", "true");
@@ -110,7 +45,6 @@ test("first launch persists completion and signed-in users can continue", async 
 	});
 	await page.goto("/?windowType=editor");
 	const tour = page.getByRole("dialog", { name: "Welcome to SuperShare" });
-	await tour.getByRole("button", { name: "Continue", exact: true }).click();
 	await expect(tour.getByRole("heading", { name: "Allow SuperShare to record" })).toBeVisible();
 	await expect(tour.locator("[data-permissions-confetti]")).toBeVisible();
 	await tour.getByRole("button", { name: "Start recording", exact: true }).click();
@@ -139,9 +73,6 @@ test("onboarding fits a compact window with reduced motion", async ({ page }) =>
 	await expect(
 		tour.getByRole("button", { name: "Start recording", exact: true }),
 	).toBeInViewport();
-	await expect(
-		tour.locator('[data-onboarding-artwork] img[src$="login-banner.png"]'),
-	).toBeInViewport();
 	for (const size of [
 		{ width: 720, height: 780 },
 		{ width: 640, height: 650 },
@@ -158,13 +89,9 @@ test("onboarding fits a compact window with reduced motion", async ({ page }) =>
 			.toBeLessThanOrEqual(1);
 	}
 	await page.screenshot({ path: "test-results/onboarding-compact.png" });
-	await tour.getByRole("button", { name: "Back to account" }).click();
-	await expect(tour).toHaveAttribute("data-onboarding-state", "login");
 });
 
-test("short dark windows keep the banner and navigation visible while the account form scrolls", async ({
-	page,
-}) => {
+test("short dark windows fit the permissions page without scrolling", async ({ page }) => {
 	await installDesktopBridge(page);
 	await page.emulateMedia({ reducedMotion: "reduce" });
 	await page.goto("/?windowType=editor");
@@ -190,24 +117,8 @@ test("short dark windows keep the banner and navigation visible while the accoun
 			),
 		)
 		.toBeLessThanOrEqual(1);
-	const bodyBounds = (await body.boundingBox())!;
-	const footerBounds = (await tour
-		.getByRole("button", { name: "Back to account" })
-		.boundingBox())!;
-	expect(bodyBounds.y + bodyBounds.height).toBeLessThanOrEqual(footerBounds.y);
 	await expect(tour.locator("[data-permissions-confetti]")).toHaveCount(0);
 	await page.screenshot({ path: "test-results/onboarding-narrow-permissions.png" });
-	await tour.getByRole("button", { name: "Back to account" }).click();
-	const bounds = await tour.boundingBox();
-	await expect(tour.getByRole("button", { name: "Continue", exact: true })).toBeInViewport();
-	await expect(
-		tour.locator('[data-onboarding-artwork] img[src$="login-banner.png"]'),
-	).toBeInViewport();
-	expect(await tour.boundingBox()).toEqual(bounds);
-	await expect(tour).toHaveJSProperty("scrollWidth", bounds!.width);
-	await page.screenshot({ path: "test-results/onboarding-narrow-account.png" });
-	await tour.getByRole("button", { name: "Continue", exact: true }).click();
-	await expect(tour.getByRole("heading", { name: "Allow SuperShare to record" })).toBeVisible();
 });
 
 test("sign-in is mandatory even after onboarding was completed", async ({ page }) => {
@@ -219,13 +130,6 @@ test("sign-in is mandatory even after onboarding was completed", async ({ page }
 	await expect(tour.getByRole("button", { name: "Continue without signing in" })).toHaveCount(0);
 	await expect(tour.getByText("Optional", { exact: true })).toHaveCount(0);
 	await expect(tour.getByText("Sign in to continue", { exact: true })).toHaveCount(0);
-	const pages = tour.getByRole("navigation", { name: "Onboarding pages" });
-	await expect(pages).toBeInViewport();
-	await expect(pages.getByRole("button", { name: "Account", exact: true })).toHaveAttribute(
-		"aria-current",
-		"page",
-	);
-	await expect(pages.getByRole("button", { name: "Permissions", exact: true })).toBeDisabled();
 	await expect(tour.getByRole("button", { name: "Start recording" })).toHaveCount(0);
 	await expect(tour.getByRole("button", { name: "Close", exact: true })).toHaveCount(0);
 	await page.keyboard.press("Escape");
@@ -258,11 +162,6 @@ test("Supabase email callback advances to permissions only after a session is re
 	});
 	await expect(tour).toHaveAttribute("data-onboarding-state", "permissions");
 	await expect(tour.getByRole("heading", { name: "Allow SuperShare to record" })).toBeVisible();
-	await expect(
-		tour
-			.getByRole("navigation", { name: "Onboarding pages" })
-			.getByRole("button", { name: "Permissions", exact: true }),
-	).toBeEnabled();
 	await expect(tour.getByRole("button", { name: "Start recording", exact: true })).toBeEnabled();
 	await tour.getByRole("button", { name: "Start recording", exact: true }).click();
 	await expect(tour).not.toBeVisible();
@@ -308,6 +207,9 @@ test("missing macOS permissions gate Start recording until access is allowed", a
 	const start = tour.getByRole("button", { name: "Start recording", exact: true });
 	await expect(tour.getByRole("heading", { name: "Allow SuperShare to record" })).toBeVisible();
 	await expect(start).toBeDisabled();
+	await expect(tour.locator("[data-onboarding-brand]")).toHaveCount(0);
+	await expect(tour.getByText(/Allow both, then come back here/)).toBeVisible();
+	await expect(tour.getByRole("button", { name: "Check again", exact: true })).toBeVisible();
 	await page.setViewportSize({ width: 390, height: 600 });
 	await expect
 		.poll(() =>
@@ -325,21 +227,11 @@ test("missing macOS permissions gate Start recording until access is allowed", a
 	await expect(page.locator("html")).toHaveAttribute("data-accessibility-settings", "true");
 	await expect(tour.getByText("Allowed", { exact: true })).toHaveCount(2);
 	await expect(start).toBeEnabled();
+	await expect(tour.getByRole("button", { name: "Check again", exact: true })).toHaveCount(0);
 	await expect(tour.locator("[data-permissions-confetti]")).toBeVisible();
 	await expect(tour.locator("[data-permissions-confetti]")).toHaveCount(0, { timeout: 5000 });
 	await page.evaluate(() => window.dispatchEvent(new Event("focus")));
 	await expect(tour.locator("[data-permissions-confetti]")).toHaveCount(0);
-	await tour.getByRole("button", { name: "Back to account" }).click();
-	await tour.getByRole("button", { name: "Continue", exact: true }).click();
-	await expect(tour.locator("[data-permissions-confetti]")).toBeVisible();
-	await expect
-		.poll(() =>
-			tour
-				.locator("[data-permissions-confetti] span")
-				.first()
-				.evaluate((element) => Number(getComputedStyle(element).opacity)),
-		)
-		.toBeGreaterThan(0.5);
 	await page.screenshot({
 		path: "test-results/onboarding-permissions.png",
 		animations: "disabled",
