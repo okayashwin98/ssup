@@ -1,5 +1,5 @@
-import { Plus } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
+import { Plus } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 
 export function RecordNewButton({
@@ -15,7 +15,8 @@ export function RecordNewButton({
 }) {
 	return (
 		<Button
-			variant="accent"
+			// The empty-library prompt is neutral, matching the toolbar's Import button.
+			variant={first ? "secondary" : "accent"}
 			disabled={busy}
 			onClick={() => void run(() => window.electronAPI.showRecordingHud())}
 			className={cn("shrink-0 gap-2 text-[13px]", className)}
