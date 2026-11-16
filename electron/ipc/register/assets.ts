@@ -5,10 +5,21 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { app, ipcMain } from "electron";
 import { USER_DATA_PATH } from "../../appPaths";
+import { convertHeicToPng } from "../../heicConversion";
 import { getAssetRootPath } from "../project/manager";
 import { normalizePath } from "../utils";
 
 export function registerAssetHandlers() {
+	// iPhone HEIC/HEIF wallpapers: Chromium cannot decode them, so macOS converts them to PNG.
+	ipcMain.handle("convert-heic-wallpaper", async (_, bytes: unknown) => {
+		try {
+			if (!(bytes instanceof Uint8Array)) throw new Error("Expected image bytes");
+			return { success: true, data: await convertHeicToPng(bytes) };
+		} catch {
+			return { success: false, error: "This HEIC image could not be converted" };
+		}
+	});
+
 	async function resolveReadableLocalFilePath(filePath: string) {
 		const normalizedPath = normalizePath(filePath);
 		const resolvedPath = await fs.realpath(normalizedPath).catch(() => normalizedPath);

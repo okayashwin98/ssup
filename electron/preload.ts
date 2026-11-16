@@ -866,6 +866,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
 			captionSidecar,
 		);
 	},
+	convertHeicWallpaper: (bytes: Uint8Array) => {
+		return ipcRenderer.invoke("convert-heic-wallpaper", bytes);
+	},
 	openVideoFilePicker: (options?: { includeProjects?: boolean }) => {
 		return ipcRenderer.invoke("open-video-file-picker", options);
 	},

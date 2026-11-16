@@ -31,6 +31,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { getAssetPath, getRenderableVideoUrl, getWallpaperThumbnailUrl } from "@/lib/assetPath";
 import { isGradientWallpaper, PRESET_GRADIENTS } from "@/lib/backgroundGradients";
 import { cn } from "@/lib/utils";
+import { prepareWallpaperImage, WALLPAPER_IMAGE_ACCEPT } from "@/lib/wallpaperUpload";
 import type { BuiltInWallpaper } from "@/lib/wallpapers";
 import {
 	BUILT_IN_WALLPAPERS,
@@ -1598,42 +1599,23 @@ export function SettingsPanel({
 		});
 	};
 
-	const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-		const files = event.target.files;
-		if (!files || files.length === 0) return;
+	const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+		const input = event.target;
+		const file = input.files?.[0];
+		// Reset input so the same file can be selected again
+		input.value = "";
+		if (!file) return;
 
-		const file = files[0];
-
-		// Validate file type - only allow JPG/JPEG
-		const validTypes = ["image/jpeg", "image/jpg"];
-		if (!validTypes.includes(file.type)) {
+		try {
+			const dataUrl = await prepareWallpaperImage(file);
+			setCustomImages((prev) => [...prev, dataUrl]);
+			onWallpaperChange(dataUrl);
+			toast.success(tSettings("background.uploadSuccess"));
+		} catch {
 			toast.error(tSettings("background.uploadError"), {
 				description: tSettings("background.uploadErrorDescription"),
 			});
-			event.target.value = "";
-			return;
 		}
-
-		const reader = new FileReader();
-
-		reader.onload = (e) => {
-			const dataUrl = e.target?.result as string;
-			if (dataUrl) {
-				setCustomImages((prev) => [...prev, dataUrl]);
-				onWallpaperChange(dataUrl);
-				toast.success(tSettings("background.uploadSuccess"));
-			}
-		};
-
-		reader.onerror = () => {
-			toast.error(t("common.errors.failedToUploadImage"), {
-				description: t("common.errors.fileReadError"),
-			});
-		};
-
-		reader.readAsDataURL(file);
-		// Reset input so the same file can be selected again
-		event.target.value = "";
 	};
 
 	const handleVideoUpload = async () => {
@@ -1728,7 +1710,7 @@ export function SettingsPanel({
 					type="file"
 					ref={fileInputRef}
 					onChange={handleImageUpload}
-					accept=".jpg,.jpeg,image/jpeg"
+					accept={WALLPAPER_IMAGE_ACCEPT}
 					className="hidden"
 				/>
 				<div className="grid pt-4 overflow-hidden" data-testid="background-slider">

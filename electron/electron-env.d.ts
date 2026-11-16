@@ -809,6 +809,10 @@ interface Window {
 			error?: string;
 			canceled?: boolean;
 		}>;
+		/** macOS only: converts HEIC/HEIF image bytes to PNG bytes. */
+		convertHeicWallpaper?: (
+			bytes: Uint8Array,
+		) => Promise<{ success: boolean; data?: Uint8Array; error?: string }>;
 		openVideoFilePicker: (options?: { includeProjects?: boolean }) => Promise<{
 			success: boolean;
 			kind?: "media" | "project";
