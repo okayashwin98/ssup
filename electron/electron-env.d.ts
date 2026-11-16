@@ -255,16 +255,28 @@ interface Window {
 		}) => Promise<string | null>;
 		hudNotify: (payload: { title?: string; message: string }) => void;
 		hudSetWebcamBubble: (request: { visible: boolean; deviceId?: string }) => void;
-		hudPublishRecordingStatus: (status: { paused: boolean; elapsed: number }) => void;
+		hudPublishRecordingStatus: (status: {
+			paused: boolean;
+			elapsed: number;
+			restarting?: boolean;
+		}) => void;
+		/** While a restart swaps takes, the recording bar and webcam bubble stay up. */
+		hudSetRecordingRestarting?: (restarting: boolean) => void;
 		onRecordingControlsCommand: (
-			callback: (command: "stop" | "pause" | "resume" | "cancel" | "hide") => void,
+			callback: (
+				command: "stop" | "restart" | "pause" | "resume" | "cancel" | "hide",
+			) => void,
 		) => () => void;
 		sendRecordingControlsCommand: (
-			command: "stop" | "pause" | "resume" | "cancel" | "hide",
+			command: "stop" | "restart" | "pause" | "resume" | "cancel" | "hide",
 		) => void;
-		getRecordingControlsStatus: () => Promise<{ paused: boolean; elapsed: number }>;
+		getRecordingControlsStatus: () => Promise<{
+			paused: boolean;
+			elapsed: number;
+			restarting?: boolean;
+		}>;
 		onRecordingControlsStatus: (
-			callback: (status: { paused: boolean; elapsed: number }) => void,
+			callback: (status: { paused: boolean; elapsed: number; restarting?: boolean }) => void,
 		) => () => void;
 		webcamBubbleGetDevice: () => Promise<string | null>;
 		onWebcamBubbleDeviceChanged: (callback: (deviceId: string | null) => void) => () => void;

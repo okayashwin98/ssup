@@ -106,6 +106,8 @@ export function LaunchWindow() {
 		pauseRecording,
 		resumeRecording,
 		cancelRecording,
+		restartRecording,
+		restarting,
 		cancelRecordingStart,
 		microphoneEnabled,
 		setMicrophoneEnabled,
@@ -194,15 +196,30 @@ export function LaunchWindow() {
 
 	// The recording bar is another window: send it the time, and take its commands.
 	useEffect(() => {
-		if (recording) window.electronAPI.hudPublishRecordingStatus({ paused, elapsed });
-	}, [recording, paused, elapsed]);
+		if (recording || restarting) {
+			window.electronAPI.hudPublishRecordingStatus({ paused, elapsed, restarting });
+		}
+	}, [recording, restarting, paused, elapsed]);
+	// Discards the take and starts again; a failure is reported like the bar's other errors.
+	const restart = async () => {
+		if (!(await restartRecording())) {
+			toast.error(t("recording.restartFailed"));
+		}
+	};
 	const commandHandlers = useRef({
 		toggleRecording,
 		pauseRecording,
 		resumeRecording,
 		cancelRecording,
+		restart,
 	});
-	commandHandlers.current = { toggleRecording, pauseRecording, resumeRecording, cancelRecording };
+	commandHandlers.current = {
+		toggleRecording,
+		pauseRecording,
+		resumeRecording,
+		cancelRecording,
+		restart,
+	};
 	const recordingRef = useRef(recording);
 	recordingRef.current = recording;
 	useEffect(
@@ -211,6 +228,7 @@ export function LaunchWindow() {
 				if (!recordingRef.current) return;
 				const handlers = commandHandlers.current;
 				if (command === "stop") void handlers.toggleRecording();
+				else if (command === "restart") void handlers.restart();
 				else if (command === "pause") void handlers.pauseRecording();
 				else if (command === "resume") void handlers.resumeRecording();
 				else if (command === "cancel") void handlers.cancelRecording();
@@ -410,7 +428,9 @@ export function LaunchWindow() {
 			<RecordingBarControls
 				paused={paused}
 				elapsed={elapsed}
+				restarting={restarting}
 				onStop={() => void toggleRecording()}
+				onRestart={() => void restart()}
 				onPauseResume={() => void (paused ? resumeRecording() : pauseRecording())}
 				onCancel={() => void cancelRecording()}
 				onHide={() => window.electronAPI.hudOverlayHide()}

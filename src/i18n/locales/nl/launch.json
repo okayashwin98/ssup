@@ -43,6 +43,8 @@
 		"pause": "Pauzeren",
 		"stop": "Stoppen",
 		"cancel": "Annuleren",
+		"restart": "Opname opnieuw starten",
+		"restartFailed": "De opname kon niet opnieuw worden gestart",
 		"more": "Meer",
 		"update": {
 			"update": "Bijwerken",

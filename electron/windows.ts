@@ -567,12 +567,30 @@ ipcMain.handle("set-hud-overlay-capture-protection", (_event, enabled: boolean) 
 
 const editorWindows = new Set<BrowserWindow>();
 let recordingPreparationActive = false;
+// A restart discards the take and starts another; between the two, the recording bar
+// and webcam bubble stay as they are instead of closing and reopening.
+let hudRecordingRestarting = false;
 function getHudEditorMode() {
 	return isHudInEditorMode(
 		editorWindows.size,
 		recordingPreparationActive,
-		hudOverlayRecordingActive,
+		hudOverlayRecordingActive || hudRecordingRestarting,
 	);
+}
+export function isHudRecordingRestarting(): boolean {
+	return hudRecordingRestarting;
+}
+/** True when a restart ended with no take running, so the start bar should come back. */
+export function setHudRecordingRestarting(restarting: boolean): boolean {
+	if (hudRecordingRestarting === restarting) return false;
+	hudRecordingRestarting = restarting;
+	notifyEditorMode();
+	if (restarting || hudOverlayRecordingActive) return false;
+	if (process.platform === "darwin") {
+		closeRecordingControls();
+		reassertHudOverlayCaptureProtection();
+	}
+	return true;
 }
 export function setHudRecordingPreparationActive(active: boolean) {
 	recordingPreparationActive = active;
@@ -748,6 +766,7 @@ export function createHudOverlayWindow(): BrowserWindow {
 		if (hudOverlayWindow === win) {
 			hudOverlayWindow = null;
 			recordingPreparationActive = false;
+			hudRecordingRestarting = false;
 			hudCaptureStarting = false;
 			hudOverlayRecordingActive = false;
 		}
@@ -846,7 +865,7 @@ export function setHudOverlayRecordingActive(recording: boolean): void {
 		if (hudOverlayRecordingActive && !wasRecording) {
 			showRecordingControls(hud?.isVisible() ? hud.getBounds() : null);
 			hud?.hide();
-		} else if (!hudOverlayRecordingActive) {
+		} else if (!hudOverlayRecordingActive && !hudRecordingRestarting) {
 			closeRecordingControls();
 		}
 		reassertHudOverlayCaptureProtection();

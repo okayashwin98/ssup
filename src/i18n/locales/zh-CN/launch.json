@@ -43,6 +43,8 @@
 		"pause": "暂停",
 		"stop": "停止",
 		"cancel": "取消",
+		"restart": "重新开始录制",
+		"restartFailed": "无法重新开始录制",
 		"more": "更多",
 		"update": {
 			"update": "更新",

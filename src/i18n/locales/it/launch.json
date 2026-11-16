@@ -43,6 +43,8 @@
 		"pause": "Pausa",
 		"stop": "Stop",
 		"cancel": "Annulla",
+		"restart": "Riavvia registrazione",
+		"restartFailed": "Impossibile riavviare la registrazione",
 		"more": "Altro",
 		"update": {
 			"update": "Aggiorna",

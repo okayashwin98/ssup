@@ -183,7 +183,8 @@ function settleNativeVideoExportPendingRequests(
 	}
 }
 
-type RecordingControlsCommand = "stop" | "pause" | "resume" | "cancel" | "hide";
+type RecordingControlsCommand = "stop" | "restart" | "pause" | "resume" | "cancel" | "hide";
+type RecordingControlsStatus = { paused: boolean; elapsed: number; restarting?: boolean };
 type HudMenuItem = {
 	id?: string;
 	label?: string;
@@ -244,8 +245,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	hudSetWebcamBubble: (request: { visible: boolean; deviceId?: string }) => {
 		ipcRenderer.send("hud-set-webcam-bubble", request);
 	},
-	hudPublishRecordingStatus: (status: { paused: boolean; elapsed: number }) => {
+	hudPublishRecordingStatus: (status: RecordingControlsStatus) => {
 		ipcRenderer.send("hud-recording-status", status);
+	},
+	hudSetRecordingRestarting: (restarting: boolean) => {
+		ipcRenderer.send("hud-recording-restarting", restarting);
 	},
 	onRecordingControlsCommand: (callback: (command: RecordingControlsCommand) => void) => {
 		const listener = (_event: Electron.IpcRendererEvent, command: RecordingControlsCommand) =>
@@ -257,17 +261,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		ipcRenderer.send("recording-controls-command", command);
 	},
 	getRecordingControlsStatus: () =>
-		ipcRenderer.invoke("recording-controls-get-status") as Promise<{
-			paused: boolean;
-			elapsed: number;
-		}>,
-	onRecordingControlsStatus: (
-		callback: (status: { paused: boolean; elapsed: number }) => void,
-	) => {
-		const listener = (
-			_event: Electron.IpcRendererEvent,
-			status: { paused: boolean; elapsed: number },
-		) => callback(status);
+		ipcRenderer.invoke("recording-controls-get-status") as Promise<RecordingControlsStatus>,
+	onRecordingControlsStatus: (callback: (status: RecordingControlsStatus) => void) => {
+		const listener = (_event: Electron.IpcRendererEvent, status: RecordingControlsStatus) =>
+			callback(status);
 		ipcRenderer.on("recording-controls-status", listener);
 		return () => ipcRenderer.removeListener("recording-controls-status", listener);
 	},

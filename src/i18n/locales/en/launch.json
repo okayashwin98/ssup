@@ -43,6 +43,8 @@
 		"pause": "Pause",
 		"stop": "Stop",
 		"cancel": "Cancel",
+		"restart": "Restart recording",
+		"restartFailed": "Couldn't restart the recording",
 		"more": "More",
 		"update": {
 			"update": "Update",

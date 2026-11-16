@@ -29,17 +29,20 @@ if (VITE_DEV_SERVER_URL && process.env.RECORDLY_DEV_DEBUG_PORT) {
 }
 
 export const HUD_BAR_BOTTOM_MARGIN_DIP = 24;
-const RECORDING_BAR_DEFAULT_SIZE = { width: 300, height: 54 };
+// The recording bar's own size, so its window opens without resizing.
+const RECORDING_BAR_DEFAULT_SIZE = { width: 313, height: 54 };
 const WEBCAM_BUBBLE_DEFAULT_SIZE = 288;
 const WEBCAM_BUBBLE_MIN_SIZE = 120;
 const WEBCAM_BUBBLE_MAX_SIZE = 480;
 const WEBCAM_BUBBLE_SETTINGS_FILE = path.join(USER_DATA_PATH, "webcam-bubble.json");
 
-export type RecordingControlsCommand = "stop" | "pause" | "resume" | "cancel" | "hide";
+export type RecordingControlsCommand = "stop" | "restart" | "pause" | "resume" | "cancel" | "hide";
 
 export interface RecordingControlsStatus {
 	paused: boolean;
 	elapsed: number;
+	/** Between a discarded take and its replacement: the bar's buttons wait. */
+	restarting?: boolean;
 }
 
 export interface HudMenuItem {
@@ -480,6 +483,7 @@ export function registerHudCompactWindowIpc(options: {
 		recordingStatus = {
 			paused: Boolean(status?.paused),
 			elapsed: Math.max(0, Math.floor(Number(status?.elapsed) || 0)),
+			restarting: Boolean(status?.restarting),
 		};
 		getRecordingControlsWindow()?.webContents.send(
 			"recording-controls-status",
@@ -494,7 +498,7 @@ export function registerHudCompactWindowIpc(options: {
 			hideRecordingControls();
 			return;
 		}
-		if (!["stop", "pause", "resume", "cancel"].includes(command)) return;
+		if (!["stop", "restart", "pause", "resume", "cancel"].includes(command)) return;
 		getHudWindow()?.webContents.send("recording-controls-command", command);
 	});
 

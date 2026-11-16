@@ -1,6 +1,9 @@
 import { expect, test } from "@playwright/test";
 import { installDesktopBridge } from "./bridge";
 
+// Matches RECORDING_BAR_DEFAULT_SIZE in electron/hudCompactWindows.ts.
+const RECORDING_BAR_WIDTH = 313;
+
 test("Display, Window and Area each show their icon over their label", async ({ page }) => {
 	await installDesktopBridge(page);
 	await page.goto("/?windowType=hud-overlay");
@@ -61,6 +64,12 @@ test("recording bar shows the time and sends its commands to the start bar", asy
 			const html = document.documentElement;
 			html.dataset.commands = [html.dataset.commands, command].filter(Boolean).join(",");
 		};
+		window.electronAPI.onRecordingControlsStatus = (callback) => {
+			const listener = (event: Event) =>
+				callback((event as CustomEvent<{ paused: boolean; elapsed: number }>).detail);
+			window.addEventListener("test-recording-status", listener);
+			return () => window.removeEventListener("test-recording-status", listener);
+		};
 	});
 	await page.goto("/?windowType=recording-controls");
 	const controls = page.getByRole("group", { name: "Recording controls" });
@@ -68,12 +77,48 @@ test("recording bar shows the time and sends its commands to the start bar", asy
 	await controls.getByRole("button", { name: "Pause", exact: true }).click();
 	await controls.getByRole("button", { name: "Stop", exact: true }).click();
 	await expect(page.locator("html")).toHaveAttribute("data-commands", "pause,stop");
+	// Restart sits directly after Stop and is drawn like the bar's other icon buttons.
+	const restart = controls.getByRole("button", { name: "Restart recording", exact: true });
+	await expect(restart).toHaveAttribute("title", "Restart recording");
+	const buttons = await controls
+		.getByRole("button")
+		.evaluateAll((elements) => elements.map((element) => element.getAttribute("aria-label")));
+	expect(buttons).toEqual(["Stop", "Restart recording", "Pause", "Cancel", "Hide HUD"]);
+	const [restartBox, pauseBox, barBox] = await Promise.all([
+		restart.boundingBox(),
+		controls.getByRole("button", { name: "Pause", exact: true }).boundingBox(),
+		controls.boundingBox(),
+	]);
+	expect({ width: restartBox!.width, height: restartBox!.height }).toEqual({
+		width: pauseBox!.width,
+		height: pauseBox!.height,
+	});
+	// The bar's window opens at this width.
+	expect(barBox!.width).toBe(RECORDING_BAR_WIDTH);
 	// Tall enough for both of macOS's 27 pt corners.
 	expect((await controls.boundingBox())?.height).toBe(54);
 	expect(
 		await controls.evaluate((element) => getComputedStyle(element).borderTopRightRadius),
 	).toBe("27px");
 	await page.screenshot({ path: "test-results/hud-recording.png" });
+	// Restart sends its command once, and the bar's buttons wait until the new take runs.
+	await restart.click();
+	await expect(page.locator("html")).toHaveAttribute("data-commands", "pause,stop,restart");
+	for (const name of ["Stop", "Restart recording", "Pause", "Cancel"]) {
+		await expect(controls.getByRole("button", { name, exact: true })).toBeDisabled();
+	}
+	await restart.click({ force: true });
+	await expect(page.locator("html")).toHaveAttribute("data-commands", "pause,stop,restart");
+	await page.screenshot({ path: "test-results/hud-recording-restarting.png" });
+	await page.evaluate(() =>
+		window.dispatchEvent(
+			new CustomEvent("test-recording-status", {
+				detail: { paused: false, elapsed: 0, restarting: false },
+			}),
+		),
+	);
+	await expect(controls.getByRole("status")).toHaveText("00:00");
+	await expect(restart).toBeEnabled();
 });
 
 test("the webcam bubble shows outside the editor and closes in it", async ({ page }) => {

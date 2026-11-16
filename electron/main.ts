@@ -60,7 +60,9 @@ import {
 	isHudOverlayMousePassthroughSupported,
 	beginHudCaptureProtection,
 	reassertHudOverlayMousePassthrough as reassertHudOverlayMouseState,
+	isHudRecordingRestarting,
 	setHudOverlayRecordingActive,
+	setHudRecordingRestarting,
 	showUpdateToastWindow,
 } from "./windows";
 import { getWebcamBubbleWindow, revealRecordingControls } from "./hudCompactWindows";
@@ -748,6 +750,15 @@ ipcMain.handle("check-for-app-updates", async () => {
 	return { success: true, logPath: getUpdaterLogPath() };
 });
 
+// Sent by the start bar around a restart. If the restart ends with no take running
+// (it failed, or the countdown was canceled), the start bar returns as after a discard.
+ipcMain.on("hud-recording-restarting", (event, restarting: boolean) => {
+	if (event.sender !== getHudOverlayWindow()?.webContents) return;
+	if (setHudRecordingRestarting(Boolean(restarting))) {
+		restoreWindowSafely(mainWindow);
+	}
+});
+
 function updateTrayMenu(recording: boolean = false) {
 	if (!tray) return;
 	const trayIcon = recording ? getRecordingTrayIcon() : getDefaultTrayIcon();
@@ -1134,7 +1145,8 @@ app.whenReady().then(async () => {
 			if (recording) {
 				reassertHudOverlayMouseState();
 			}
-			if (!recording) {
+			// A restart goes straight from one take to the next: the start bar stays away.
+			if (!recording && !isHudRecordingRestarting()) {
 				restoreWindowSafely(mainWindow);
 			}
 		},

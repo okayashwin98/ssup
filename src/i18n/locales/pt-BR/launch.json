@@ -43,6 +43,8 @@
 		"pause": "Pausar",
 		"stop": "Parar",
 		"cancel": "Cancelar",
+		"restart": "Reiniciar gravação",
+		"restartFailed": "Não foi possível reiniciar a gravação",
 		"more": "Mais",
 		"update": {
 			"update": "Atualizar",

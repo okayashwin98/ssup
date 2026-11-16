@@ -213,6 +213,22 @@ describe("stopAndDiscardNativeCapture", () => {
 		expect(deleteRecordingFile).not.toHaveBeenCalled();
 	});
 
+	it("treats a delete the main process refused as a failed delete", async () => {
+		const result = await stopAndDiscardNativeCapture({
+			stopNativeScreenRecording: vi.fn().mockResolvedValue({
+				success: true,
+				path: "/recordings/recording-1.mp4",
+			}),
+			deleteRecordingFile: vi.fn().mockResolvedValue({ success: false, error: "locked" }),
+		});
+
+		expect(result).toMatchObject({
+			stopSucceeded: true,
+			deleteSucceeded: false,
+			path: "/recordings/recording-1.mp4",
+		});
+	});
+
 	it("keeps the stopped path available when deletion fails so cleanup can retry", async () => {
 		const deleteError = new Error("file locked");
 

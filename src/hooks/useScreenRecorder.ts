@@ -129,7 +129,12 @@ type UseScreenRecorderReturn = {
 	toggleRecording: () => void;
 	pauseRecording: () => void;
 	resumeRecording: () => void;
-	cancelRecording: () => void;
+	/** Discards the take; resolves true once the capture is stopped and its files are gone. */
+	cancelRecording: () => Promise<boolean>;
+	/** Discards the take, then starts a fresh one the normal way. False when it could not. */
+	restartRecording: () => Promise<boolean>;
+	/** From pressing Restart until the new take runs or the restart gives up. */
+	restarting: boolean;
 	cancelRecordingStart: () => Promise<boolean>;
 	preparePermissions: () => Promise<boolean>;
 	isMacOS: boolean;
@@ -299,7 +304,13 @@ export async function stopAndDiscardNativeCapture({
 	}
 
 	try {
-		await deleteRecordingFile(stoppedResult.path);
+		// The main process answers a refused or failed delete instead of throwing.
+		const deleted = (await deleteRecordingFile(stoppedResult.path)) as
+			| { success?: boolean; error?: string }
+			| undefined;
+		if (deleted?.success === false) {
+			throw new Error(deleted.error ?? "Could not delete the discarded recording");
+		}
 		return {
 			stopSucceeded: true,
 			deleteSucceeded: true,
@@ -380,6 +391,8 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 	const [starting, setStarting] = useState(false);
 	const [finalizing, setFinalizing] = useState(false);
 	const [countdownActive, setCountdownActive] = useState(false);
+	const [restarting, setRestarting] = useState(false);
+	const restartInFlight = useRef(false);
 	const [isMacOS, setIsMacOS] = useState(false);
 	const [microphoneEnabled, setMicrophoneEnabled] = useState(false);
 	const [microphoneDeviceId, setMicrophoneDeviceId] = useState<string | undefined>(undefined);
@@ -1193,7 +1206,8 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 		const pendingPath = pendingNativeCleanupPath.current;
 		if (pendingPath) {
 			try {
-				await window.electronAPI.deleteRecordingFile(pendingPath);
+				const deleted = await window.electronAPI.deleteRecordingFile(pendingPath);
+				if (deleted?.success === false) throw new Error(deleted.error);
 				pendingNativeCleanupPath.current = null;
 			} catch (error) {
 				console.warn("Failed to delete pending native capture file:", error);
@@ -2303,7 +2317,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 	}, []);
 
 	const pauseRecording = useCallback(() => {
-		if (!recording || paused) return;
+		if (!recording || paused || restartInFlight.current) return;
 		if (nativeScreenRecording.current) {
 			void (async () => {
 				const result = await window.electronAPI.pauseNativeScreenRecording();
@@ -2349,7 +2363,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 	}, [markRecordingPaused, pauseMicFallbackRecorder, paused, recording]);
 
 	const resumeRecording = useCallback(() => {
-		if (!recording || !paused) return;
+		if (!recording || !paused || restartInFlight.current) return;
 		if (nativeScreenRecording.current) {
 			void (async () => {
 				const result = await window.electronAPI.resumeNativeScreenRecording();
@@ -2394,17 +2408,25 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 		}
 	}, [markRecordingResumed, paused, recording, resumeMicFallbackRecorder]);
 
-	const cancelRecording = useCallback(() => {
+	const cancelRecording = useCallback(async () => {
 		recordingStartGeneration.current += 1;
-		if (!recording) return;
+		if (!recordingActive.current) return false;
 		setPaused(false);
 		markRecordingResumed(Date.now());
 
-		// Discard webcam recording regardless of recording mode
-		webcamChunks.current = [];
-		if (webcamRecorder.current && webcamRecorder.current.state !== "inactive") {
-			webcamRecorder.current.stop();
+		// Discard the webcam recording regardless of recording mode. Its handlers come off
+		// first: the last chunk it hands over on stop must not be saved after the discard.
+		const camera = webcamRecorder.current;
+		if (camera) {
+			camera.ondataavailable = null;
+			camera.onstop = null;
+			camera.onerror = null;
+			if (camera.state !== "inactive") camera.stop();
 		}
+		webcamStopResolver.current?.(null);
+		webcamStopResolver.current = null;
+		webcamStopPromise.current = null;
+		webcamChunks.current = [];
 		webcamRecorder.current = null;
 		webcamStartTime.current = null;
 		webcamTimeOffsetMs.current = 0;
@@ -2415,33 +2437,79 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 
 		if (nativeScreenRecording.current) {
 			setRecording(false);
-			window.electronAPI?.setRecordingState(false);
-			void (async () => {
-				await Promise.allSettled([discardActiveNativeCapture(), stopMicFallbackRecorder()]);
-			})();
-			return;
+			const stateReset = window.electronAPI?.setRecordingState(false);
+			const [discarded] = await Promise.allSettled([
+				discardActiveNativeCapture(),
+				stopMicFallbackRecorder(),
+				stateReset,
+			]);
+			return (
+				discarded.status === "fulfilled" &&
+				discarded.value &&
+				!nativeScreenRecording.current
+			);
 		}
 
-		if (mediaRecorder.current) {
+		const recorder = mediaRecorder.current;
+		if (recorder) {
 			chunks.current = [];
-			cleanupCapturedMedia();
-			if (mediaRecorder.current.state !== "inactive") {
-				mediaRecorder.current.stop();
+			// Unhooked like the webcam, so a late chunk cannot be saved as a recording.
+			recorder.ondataavailable = null;
+			recorder.onstop = null;
+			recorder.onerror = null;
+			if (recorder.state !== "inactive") {
+				await new Promise<void>((resolve) => {
+					recorder.addEventListener("stop", () => resolve(), { once: true });
+					recorder.stop();
+				});
 			}
+			mediaRecorder.current = null;
+			cleanupCapturedMedia();
 			setRecording(false);
-			window.electronAPI?.setRecordingState(false);
+			await Promise.allSettled([window.electronAPI?.setRecordingState(false)]);
 		}
+		return true;
 	}, [
 		cleanupCapturedMedia,
 		discardActiveNativeCapture,
 		markRecordingResumed,
 		setRecording,
-		recording,
 		stopMicFallbackRecorder,
 	]);
 
+	// Throws the take away, waits until nothing of it is left, then starts again the normal
+	// way: same source and devices, and the countdown again when one is set.
+	const restartRecording = async () => {
+		if (
+			restartInFlight.current ||
+			starting ||
+			countdownActive ||
+			finalizing ||
+			nativeStopRequestInFlight.current ||
+			!recordingActive.current
+		) {
+			return true;
+		}
+		restartInFlight.current = true;
+		setRestarting(true);
+		// Keeps the recording bar and webcam bubble up between the two takes.
+		window.electronAPI?.hudSetRecordingRestarting?.(true);
+		try {
+			if (!(await cancelRecording())) return false;
+			await startRecording();
+			return true;
+		} catch (error) {
+			console.error("Failed to restart recording:", error);
+			return false;
+		} finally {
+			restartInFlight.current = false;
+			setRestarting(false);
+			window.electronAPI?.hudSetRecordingRestarting?.(false);
+		}
+	};
+
 	const toggleRecording = async () => {
-		if (starting || countdownActive || finalizing) {
+		if (restartInFlight.current || starting || countdownActive || finalizing) {
 			return;
 		}
 
@@ -2464,6 +2532,8 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 		pauseRecording,
 		resumeRecording,
 		cancelRecording,
+		restartRecording,
+		restarting,
 		cancelRecordingStart,
 		preparePermissions,
 		isMacOS,

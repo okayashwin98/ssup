@@ -234,8 +234,12 @@
 	cursor: default;
 }
 
-.stop:hover {
+.stop:hover:not(:disabled) {
 	background: #ff5b51;
+}
+
+.stop:disabled {
+	opacity: 0.4;
 }
 
 .stopSquare {

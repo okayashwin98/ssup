@@ -14,6 +14,7 @@ import {
 	removeFolderIfEmpty,
 } from "../project/projectMedia";
 import { getRecordingThumbnail } from "../recording/thumbnail";
+import { discardRecordingFiles } from "../recording/discardFiles";
 import { listRecordings, setRecordingsRemoved } from "../recording/library";
 import { importRecording, discardRecordingImport } from "../recording/importRecording";
 import { randomUUID } from "node:crypto";
@@ -56,7 +57,6 @@ import {
 import {
 	approveUserPath,
 	getRecordingsDir,
-	getTelemetryPathForVideo,
 	isAutoRecordingPath,
 	normalizeVideoSourcePath,
 	normalizePath,
@@ -1083,16 +1083,16 @@ export function registerProjectHandlers() {
 			const recordingsDir = await fs
 				.realpath(recordingsDirRaw)
 				.catch(() => path.resolve(recordingsDirRaw));
+			// A discarded take is still loose in the recordings folder; project folders are never touched.
 			if (
 				!isPathInsideDirectory(resolvedPath, recordingsDir) ||
+				path.dirname(resolvedPath) !== recordingsDir ||
 				!isAutoRecordingPath(resolvedPath)
 			) {
 				return { success: false, error: "Only auto-generated recordings can be deleted" };
 			}
-			await fs.unlink(resolvedPath);
-			// Also delete the cursor telemetry sidecar if it exists
-			const telemetryPath = getTelemetryPathForVideo(resolvedPath);
-			await fs.unlink(telemetryPath).catch(() => undefined);
+			// The video and every sidecar of this take: cursor data, audio tracks, camera, session.
+			await discardRecordingFiles(resolvedPath);
 			const currentResolved = currentVideoPath
 				? await fs.realpath(currentVideoPath).catch(() => currentVideoPath)
 				: null;

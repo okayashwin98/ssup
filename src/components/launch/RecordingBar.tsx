@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { MinusIcon, XIcon } from "@/components/ui/icons";
+import { ArrowCounterClockwise, MinusIcon, XIcon } from "@/components/ui/icons";
 import { useScopedT } from "../../contexts/I18nContext";
 import { PauseBarIcon, PlayBarIcon } from "./BarIcons";
 import styles from "./HudBar.module.css";
@@ -18,17 +18,22 @@ function formatElapsed(seconds: number) {
 export interface RecordingBarControlsProps {
 	paused: boolean;
 	elapsed: number;
+	/** A restart is swapping takes: every button but Hide waits. */
+	restarting?: boolean;
 	onStop: () => void;
+	onRestart: () => void;
 	onPauseResume: () => void;
 	onCancel: () => void;
 	onHide: () => void;
 }
 
-/** Stop, time, pause and discard: the bar shown while a recording runs. */
+/** Stop, restart, time, pause and discard: the bar shown while a recording runs. */
 export function RecordingBarControls({
 	paused,
 	elapsed,
+	restarting = false,
 	onStop,
+	onRestart,
 	onPauseResume,
 	onCancel,
 	onHide,
@@ -42,10 +47,21 @@ export function RecordingBarControls({
 				// Turns a brighter red on hover instead of taking the bar's hover fill.
 				data-own-hover=""
 				onClick={onStop}
+				disabled={restarting}
 				title={t("recording.stop")}
 				aria-label={t("recording.stop")}
 			>
 				<span className={styles.stopSquare} />
+			</button>
+			<button
+				type="button"
+				className={`${styles.item} ${styles.iconOnly}`}
+				onClick={onRestart}
+				disabled={restarting}
+				title={t("recording.restart")}
+				aria-label={t("recording.restart")}
+			>
+				<ArrowCounterClockwise className={styles.icon} />
 			</button>
 			<div
 				className={styles.timer}
@@ -60,6 +76,7 @@ export function RecordingBarControls({
 				type="button"
 				className={`${styles.item} ${styles.iconOnly}`}
 				onClick={onPauseResume}
+				disabled={restarting}
 				title={paused ? t("recording.resume") : t("recording.pause")}
 				aria-label={paused ? t("recording.resume") : t("recording.pause")}
 			>
@@ -73,6 +90,7 @@ export function RecordingBarControls({
 				type="button"
 				className={`${styles.item} ${styles.iconOnly}`}
 				onClick={onCancel}
+				disabled={restarting}
 				title={t("recording.cancel")}
 				aria-label={t("recording.cancel")}
 			>
@@ -97,7 +115,11 @@ const dragRecordingBar = (phase: "start" | "move" | "end", screenX: number, scre
 /** The recording bar window; the start bar's window keeps the recorder and takes its commands. */
 export default function RecordingBarWindow() {
 	const rootRef = useRef<HTMLDivElement>(null);
-	const [status, setStatus] = useState({ paused: false, elapsed: 0 });
+	const [status, setStatus] = useState<{
+		paused: boolean;
+		elapsed: number;
+		restarting?: boolean;
+	}>({ paused: false, elapsed: 0 });
 	useBarWindowSize(rootRef);
 	const onGlass = useWindowGlass();
 	useBarDrag(rootRef, dragRecordingBar);
@@ -128,7 +150,13 @@ export default function RecordingBarWindow() {
 				<RecordingBarControls
 					paused={status.paused}
 					elapsed={status.elapsed}
+					restarting={status.restarting}
 					onStop={() => send("stop")}
+					onRestart={() => {
+						// Disabled at once, before the start bar confirms, so a second press does nothing.
+						setStatus((current) => ({ ...current, restarting: true }));
+						send("restart");
+					}}
 					onPauseResume={() => send(status.paused ? "resume" : "pause")}
 					onCancel={() => send("cancel")}
 					onHide={() => send("hide")}

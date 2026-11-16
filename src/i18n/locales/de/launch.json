@@ -43,6 +43,8 @@
 		"pause": "Pause",
 		"stop": "Stopp",
 		"cancel": "Abbrechen",
+		"restart": "Aufnahme neu starten",
+		"restartFailed": "Die Aufnahme konnte nicht neu gestartet werden",
 		"more": "Mehr",
 		"update": {
 			"update": "Aktualisieren",
