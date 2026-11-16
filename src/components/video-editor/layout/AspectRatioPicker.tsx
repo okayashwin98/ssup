@@ -1,6 +1,6 @@
-import { type ComponentType, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { CaretDown, InstagramLogo, XLogo, YoutubeLogo } from "@/components/ui/icons";
+import { CaretDown } from "@/components/ui/icons";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { useI18n } from "@/contexts/I18nContext";
@@ -19,6 +19,7 @@ import {
 /** Widest to tallest. Every ratio the old dropdown offered is here, 16:10 and 10:16 included. */
 const RATIOS: AspectRatio[] = [
 	"native",
+	"3:1",
 	"16:9",
 	"16:10",
 	"3:2",
@@ -30,39 +31,6 @@ const RATIOS: AspectRatio[] = [
 	"2:3",
 	"10:16",
 	"9:16",
-];
-
-const PLATFORMS: Array<{
-	name: string;
-	icon: ComponentType<{ className?: string }>;
-	presets: Array<[name: string, ratio: AspectRatio]>;
-}> = [
-	{
-		name: "X",
-		icon: XLogo,
-		presets: [
-			["Post", "16:9"],
-			["Cover", "3:1"],
-		],
-	},
-	{
-		name: "YouTube",
-		icon: YoutubeLogo,
-		presets: [
-			["Video", "16:9"],
-			["Thumbnail", "16:9"],
-			["Banner", "16:9"],
-		],
-	},
-	{
-		name: "Instagram",
-		icon: InstagramLogo,
-		presets: [
-			["Post", "1:1"],
-			["Portrait", "4:5"],
-			["Story", "9:16"],
-		],
-	},
 ];
 
 /** One choice in a grid of shapes: the outline drawn to scale, with its ratio underneath. */
@@ -134,12 +102,9 @@ export function AspectRatioPicker({ t, value, onChange, getSourceSize }: Props) 
 	const [source, setSource] = useState({ width: 1920, height: 1080 });
 	const [width, setWidth] = useState("");
 	const [height, setHeight] = useState("");
-	// Several presets share a ratio; remember which one was picked so only it is highlighted.
-	const [picked, setPicked] = useState<{ key: string; ratio: AspectRatio } | null>(null);
 	const nativeLabel = t("editor.aspectRatio.native", "Native");
 	const title = t("editor.aspectRatio.title", "Aspect ratio");
 	const label = value === "native" ? nativeLabel : getAspectRatioShortLabel(value);
-	const selectedKey = picked?.ratio === value ? picked.key : `ratio/${value}`;
 	const sizeInvalid =
 		(width !== "" && !isValidCustomSide(width)) ||
 		(height !== "" && !isValidCustomSide(height));
@@ -150,8 +115,7 @@ export function AspectRatioPicker({ t, value, onChange, getSourceSize }: Props) 
 		setHeight(String(frame.height));
 	}
 
-	function choose(ratio: AspectRatio, key: string) {
-		setPicked({ key, ratio });
+	function choose(ratio: AspectRatio) {
 		onChange(ratio);
 		showSize(ratio);
 	}
@@ -160,24 +124,7 @@ export function AspectRatioPicker({ t, value, onChange, getSourceSize }: Props) 
 		setWidth(nextWidth);
 		setHeight(nextHeight);
 		const ratio = customSizeToAspectRatio(nextWidth, nextHeight);
-		if (ratio) {
-			setPicked({ key: "custom", ratio });
-			onChange(ratio);
-		}
-	}
-
-	function tile(ratio: AspectRatio, key: string, name?: string) {
-		return (
-			<RatioTile
-				key={key}
-				ratio={getAspectRatioValue(ratio, source.width / source.height)}
-				dashed={ratio === "native"}
-				label={ratio === "native" ? nativeLabel : ratio}
-				name={name}
-				selected={selectedKey === key}
-				onSelect={() => choose(ratio, key)}
-			/>
-		);
+		if (ratio) onChange(ratio);
 	}
 
 	return (
@@ -249,23 +196,17 @@ export function AspectRatioPicker({ t, value, onChange, getSourceSize }: Props) 
 					<div
 						role="radiogroup"
 						aria-label={t("editor.aspectRatio.presets", "Aspect ratio presets")}
-						className="flex flex-col gap-3"
+						className="grid grid-cols-4 gap-1"
 					>
-						<div className="grid grid-cols-4 gap-1">
-							{RATIOS.map((ratio) => tile(ratio, `ratio/${ratio}`))}
-						</div>
-						{PLATFORMS.map((platform) => (
-							<div key={platform.name} className="flex flex-col gap-1.5">
-								<p className="flex items-center gap-1.5 px-1 text-xs font-medium text-foreground">
-									<platform.icon className="size-3.5" aria-hidden="true" />
-									{platform.name}
-								</p>
-								<div className="grid grid-cols-4 gap-1">
-									{platform.presets.map(([name, ratio]) =>
-										tile(ratio, `platform/${platform.name}/${name}`, name),
-									)}
-								</div>
-							</div>
+						{RATIOS.map((ratio) => (
+							<RatioTile
+								key={ratio}
+								ratio={getAspectRatioValue(ratio, source.width / source.height)}
+								dashed={ratio === "native"}
+								label={ratio === "native" ? nativeLabel : ratio}
+								selected={value === ratio}
+								onSelect={() => choose(ratio)}
+							/>
 						))}
 					</div>
 				</div>

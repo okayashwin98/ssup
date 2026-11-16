@@ -89,6 +89,13 @@ describe("calculateMp4SourceDimensions", () => {
 		});
 	});
 
+	it("fits a 3:1 export inside the source width", () => {
+		expect(calculateMp4SourceDimensions(1920, 1080, "3:1")).toEqual({
+			width: 1920,
+			height: 640,
+		});
+	});
+
 	it("keeps landscape aspect-ratio exports inside the source bounds", () => {
 		expect(calculateMp4SourceDimensions(1920, 1080, "4:3")).toEqual({
 			width: 1440,

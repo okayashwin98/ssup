@@ -40,6 +40,10 @@ describe("resolveVideoUrl", () => {
 });
 
 describe("normalizeProjectEditor", () => {
+	it("keeps a saved 3:1 aspect ratio", () => {
+		expect(normalizeProjectEditor({ aspectRatio: "3:1" }).aspectRatio).toBe("3:1");
+	});
+
 	it("keeps zooms on unless the project turned them off", () => {
 		expect(normalizeProjectEditor({}).zoomsEnabled).toBe(true);
 		expect(normalizeProjectEditor({ zoomsEnabled: false }).zoomsEnabled).toBe(false);
