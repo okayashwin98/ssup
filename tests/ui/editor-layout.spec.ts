@@ -166,3 +166,38 @@ test("new zoom blocks default to 1.8x", async ({ page }) => {
 		"true",
 	);
 });
+
+test("playback bar stays on one row, compacting only when the preview is too narrow", async ({
+	page,
+}) => {
+	await installDesktopBridge(page);
+	await page.goto("/?windowType=editor");
+	await expect(page.getByRole("button", { name: "Play", exact: true })).toBeVisible({
+		timeout: 20000,
+	});
+	for (const width of [1440, 1150, 1000, 953, 952, 800]) {
+		await page.setViewportSize({ width, height: 800 });
+		const bar = (await page.locator(".editor-playback").boundingBox())!;
+		const compact = bar.width <= 560;
+		const buttons = await page.locator(".editor-playback button").evaluateAll((nodes) =>
+			nodes.map((n) => {
+				const r = n.getBoundingClientRect();
+				return { x: r.x, y: r.y, right: r.right, bottom: r.bottom, height: r.height };
+			}),
+		);
+		expect(buttons).toHaveLength(9);
+		for (const [i, button] of buttons.entries()) {
+			expect(button.x).toBeGreaterThanOrEqual(bar.x);
+			expect(button.right).toBeLessThanOrEqual(bar.x + bar.width);
+			expect(
+				Math.abs((button.y + button.bottom) / 2 - (buttons[0].y + buttons[0].bottom) / 2),
+			).toBeLessThan(1);
+			if (i > 0) expect(button.x).toBeGreaterThanOrEqual(buttons[i - 1].right);
+			// The play button is 36px at full size; every other button is 32px.
+			expect(button.height).toBe(compact ? 28 : i === 5 ? 36 : 32);
+		}
+		const addLayer = page.getByRole("button", { name: "Add Layer", exact: true });
+		await expect(addLayer.getByText("Add Layer")).toBeVisible({ visible: !compact });
+		await expect(addLayer).toHaveAttribute("aria-label", "Add Layer");
+	}
+});

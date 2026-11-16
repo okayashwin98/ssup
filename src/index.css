@@ -176,23 +176,39 @@
 .editor-header-end {
 	white-space: nowrap;
 }
+.editor-preview-panel {
+	container: editor-preview / inline-size;
+}
 .editor-playback {
 	container-type: inline-size;
 }
-@container (max-width: 760px) {
+/* Too narrow to centre the transport: the tools keep their width and everything stays on one row. */
+@container editor-preview (max-width: 760px) {
+	.editor-playback {
+		grid-template-columns: auto minmax(max-content, 1fr) auto;
+	}
+}
+/* Narrower than the full-size row (552px of content): 28px buttons and an icon-only Add Layer. */
+@container editor-preview (max-width: 560px) {
+	.editor-playback {
+		gap: 4px;
+		padding-inline: 8px;
+	}
+	.editor-playback button {
+		width: 28px;
+		min-width: 28px;
+		height: 28px;
+		padding-inline: 0;
+	}
 	.editor-playback-tools {
-		grid-row: 2;
-		grid-column: 1 / -1;
-		justify-content: center;
-		padding-bottom: 8px;
+		gap: 4px;
 	}
-	.editor-playback-center {
-		grid-row: 1;
-		grid-column: 2;
+	.editor-playback-center > div {
+		gap: 2px;
 	}
-	.editor-playback-volume {
-		grid-row: 1;
-		grid-column: 3;
+	.editor-playback-add-label,
+	.editor-playback-add-caret {
+		display: none;
 	}
 }
 @container (max-width: 520px) {
