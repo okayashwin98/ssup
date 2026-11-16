@@ -1,4 +1,6 @@
 import { Application, Container, Graphics, Rectangle, Sprite, Texture } from "pixi.js";
+import { isCustomGradientWallpaper } from "@/lib/backgroundGradients";
+import { drawCssGradientBackground } from "./cssGradientBackground";
 import { MotionBlurFilter } from "pixi-filters/motion-blur";
 import { ZoomBlurFilter } from "pixi-filters/zoom-blur";
 import type {
@@ -620,6 +622,11 @@ export class FrameRenderer {
 			} else if (wallpaper.startsWith("#")) {
 				bgCtx.fillStyle = wallpaper;
 				bgCtx.fillRect(0, 0, this.config.width, this.config.height);
+			} else if (
+				isCustomGradientWallpaper(wallpaper) &&
+				drawCssGradientBackground(bgCtx, wallpaper, this.config.width, this.config.height)
+			) {
+				// Custom gradients follow the CSS the preview draws, angle and stops included.
 			} else if (
 				wallpaper.startsWith("linear-gradient") ||
 				wallpaper.startsWith("radial-gradient")

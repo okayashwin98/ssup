@@ -1,4 +1,6 @@
 import { clipNeedsRenderedAudio } from "@/lib/noiseFilterStrength";
+import { isCustomGradientWallpaper } from "@/lib/backgroundGradients";
+import { createCssGradientBackground } from "./cssGradientBackground";
 import type {
 	AnnotationRegion,
 	AudioRegion,
@@ -1985,6 +1987,15 @@ export class ModernVideoExporter {
 		ctx: CanvasRenderingContext2D,
 		wallpaper: string,
 	): CanvasGradient | null {
+		if (isCustomGradientWallpaper(wallpaper)) {
+			// Same CSS-exact drawing as the other export paths, so Breeze matches them.
+			return createCssGradientBackground(
+				ctx,
+				wallpaper,
+				this.config.width,
+				this.config.height,
+			);
+		}
 		const gradientMatch = wallpaper.match(/(linear|radial)-gradient\((.+)\)/);
 		if (!gradientMatch) {
 			return null;

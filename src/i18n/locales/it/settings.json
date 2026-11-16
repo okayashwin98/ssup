@@ -230,7 +230,22 @@
 		"uploadCustom": "Carica personalizzato",
 		"uploadSuccess": "Immagine personalizzata caricata con successo!",
 		"uploadError": "Carica un file immagine JPG o JPEG.",
-		"uploadErrorDescription": "Sono supportate solo immagini JPG e JPEG."
+		"uploadErrorDescription": "Sono supportate solo immagini JPG e JPEG.",
+		"customColor": "Colore personalizzato",
+		"saveColor": "Salva colore",
+		"removeCustomColor": "Rimuovi colore personalizzato",
+		"createCustomGradient": "Crea sfumatura personalizzata",
+		"customGradient": "Sfumatura personalizzata",
+		"customGradientNumber": "Sfumatura personalizzata {{number}}",
+		"gradientPreview": "Anteprima della sfumatura",
+		"colorNumber": "Colore {{number}}",
+		"removeColorNumber": "Rimuovi colore {{number}}",
+		"addColor": "Aggiungi colore",
+		"angle": "Angolo",
+		"saveGradient": "Salva sfumatura",
+		"remove": "Rimuovi",
+		"removeGradient": "Rimuovi sfumatura",
+		"removeColor": "Rimuovi colore"
 	},
 	"export": {
 		"title": "Esporta",

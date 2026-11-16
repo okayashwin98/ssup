@@ -230,7 +230,22 @@
 		"uploadCustom": "上传自定义",
 		"uploadSuccess": "自定义图片上传成功！",
 		"uploadError": "请上传 JPG 或 JPEG 图片文件。",
-		"uploadErrorDescription": "仅支持 JPG 和 JPEG 图片。"
+		"uploadErrorDescription": "仅支持 JPG 和 JPEG 图片。",
+		"customColor": "自定义颜色",
+		"saveColor": "保存颜色",
+		"removeCustomColor": "移除自定义颜色",
+		"createCustomGradient": "创建自定义渐变",
+		"customGradient": "自定义渐变",
+		"customGradientNumber": "自定义渐变 {{number}}",
+		"gradientPreview": "渐变预览",
+		"colorNumber": "颜色 {{number}}",
+		"removeColorNumber": "移除颜色 {{number}}",
+		"addColor": "添加颜色",
+		"angle": "角度",
+		"saveGradient": "保存渐变",
+		"remove": "移除",
+		"removeGradient": "移除渐变",
+		"removeColor": "移除颜色"
 	},
 	"export": {
 		"title": "导出",

@@ -230,7 +230,22 @@
 		"uploadCustom": "Загрузить",
 		"uploadSuccess": "Изображение загружено.",
 		"uploadError": "Загрузите JPG или JPEG.",
-		"uploadErrorDescription": "Поддерживаются только JPG и JPEG."
+		"uploadErrorDescription": "Поддерживаются только JPG и JPEG.",
+		"customColor": "Свой цвет",
+		"saveColor": "Сохранить цвет",
+		"removeCustomColor": "Удалить свой цвет",
+		"createCustomGradient": "Создать свой градиент",
+		"customGradient": "Свой градиент",
+		"customGradientNumber": "Свой градиент {{number}}",
+		"gradientPreview": "Предпросмотр градиента",
+		"colorNumber": "Цвет {{number}}",
+		"removeColorNumber": "Удалить цвет {{number}}",
+		"addColor": "Добавить цвет",
+		"angle": "Угол",
+		"saveGradient": "Сохранить градиент",
+		"remove": "Удалить",
+		"removeGradient": "Удалить градиент",
+		"removeColor": "Удалить цвет"
 	},
 	"export": {
 		"title": "Экспорт",

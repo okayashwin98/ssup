@@ -230,7 +230,22 @@
 		"uploadCustom": "사용자 이미지 업로드",
 		"uploadSuccess": "사용자 이미지를 업로드했습니다!",
 		"uploadError": "JPG 또는 JPEG 이미지 파일을 업로드해 주세요.",
-		"uploadErrorDescription": "JPG 또는 JPEG 이미지 파일을 업로드해 주세요."
+		"uploadErrorDescription": "JPG 또는 JPEG 이미지 파일을 업로드해 주세요.",
+		"customColor": "사용자 지정 색상",
+		"saveColor": "색상 저장",
+		"removeCustomColor": "사용자 지정 색상 제거",
+		"createCustomGradient": "사용자 지정 그라디언트 만들기",
+		"customGradient": "사용자 지정 그라디언트",
+		"customGradientNumber": "사용자 지정 그라디언트 {{number}}",
+		"gradientPreview": "그라디언트 미리보기",
+		"colorNumber": "색상 {{number}}",
+		"removeColorNumber": "색상 {{number}} 제거",
+		"addColor": "색상 추가",
+		"angle": "각도",
+		"saveGradient": "그라디언트 저장",
+		"remove": "제거",
+		"removeGradient": "그라디언트 제거",
+		"removeColor": "색상 제거"
 	},
 	"export": {
 		"title": "내보내기",

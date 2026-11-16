@@ -1,5 +1,6 @@
 import { normalizeExportPreferences, type ExportPreferences } from "./exportPreferences";
 import { loadAppSetting, saveAppSetting } from "../../lib/appSettings";
+import { normalizeCustomColors, normalizeCustomGradients } from "../../lib/backgroundGradients";
 import {
 	getDefaultBorderRadiusPercent,
 	legacyBorderRadiusPixelsToPercent,
@@ -80,6 +81,9 @@ export interface EditorPreferences extends PersistedEditorControls, ExportPrefer
 	customAspectWidth: string;
 	customAspectHeight: string;
 	customWallpapers: string[];
+	/** Background colours and gradients the user saved for reuse in any project. */
+	customColors: string[];
+	customGradients: string[];
 	autoApplyFreshRecordingAutoZooms: boolean;
 	whisperExecutablePath: string | null;
 	whisperModelPath: string | null;
@@ -136,6 +140,8 @@ export const DEFAULT_EDITOR_PREFERENCES: EditorPreferences = {
 	customAspectWidth: "16",
 	customAspectHeight: "9",
 	customWallpapers: [],
+	customColors: [],
+	customGradients: [],
 	autoApplyFreshRecordingAutoZooms: true,
 	whisperExecutablePath: null,
 	whisperModelPath: null,
@@ -426,6 +432,14 @@ export function normalizeEditorPreferences(
 			raw.customWallpapers,
 			fallback.customWallpapers,
 		),
+		customColors:
+			raw.customColors === undefined
+				? fallback.customColors
+				: normalizeCustomColors(raw.customColors),
+		customGradients:
+			raw.customGradients === undefined
+				? fallback.customGradients
+				: normalizeCustomGradients(raw.customGradients),
 		autoApplyFreshRecordingAutoZooms: normalizeBoolean(
 			raw.autoApplyFreshRecordingAutoZooms,
 			fallback.autoApplyFreshRecordingAutoZooms,

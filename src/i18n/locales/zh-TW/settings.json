@@ -230,7 +230,22 @@
 		"uploadCustom": "上傳自訂圖片",
 		"uploadSuccess": "自訂圖片已成功上傳！",
 		"uploadError": "請上傳 JPG 或 JPEG 圖片檔。",
-		"uploadErrorDescription": "僅支援 JPG 與 JPEG 圖片。"
+		"uploadErrorDescription": "僅支援 JPG 與 JPEG 圖片。",
+		"customColor": "自訂顏色",
+		"saveColor": "儲存顏色",
+		"removeCustomColor": "移除自訂顏色",
+		"createCustomGradient": "建立自訂漸層",
+		"customGradient": "自訂漸層",
+		"customGradientNumber": "自訂漸層 {{number}}",
+		"gradientPreview": "漸層預覽",
+		"colorNumber": "顏色 {{number}}",
+		"removeColorNumber": "移除顏色 {{number}}",
+		"addColor": "新增顏色",
+		"angle": "角度",
+		"saveGradient": "儲存漸層",
+		"remove": "移除",
+		"removeGradient": "移除漸層",
+		"removeColor": "移除顏色"
 	},
 	"export": {
 		"title": "匯出",

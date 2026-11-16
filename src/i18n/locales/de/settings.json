@@ -230,7 +230,22 @@
 		"uploadCustom": "Benutzerdefiniertes Bild hochladen",
 		"uploadSuccess": "Benutzerdefiniertes Bild erfolgreich hochgeladen!",
 		"uploadError": "Bitte lade eine JPG- oder JPEG-Bilddatei hoch.",
-		"uploadErrorDescription": "Es werden nur JPG- und JPEG-Bilder unterstützt."
+		"uploadErrorDescription": "Es werden nur JPG- und JPEG-Bilder unterstützt.",
+		"customColor": "Eigene Farbe",
+		"saveColor": "Farbe speichern",
+		"removeCustomColor": "Eigene Farbe entfernen",
+		"createCustomGradient": "Eigenen Farbverlauf erstellen",
+		"customGradient": "Eigener Farbverlauf",
+		"customGradientNumber": "Eigener Farbverlauf {{number}}",
+		"gradientPreview": "Vorschau des Farbverlaufs",
+		"colorNumber": "Farbe {{number}}",
+		"removeColorNumber": "Farbe {{number}} entfernen",
+		"addColor": "Farbe hinzufügen",
+		"angle": "Winkel",
+		"saveGradient": "Farbverlauf speichern",
+		"remove": "Entfernen",
+		"removeGradient": "Farbverlauf entfernen",
+		"removeColor": "Farbe entfernen"
 	},
 	"export": {
 		"title": "Exportieren",

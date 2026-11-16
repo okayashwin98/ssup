@@ -230,7 +230,22 @@
 		"uploadCustom": "Enviar personalizado",
 		"uploadSuccess": "Imagem personalizada enviada com sucesso!",
 		"uploadError": "Envie um arquivo de imagem JPG ou JPEG.",
-		"uploadErrorDescription": "Somente imagens JPG e JPEG são suportadas."
+		"uploadErrorDescription": "Somente imagens JPG e JPEG são suportadas.",
+		"customColor": "Cor personalizada",
+		"saveColor": "Salvar cor",
+		"removeCustomColor": "Remover cor personalizada",
+		"createCustomGradient": "Criar gradiente personalizado",
+		"customGradient": "Gradiente personalizado",
+		"customGradientNumber": "Gradiente personalizado {{number}}",
+		"gradientPreview": "Prévia do gradiente",
+		"colorNumber": "Cor {{number}}",
+		"removeColorNumber": "Remover cor {{number}}",
+		"addColor": "Adicionar cor",
+		"angle": "Ângulo",
+		"saveGradient": "Salvar gradiente",
+		"remove": "Remover",
+		"removeGradient": "Remover gradiente",
+		"removeColor": "Remover cor"
 	},
 	"export": {
 		"title": "Exportar",

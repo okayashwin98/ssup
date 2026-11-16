@@ -230,7 +230,22 @@
 		"uploadCustom": "Afbeelding uploaden",
 		"uploadSuccess": "Eigen afbeelding succesvol geüpload!",
 		"uploadError": "Upload een JPG- of JPEG-afbeelding.",
-		"uploadErrorDescription": "Alleen JPG- en JPEG-afbeeldingen worden ondersteund."
+		"uploadErrorDescription": "Alleen JPG- en JPEG-afbeeldingen worden ondersteund.",
+		"customColor": "Eigen kleur",
+		"saveColor": "Kleur bewaren",
+		"removeCustomColor": "Eigen kleur verwijderen",
+		"createCustomGradient": "Eigen kleurverloop maken",
+		"customGradient": "Eigen kleurverloop",
+		"customGradientNumber": "Eigen kleurverloop {{number}}",
+		"gradientPreview": "Voorbeeld van kleurverloop",
+		"colorNumber": "Kleur {{number}}",
+		"removeColorNumber": "Kleur {{number}} verwijderen",
+		"addColor": "Kleur toevoegen",
+		"angle": "Hoek",
+		"saveGradient": "Kleurverloop bewaren",
+		"remove": "Verwijderen",
+		"removeGradient": "Kleurverloop verwijderen",
+		"removeColor": "Kleur verwijderen"
 	},
 	"export": {
 		"title": "Exporteren",

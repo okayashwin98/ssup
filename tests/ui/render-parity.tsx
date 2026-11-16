@@ -11,6 +11,7 @@ import VideoPlayback, { type VideoPlaybackRef } from "@/components/video-editor/
 import { I18nProvider } from "@/contexts/I18nContext";
 import { FrameRenderer as LegacyFrameRenderer } from "@/lib/exporter/frameRenderer";
 import { FrameRenderer as ModernFrameRenderer } from "@/lib/exporter/modernFrameRenderer";
+import { ModernVideoExporter } from "@/lib/exporter/modernVideoExporter";
 import "@/index.css";
 
 type ParityConfig = {
@@ -137,6 +138,39 @@ async function exportFrame(kind: "legacy" | "modern", seconds: number, width = 1
 	}
 }
 
+/** The background the fast native ("Breeze") export is handed for a gradient wallpaper. */
+function breezeGradient(width = 1280) {
+	const height = Math.round((width * 9) / 16);
+	const exporter = new ModernVideoExporter({
+		videoUrl: videoPath,
+		width,
+		height,
+		frameRate: 30,
+		bitrate: 8_000_000,
+		wallpaper,
+		padding,
+		borderRadius: 0,
+		backgroundBlur: 0,
+		shadowIntensity: 0,
+		showShadow: false,
+		cropRegion: { x: 0, y: 0, width: 1, height: 1 },
+	} as never) as unknown as {
+		createNativeStaticLayoutGradient(
+			ctx: CanvasRenderingContext2D,
+			wallpaper: string,
+		): CanvasGradient | null;
+	};
+	const canvas = document.createElement("canvas");
+	canvas.width = width;
+	canvas.height = height;
+	const ctx = canvas.getContext("2d");
+	const gradient = ctx && exporter.createNativeStaticLayoutGradient(ctx, wallpaper);
+	if (!ctx || !gradient) throw new Error("No Breeze gradient");
+	ctx.fillStyle = gradient;
+	ctx.fillRect(0, 0, width, height);
+	return canvas.toDataURL("image/png");
+}
+
 function Parity() {
 	const playback = useRef<VideoPlaybackRef>(null);
 	const [playing, setPlaying] = useState(false);
@@ -148,6 +182,7 @@ function Parity() {
 			play: () => playback.current?.play(),
 			pause: () => playback.current?.pause(),
 			exportFrame,
+			breezeGradient,
 		},
 	});
 	return (
