@@ -64,6 +64,7 @@ import {
 	type ZoomRegion,
 	type ZoomTransitionEasing,
 } from "./types";
+import { normalizeWebcamEdgeStyle } from "./webcamEdgeFeather";
 import { convertLegacyWebcamRadiusToRoundness, normalizeWebcamCropRegion } from "./webcamOverlay";
 
 export const PROJECT_VERSION = 2;
@@ -1048,6 +1049,10 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 			margin: isFiniteNumber(webcam.margin)
 				? clamp(webcam.margin, 0, 96)
 				: DEFAULT_WEBCAM_MARGIN,
+			// Absent in projects saved before soft edges existed; those keep the standard edge.
+			...(normalizeWebcamEdgeStyle(webcam.previewFrame)
+				? { previewFrame: normalizeWebcamEdgeStyle(webcam.previewFrame) }
+				: {}),
 		},
 		sourceAudioTrackSettingsByClip:
 			editor.sourceAudioTrackSettingsByClip &&

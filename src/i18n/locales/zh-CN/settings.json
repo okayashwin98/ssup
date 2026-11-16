@@ -144,6 +144,7 @@
 		"webcamReactToZoom": "摄像头随缩放变化",
 		"webcamMirror": "镜像摄像头",
 		"webcamRoundness": "摄像头圆角",
+		"webcamSoftEdges": "柔和边缘",
 		"webcamShadow": "摄像头阴影",
 		"shadow": "阴影",
 		"radius": "圆角半径",

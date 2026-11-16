@@ -332,6 +332,11 @@ export function useProjectLifecycle(input: Input) {
 		current.appearance.setCursorIdleHide(
 			(previous) => previous ?? loadEditorPreferences().cursorIdleHide,
 		);
+		current.appearance.setWebcam((previous) =>
+			previous.previewFrame
+				? previous
+				: { ...previous, previewFrame: loadEditorPreferences().webcam.previewFrame },
+		);
 		current.appearance.setHiddenTimelineLayers([]);
 		timeline.setTrimRegions([]);
 		timeline.setClipRegions([]);

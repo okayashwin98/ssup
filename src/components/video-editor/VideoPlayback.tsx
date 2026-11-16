@@ -22,6 +22,11 @@ import {
 } from "react";
 import { getAssetPath, getRenderableAssetUrl, getRenderableVideoUrl } from "@/lib/assetPath";
 import { getWebcamShadowFilter } from "@/lib/exporter/shadowProfile";
+import {
+	drawWebcamBubble,
+	getWebcamEdgeFeatherPixels,
+	WebcamEdgeFeather,
+} from "./webcamEdgeFeather";
 import { getSquircleSvgPath } from "@/lib/geometry/squircle";
 import {
 	clampMediaTimeToDuration,
@@ -432,6 +437,12 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		const webcamVideoRef = useRef<HTMLVideoElement | null>(null);
 		const webcamBubbleRef = useRef<HTMLDivElement | null>(null);
 		const webcamBubbleInnerRef = useRef<HTMLDivElement | null>(null);
+		const webcamSoftCanvasRef = useRef<HTMLCanvasElement | null>(null);
+		const webcamSoftCtxRef = useRef<CanvasRenderingContext2D | null>(null);
+		const webcamEdgeFeatherRef = useRef<WebcamEdgeFeather | null>(null);
+		// Which source the soft canvas last finished drawing, and with what inputs.
+		const webcamSoftRenderedRef = useRef<{ path: string; key: string } | null>(null);
+		useEffect(() => () => webcamEdgeFeatherRef.current?.destroy(), []);
 		const [webcamVideoDimensions, setWebcamVideoDimensions] = useState<{
 			width: number;
 			height: number;
@@ -917,6 +928,78 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				bubbleInner.style.contain = "paint";
 				bubbleInner.style.clipPath = `path('${squirclePath}')`;
 				bubbleInner.style.setProperty("-webkit-clip-path", `path('${squirclePath}')`);
+
+				// Soft edges are drawn by the same canvas routine the exporters use.
+				const softCanvas = webcamSoftCanvasRef.current;
+				const featherPx = getWebcamEdgeFeatherPixels(
+					webcam?.previewFrame,
+					overlay.clientWidth,
+				);
+				if (featherPx <= 0 || !softCanvas) {
+					webcamSoftRenderedRef.current = null;
+					if (softCanvas) softCanvas.style.display = "none";
+					bubbleInner.style.visibility = "visible";
+					return;
+				}
+				bubbleInner.style.visibility = "hidden";
+				const video = webcamVideoRef.current;
+				if (
+					video &&
+					webcamMediaSynchronized &&
+					video.readyState >= 2 &&
+					!video.seeking &&
+					video.videoWidth > 0 &&
+					video.videoHeight > 0
+				) {
+					const scale = Math.max(1, window.devicePixelRatio || 1);
+					const { sx, sy, sw, sh } = getWebcamCropSourceRect(
+						webcamCropRegion,
+						video.videoWidth,
+						video.videoHeight,
+					);
+					const key = [
+						video.currentTime,
+						scaledDimensions.width,
+						scaledDimensions.height,
+						scaledRadius,
+						featherPx,
+						webcamMirror,
+						sx,
+						sy,
+						sw,
+						sh,
+						scale,
+					].join("|");
+					const rendered = webcamSoftRenderedRef.current;
+					if (rendered?.path !== webcamVideoPath || rendered.key !== key) {
+						webcamSoftCtxRef.current ??= softCanvas.getContext("2d");
+						webcamEdgeFeatherRef.current ??= new WebcamEdgeFeather();
+						if (webcamSoftCtxRef.current) {
+							drawWebcamBubble(
+								softCanvas,
+								webcamSoftCtxRef.current,
+								webcamEdgeFeatherRef.current,
+								{
+									source: video,
+									sx,
+									sy,
+									sw,
+									sh,
+									width: scaledDimensions.width,
+									height: scaledDimensions.height,
+									radius: scaledRadius,
+									mirror: webcamMirror,
+									featherPx,
+									scale,
+								},
+							);
+							webcamSoftRenderedRef.current = { path: webcamVideoPath, key };
+						}
+					}
+				}
+				// While a seek decodes, keep the last soft frame rather than flashing a sharp one.
+				softCanvas.style.display =
+					webcamSoftRenderedRef.current?.path === webcamVideoPath ? "block" : "none";
 			},
 			[
 				webcamCorner,
@@ -932,6 +1015,9 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				webcamHeight,
 				webcamVideoPath,
 				webcamWidth,
+				webcamCropRegion,
+				webcamMirror,
+				webcamMediaSynchronized,
 			],
 		);
 
@@ -1727,8 +1813,10 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 					});
 				}
 				syncWebcamMedia();
+				// A paused preview can finish its tick before the camera decoder lands.
+				applyWebcamBubbleLayout(animationStateRef.current.appliedScale || 1);
 			},
-			[syncWebcamMedia],
+			[syncWebcamMedia, applyWebcamBubbleLayout],
 		);
 
 		useEffect(() => {
@@ -2631,6 +2719,13 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 										</div>
 									</div>
 								</div>
+								<canvas
+									ref={webcamSoftCanvasRef}
+									data-webcam-soft-edges
+									aria-hidden="true"
+									className="pointer-events-none absolute inset-0 h-full w-full"
+									style={{ display: "none" }}
+								/>
 							</div>
 						) : null}
 						{!isGap && activeCaptionLayout && autoCaptionSettings ? (

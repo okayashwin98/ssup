@@ -144,6 +144,7 @@
 		"webcamReactToZoom": "확대 시 웹캠 반응",
 		"webcamMirror": "웹캠 미러링",
 		"webcamRoundness": "웹캠 둥글기",
+		"webcamSoftEdges": "부드러운 가장자리",
 		"webcamShadow": "웹캠 그림자",
 		"shadow": "그림자",
 		"radius": "반경",

@@ -89,10 +89,16 @@ import {
 	renderAnnotations,
 	renderAnnotationToCanvas,
 } from "./annotationRenderer";
+import {
+	drawWebcamBubble,
+	getWebcamEdgeFeatherPixels,
+	WebcamEdgeFeather,
+} from "@/components/video-editor/webcamEdgeFeather";
 import { ForwardFrameSource } from "./forwardFrameSource";
 import { resolveMediaElementSource } from "./localMediaSource";
 import {
 	getShadowFilterPadding,
+	getWebcamShadowFilter,
 	getWebcamShadowStrength,
 	VIDEO_SHADOW_LAYER_PROFILES,
 	WEBCAM_SHADOW_LAYER_PROFILES,
@@ -402,6 +408,14 @@ export class FrameRenderer {
 	private videoShadowLayers: ShadowLayer[] = [];
 	private webcamShadowLayers: ShadowLayer[] = [];
 	private webcamSprite: Sprite | null = null;
+	// Soft edges are composited on a 2D canvas, the same routine and shadow filter as the
+	// preview and the older renderer, then shown as one sprite outside the sharp mask.
+	private webcamSoftSprite: Sprite | null = null;
+	private webcamSoftBubbleCanvas: HTMLCanvasElement | null = null;
+	private webcamSoftBubbleCtx: CanvasRenderingContext2D | null = null;
+	private webcamSoftCanvas: HTMLCanvasElement | null = null;
+	private webcamSoftCtx: CanvasRenderingContext2D | null = null;
+	private readonly webcamEdgeFeather = new WebcamEdgeFeather();
 	private webcamTextureSource: MutableVideoTextureSource | null = null;
 	private webcamForwardFrameSource: ForwardFrameSource | null = null;
 	private webcamDecodedFrame: VideoFrame | null = null;
@@ -2728,6 +2742,99 @@ export class FrameRenderer {
 		}
 	}
 
+	private drawSoftWebcam(
+		renderable: WebcamRenderSource,
+		layout: {
+			x: number;
+			y: number;
+			width: number;
+			height: number;
+			radius: number;
+			featherPx: number;
+			mirror: boolean;
+			shadow: number;
+		},
+	): void {
+		if (!this.webcamRootContainer) return;
+		this.webcamSoftBubbleCanvas ??= document.createElement("canvas");
+		this.webcamSoftBubbleCtx ??= configureHighQuality2DContext(
+			this.webcamSoftBubbleCanvas.getContext("2d"),
+		);
+		this.webcamSoftCanvas ??= document.createElement("canvas");
+		this.webcamSoftCtx ??= this.webcamSoftCanvas.getContext("2d");
+		const bubble = this.webcamSoftBubbleCanvas;
+		const bubbleCtx = this.webcamSoftBubbleCtx;
+		const output = this.webcamSoftCanvas;
+		const outputCtx = this.webcamSoftCtx;
+		if (!bubbleCtx || !outputCtx) {
+			this.webcamRootContainer.visible = false;
+			return;
+		}
+		// The renderable source is already cropped (or uncropped by default).
+		drawWebcamBubble(bubble, bubbleCtx, this.webcamEdgeFeather, {
+			source: renderable.source,
+			sx: 0,
+			sy: 0,
+			sw: renderable.width,
+			sh: renderable.height,
+			width: layout.width,
+			height: layout.height,
+			radius: layout.radius,
+			mirror: layout.mirror,
+			featherPx: layout.featherPx,
+		});
+		const shadowSize = Math.min(layout.width, layout.height);
+		const strength = getWebcamShadowStrength(layout.shadow);
+		const filter =
+			layout.shadow > 0 ? getWebcamShadowFilter(shadowSize, layout.shadow) : "none";
+		// Each chained drop-shadow extends the previous result, so the margins add up.
+		const padding =
+			filter === "none"
+				? 0
+				: WEBCAM_SHADOW_LAYER_PROFILES.reduce(
+						(total, profile) =>
+							total +
+							getShadowFilterPadding(
+								shadowSize * profile.blurScale * strength,
+								shadowSize * profile.offsetScale * strength,
+							),
+						0,
+					);
+		const outputWidth = Math.max(1, Math.ceil(layout.width + padding * 2));
+		const outputHeight = Math.max(1, Math.ceil(layout.height + padding * 2));
+		const resized = output.width !== outputWidth || output.height !== outputHeight;
+		if (resized) {
+			output.width = outputWidth;
+			output.height = outputHeight;
+		}
+		outputCtx.setTransform(1, 0, 0, 1, 0, 0);
+		outputCtx.clearRect(0, 0, output.width, output.height);
+		outputCtx.save();
+		outputCtx.filter = filter;
+		outputCtx.drawImage(bubble, padding, padding, layout.width, layout.height);
+		outputCtx.restore();
+
+		if (!this.webcamSoftSprite) {
+			this.webcamSoftSprite = new Sprite(Texture.from(output));
+			this.webcamRootContainer.addChild(this.webcamSoftSprite);
+		} else if (resized) {
+			const previous = this.webcamSoftSprite.texture;
+			this.webcamSoftSprite.texture = Texture.from(output);
+			previous.destroy(true);
+		} else {
+			this.webcamSoftSprite.texture.source.update();
+		}
+		this.webcamSoftSprite.position.set(-padding, -padding);
+		this.webcamSoftSprite.width = output.width;
+		this.webcamSoftSprite.height = output.height;
+		this.webcamSoftSprite.visible = true;
+		if (this.webcamContainer) this.webcamContainer.visible = false;
+		for (const layer of this.webcamShadowLayers) layer.container.visible = false;
+		this.webcamLayoutCache = null;
+		this.webcamRootContainer.position.set(layout.x, layout.y);
+		this.webcamRootContainer.visible = true;
+	}
+
 	private updateWebcamOverlay(referenceTimeSeconds = this.currentVideoTime): void {
 		const webcam = this.config.webcam;
 		if (
@@ -2781,14 +2888,17 @@ export class FrameRenderer {
 			return;
 		}
 
-		this.ensureWebcamSprite(
-			renderableWebcamSource.source,
-			renderableWebcamSource.width,
-			renderableWebcamSource.height,
-		);
-		if (!this.webcamSprite) {
-			this.webcamRootContainer.visible = false;
-			return;
+		const featherPx = getWebcamEdgeFeatherPixels(webcam.previewFrame, this.config.width);
+		if (featherPx <= 0) {
+			this.ensureWebcamSprite(
+				renderableWebcamSource.source,
+				renderableWebcamSource.width,
+				renderableWebcamSource.height,
+			);
+			if (!this.webcamSprite) {
+				this.webcamRootContainer.visible = false;
+				return;
+			}
 		}
 
 		const margin = scaleWebcamOverlayPixels(webcam.margin ?? 24, this.config.width);
@@ -2834,6 +2944,22 @@ export class FrameRenderer {
 			dimensions.height,
 		);
 		const shadowStrength = getWebcamShadowStrength(webcam.shadow ?? 0);
+
+		if (featherPx > 0) {
+			this.drawSoftWebcam(renderableWebcamSource, {
+				x: position.x,
+				y: position.y,
+				width: dimensions.width,
+				height: dimensions.height,
+				radius,
+				featherPx,
+				mirror: webcam.mirror,
+				shadow: webcam.shadow ?? 0,
+			});
+			return;
+		}
+		if (this.webcamSoftSprite) this.webcamSoftSprite.visible = false;
+		if (this.webcamContainer) this.webcamContainer.visible = true;
 
 		this.webcamRootContainer.visible = true;
 
@@ -3229,6 +3355,7 @@ export class FrameRenderer {
 			this.videoSprite,
 			this.backgroundSprite,
 			this.webcamSprite,
+			this.webcamSoftSprite,
 			this.captionSprite,
 			...this.videoShadowLayers.map((layer) => layer.sprite),
 			...this.webcamShadowLayers.map((layer) => layer.sprite),
@@ -3289,6 +3416,12 @@ export class FrameRenderer {
 		this.videoShadowLayers = [];
 		this.webcamShadowLayers = [];
 		this.webcamSprite = null;
+		this.webcamSoftSprite = null;
+		this.webcamSoftBubbleCanvas = null;
+		this.webcamSoftBubbleCtx = null;
+		this.webcamSoftCanvas = null;
+		this.webcamSoftCtx = null;
+		this.webcamEdgeFeather.destroy();
 		this.webcamTextureSource = null;
 
 		this.closeBackgroundDecodedFrame();

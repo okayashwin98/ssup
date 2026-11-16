@@ -3419,6 +3419,20 @@ export function SettingsPanel({
 								onChange={(v) => updateWebcam({ roundness: v })}
 								formatValue={(v) => `${Math.round(v)}%`}
 							/>
+							<div className="flex items-center justify-between py-2">
+								<span className="text-xs font-medium text-foreground">
+									{tSettings("effects.webcamSoftEdges", "Soft edges")}
+								</span>
+								<Switch
+									aria-label={tSettings("effects.webcamSoftEdges", "Soft edges")}
+									checked={webcam?.previewFrame === "soft-blur"}
+									onCheckedChange={(soft) =>
+										updateWebcam({
+											previewFrame: soft ? "soft-blur" : "standard",
+										})
+									}
+								/>
+							</div>
 							{advanced && (
 								<SliderControl
 									label={tSettings("effects.webcamShadow")}

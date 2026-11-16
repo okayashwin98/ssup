@@ -120,6 +120,7 @@ export function useVideoEditorPresets({
 			appearance.setCropRegion({ ...snapshot.cropRegion });
 			appearance.setWebcam((current) => ({
 				...snapshot.webcam,
+				previewFrame: snapshot.webcam.previewFrame ?? current.previewFrame,
 				sourcePath: current.sourcePath,
 				visibleRanges: current.visibleRanges,
 			}));

@@ -137,6 +137,8 @@ export type WebcamPositionPreset =
 	| "custom";
 
 export interface WebcamOverlaySettings {
+	/** Edge look, the same in preview and export. Absent in projects saved before it existed: standard. */
+	previewFrame?: "standard" | "soft-blur";
 	/** Source-time intervals containing webcam footage in an imported sequence. */
 	visibleRanges?: { startMs: number; endMs: number }[];
 	enabled: boolean;

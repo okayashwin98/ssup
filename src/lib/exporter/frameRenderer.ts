@@ -63,8 +63,13 @@ import {
 	scaleWebcamOverlayPixels,
 } from "@/components/video-editor/webcamOverlay";
 import { getAssetPath, getExportableVideoUrl, getRenderableAssetUrl } from "@/lib/assetPath";
+import {
+	drawWebcamBubble,
+	getWebcamEdgeFeatherPixels,
+	WebcamEdgeFeather,
+} from "@/components/video-editor/webcamEdgeFeather";
 import { getWebcamShadowFilter } from "@/lib/exporter/shadowProfile";
-import { drawSquircleOnCanvas, drawSquircleOnGraphics } from "@/lib/geometry/squircle";
+import { drawSquircleOnGraphics } from "@/lib/geometry/squircle";
 import {
 	clampMediaTimeToDuration,
 	getEffectiveVideoStreamDurationSeconds,
@@ -266,6 +271,7 @@ export class FrameRenderer {
 	private webcamFrameCacheCtx: CanvasRenderingContext2D | null = null;
 	private webcamBubbleCanvas: HTMLCanvasElement | null = null;
 	private webcamBubbleCtx: CanvasRenderingContext2D | null = null;
+	private readonly webcamEdgeFeather = new WebcamEdgeFeather();
 	private lastSyncedWebcamTime: number | null = null;
 	private cleanupWebcamSource: (() => void) | null = null;
 
@@ -1882,65 +1888,23 @@ export class FrameRenderer {
 			dimensions.width,
 			dimensions.height,
 		);
-		const bubbleWidth = Math.max(1, Math.ceil(dimensions.width));
-		const bubbleHeight = Math.max(1, Math.ceil(dimensions.height));
-		if (bubbleCanvas.width !== bubbleWidth || bubbleCanvas.height !== bubbleHeight) {
-			bubbleCanvas.width = bubbleWidth;
-			bubbleCanvas.height = bubbleHeight;
-		}
-		bubbleCtx.clearRect(0, 0, bubbleCanvas.width, bubbleCanvas.height);
-		bubbleCtx.imageSmoothingEnabled = true;
-		bubbleCtx.imageSmoothingQuality = "high";
 		const { sx, sy, sw, sh } = getWebcamCropSourceRect(
 			webcam.cropRegion,
 			sourceWidth,
 			sourceHeight,
 		);
-		const coverScale = Math.max(dimensions.width / sw, dimensions.height / sh);
-		const drawWidth = sw * coverScale;
-		const drawHeight = sh * coverScale;
-		const drawX = (dimensions.width - drawWidth) / 2;
-		const drawY = (dimensions.height - drawHeight) / 2;
-
-		bubbleCtx.save();
-		drawSquircleOnCanvas(bubbleCtx, {
-			x: 0,
-			y: 0,
+		drawWebcamBubble(bubbleCanvas, bubbleCtx, this.webcamEdgeFeather, {
+			source: webcamFrameSource,
+			sx,
+			sy,
+			sw,
+			sh,
 			width: dimensions.width,
 			height: dimensions.height,
 			radius,
+			mirror: webcam.mirror,
+			featherPx: getWebcamEdgeFeatherPixels(webcam.previewFrame, width),
 		});
-		bubbleCtx.clip();
-		if (webcam.mirror) {
-			bubbleCtx.save();
-			bubbleCtx.translate(dimensions.width, 0);
-			bubbleCtx.scale(-1, 1);
-			bubbleCtx.drawImage(
-				webcamFrameSource,
-				sx,
-				sy,
-				sw,
-				sh,
-				drawX,
-				drawY,
-				drawWidth,
-				drawHeight,
-			);
-			bubbleCtx.restore();
-		} else {
-			bubbleCtx.drawImage(
-				webcamFrameSource,
-				sx,
-				sy,
-				sw,
-				sh,
-				drawX,
-				drawY,
-				drawWidth,
-				drawHeight,
-			);
-		}
-		bubbleCtx.restore();
 
 		if ((webcam.shadow ?? 0) > 0) {
 			const shadowSize = Math.min(dimensions.width, dimensions.height);
@@ -2030,6 +1994,7 @@ export class FrameRenderer {
 		this.webcamFrameCacheCanvas = null;
 		this.webcamFrameCacheCtx = null;
 		this.webcamBubbleCanvas = null;
+		this.webcamEdgeFeather.destroy();
 		this.webcamBubbleCtx = null;
 		this.lastSyncedWebcamTime = null;
 	}

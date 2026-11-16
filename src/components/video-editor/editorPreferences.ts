@@ -8,6 +8,7 @@ import {
 	stripPersistedDevMotionBlurSettings,
 } from "./projectPersistence";
 import { DEFAULT_CURSOR_IDLE_HIDE } from "./videoPlayback/cursorIdleVisibility";
+import { DEFAULT_NEW_PROJECT_WEBCAM_EDGE, normalizeWebcamEdgeStyle } from "./webcamEdgeFeather";
 
 type PersistedEditorControls = Pick<
 	ProjectEditorState,
@@ -127,7 +128,8 @@ export const DEFAULT_EDITOR_PREFERENCES: EditorPreferences = {
 	borderRadius: DEFAULT_EDITOR_CONTROLS.borderRadius,
 	borderRadiusUnit: "percent",
 	padding: DEFAULT_EDITOR_CONTROLS.padding,
-	webcam: DEFAULT_EDITOR_CONTROLS.webcam,
+	// New projects start with soft webcam edges.
+	webcam: { ...DEFAULT_EDITOR_CONTROLS.webcam, previewFrame: DEFAULT_NEW_PROJECT_WEBCAM_EDGE },
 	aspectRatio: DEFAULT_EDITOR_CONTROLS.aspectRatio,
 	...normalizeExportPreferences({}),
 	customAspectWidth: "16",
@@ -199,8 +201,14 @@ function normalizeEditorPresetSnapshot(candidate: unknown): EditorPresetSnapshot
 	const {
 		sourcePath: _sourcePath,
 		visibleRanges: _visibleRanges,
-		...webcam
+		previewFrame,
+		...webcamWithoutEdge
 	} = normalizedControls.webcam;
+	// A preset saved before soft edges existed leaves the edge alone when applied.
+	const rawWebcam = raw.webcam as Partial<PresetWebcamSettings> | undefined;
+	const webcam: PresetWebcamSettings = normalizeWebcamEdgeStyle(rawWebcam?.previewFrame)
+		? { ...webcamWithoutEdge, previewFrame }
+		: webcamWithoutEdge;
 
 	// A preset saved before a setting existed leaves that setting alone when applied.
 	const { cursorIdleHide: _cursorIdleHide, ...presetControls } = normalizedControls;
@@ -372,7 +380,11 @@ function normalizeEditorControls(
 		cursorIdleHide: normalized.cursorIdleHide,
 		borderRadius: normalized.borderRadius,
 		padding: normalized.padding,
-		webcam: normalized.webcam,
+		// A webcam saved without an edge setting (an older project) keeps the remembered one.
+		webcam:
+			normalized.webcam.previewFrame === undefined && fallback.webcam.previewFrame
+				? { ...normalized.webcam, previewFrame: fallback.webcam.previewFrame }
+				: normalized.webcam,
 		aspectRatio: normalized.aspectRatio,
 	};
 }
