@@ -10,6 +10,10 @@ export default defineConfig({
 	webServer: {
 		env: {
 			RECORDLY_RENDERER_ONLY: "1",
+			// Blank values win over .env.local, so tests never see the real share service or name.
+			VITE_CLOUD_SHARE_ENDPOINT: "",
+			VITE_CLOUD_SHARE_SECRET: "",
+			VITE_PROFILE_NAME: "",
 		},
 		command: "npx vite --host 127.0.0.1 --port 5178 --strictPort",
 		url: "http://127.0.0.1:5178",
