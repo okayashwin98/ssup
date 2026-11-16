@@ -15,6 +15,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { MAX_CAPTION_GLOSSARY_LENGTH } from "@/lib/captionGlossary";
 import { toast } from "@/components/ui/toast";
 import minimalCursorUrl from "@/assets/cursors/custom/minimal-cursor.svg";
+import pixelGloveCursorUrl from "@/assets/cursors/pixel-glove/arrow.png";
 import { Button } from "@/components/ui/button";
 import {
 	Select,
@@ -644,6 +645,7 @@ const BUILTIN_CURSOR_STYLE_OPTIONS: CursorStyleOption[] = [
 	{ value: "windows11", label: "Windows 11" },
 	{ value: "dot", label: "Dot" },
 	{ value: "figma", label: "Minimal" },
+	{ value: "pixel-hand", label: "Pixel Glove" },
 ];
 
 const CAPTION_LANGUAGE_OPTIONS = [
@@ -862,6 +864,24 @@ function CursorStylePreview({
 						width: `${resolvedPreviewSize}px`,
 						height: `${resolvedPreviewSize}px`,
 					}}
+				/>
+			</div>
+		);
+	}
+
+	if (style === "pixel-hand") {
+		// Shown at its native 48 px so the pixel art stays crisp; the glove itself is about 28 px tall.
+		return (
+			<div
+				className="flex items-center justify-center"
+				style={{ width: `${frameSize}px`, height: `${frameSize}px` }}
+			>
+				<img
+					src={pixelGloveCursorUrl}
+					alt=""
+					className="max-w-none drop-shadow-[0_8px_12px_rgba(15,23,42,0.18)]"
+					draggable={false}
+					style={{ width: "48px", height: "48px", imageRendering: "pixelated" }}
 				/>
 			</div>
 		);

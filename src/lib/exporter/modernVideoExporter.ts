@@ -1745,6 +1745,14 @@ export class ModernVideoExporter {
 		) {
 			reasons.push("unsupported-cursor-idle-hide");
 		}
+		// Native compositors smooth-scale the cursor and cannot curl the glove on click.
+		if (
+			this.config.cursorStyle === "pixel-hand" &&
+			this.config.showCursor === true &&
+			(this.config.cursorTelemetry?.length ?? 0) > 0
+		) {
+			reasons.push("unsupported-pixel-cursor");
+		}
 
 		const hasZoomRegions = (this.config.zoomRegions ?? []).length > 0;
 		const needsTimelineMap = this.shouldUseNativeStaticLayoutTimelineMap(

@@ -46,6 +46,10 @@ The Voom software is provided under the following license:
 Solar Icon Set by 480 Design, licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 Source: https://github.com/480-Design/Solar-Icon-Set. Icons are rendered using the MIT-licensed `@solar-icons/react` package. The muted microphone adds a diagonal stroke.
 
+## Pixel Glove cursor
+
+The Pixel Glove cursor style is based on [ComixCursors](https://github.com/lzlrd/comixcursors), revision `22deda869aab704329a7c534ea0d1087fbcb4563`, Copyright © 2006–2013 Jens Luetkens and contributors, licensed under the GNU GPL version 3 or later. The glove shapes are rendered at 48 × 48 without their blurred shadows and reduced to four greys with hard edges. The original SVG sources, AUTHORS, COPYING and the full GPL text are in [src/assets/cursors/pixel-glove](src/assets/cursors/pixel-glove/README.md).
+
 ## DM Sans
 
 Copyright 2014 The DM Sans Project Authors (https://github.com/googlefonts/dm-fonts).

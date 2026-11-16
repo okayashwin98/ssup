@@ -28,6 +28,7 @@ import {
 import { cursorSetAssets, getCursorStyleSizeMultiplier } from "./uploadedCursorAssets";
 import { computeDirectionalMotionBlur } from "./zoomTransform";
 import { getCursorIdleOpacity } from "./cursorIdleVisibility";
+import { resolvePixelGlovePose } from "./pixelGloveMotion";
 import { interpolateCursorPosition } from "./cursorPosition";
 import { computeCursorFrameBlur } from "./frameMotionSample";
 export { interpolateCursorPosition } from "./cursorPosition";
@@ -35,7 +36,7 @@ export { interpolateCursorPosition } from "./cursorPosition";
 type CursorAssetKey = NonNullable<CursorTelemetryPoint["cursorType"]>;
 type StatefulCursorStyle = Extract<
 	CursorStyle,
-	"macos" | "tahoe" | "tahoe-inverted" | "snap" | "windows11"
+	"macos" | "tahoe" | "tahoe-inverted" | "snap" | "windows11" | "pixel-hand"
 >;
 type SingleCursorStyle = Extract<CursorStyle, "dot" | "figma">;
 type CursorPackStyle = Exclude<CursorStyle, StatefulCursorStyle | SingleCursorStyle>;
@@ -207,7 +208,8 @@ function isStatefulCursorStyle(style: CursorStyle): style is StatefulCursorStyle
 		style === "tahoe" ||
 		style === "tahoe-inverted" ||
 		style === "snap" ||
-		style === "windows11"
+		style === "windows11" ||
+		style === "pixel-hand"
 	);
 }
 
@@ -267,6 +269,25 @@ async function createCursorStyleAsset(style: SingleCursorStyle): Promise<LoadedC
 		aspectRatio: canvas.height > 0 ? canvas.width / canvas.height : 1,
 		anchorX: 0.5,
 		anchorY: 0.5,
+	};
+}
+
+/** Pixel art keeps its 48 px source and is scaled with nearest-neighbour sampling everywhere. */
+async function createPixelCursorAsset(
+	url: string,
+	anchor: { x: number; y: number },
+): Promise<LoadedCursorAsset> {
+	await Assets.load(url);
+	const image = await loadImage(url);
+	const texture = Texture.from(url);
+	texture.source.scaleMode = "nearest";
+	texture.source.autoGenerateMipmaps = false;
+	return {
+		texture,
+		image,
+		aspectRatio: image.naturalHeight > 0 ? image.naturalWidth / image.naturalHeight : 1,
+		anchorX: clamp(anchor.x, 0, 1),
+		anchorY: clamp(anchor.y, 0, 1),
 	};
 }
 
@@ -579,11 +600,17 @@ export async function preloadCursorAssets() {
 						}
 
 						try {
-							const asset = await createRasterizedCursorAsset(
-								sourceAsset.url,
-								sourceAsset.fallbackAnchor,
-								{ preserveCanvas: sourceAsset.preserveCanvas },
-							);
+							const asset =
+								style === "pixel-hand"
+									? await createPixelCursorAsset(
+											sourceAsset.url,
+											sourceAsset.fallbackAnchor,
+										)
+									: await createRasterizedCursorAsset(
+											sourceAsset.url,
+											sourceAsset.fallbackAnchor,
+											{ preserveCanvas: sourceAsset.preserveCanvas },
+										);
 
 							return [key, asset] as const;
 						} catch (error) {
@@ -601,12 +628,14 @@ export async function preloadCursorAssets() {
 				) as Partial<Record<CursorAssetKey, LoadedCursorAsset>>;
 			}
 
-			const [macosAssets, tahoeAssets, snapAssets, windows11Assets] = await Promise.all([
-				loadCursorSet("macos"),
-				loadCursorSet("tahoe"),
-				loadCursorSet("snap"),
-				loadCursorSet("windows11"),
-			]);
+			const [macosAssets, tahoeAssets, snapAssets, windows11Assets, pixelGloveAssets] =
+				await Promise.all([
+					loadCursorSet("macos"),
+					loadCursorSet("tahoe"),
+					loadCursorSet("snap"),
+					loadCursorSet("windows11"),
+					loadCursorSet("pixel-hand"),
+				]);
 
 			const invertedEntries = await Promise.all(
 				(Object.entries(tahoeAssets) as Array<[CursorAssetKey, LoadedCursorAsset]>).map(
@@ -619,6 +648,7 @@ export async function preloadCursorAssets() {
 				tahoe: tahoeAssets,
 				snap: snapAssets,
 				windows11: windows11Assets,
+				"pixel-hand": pixelGloveAssets,
 				"tahoe-inverted": Object.fromEntries(invertedEntries) as Partial<
 					Record<CursorAssetKey, LoadedCursorAsset>
 				>,
@@ -689,6 +719,7 @@ export async function buildNativeCursorAtlas(
 	}
 
 	ctx.clearRect(0, 0, atlasWidth, atlasHeight);
+	ctx.imageSmoothingEnabled = style !== "pixel-hand";
 	let x = NATIVE_CURSOR_ATLAS_PADDING;
 	for (const { key, index, asset, width, height } of packedAssets) {
 		const y = NATIVE_CURSOR_ATLAS_PADDING;
@@ -970,6 +1001,8 @@ function getCursorVisualState(
 	timeMs: number,
 	clickBounceDuration: number,
 	clickEffectDurationMs: number,
+	style?: CursorStyle,
+	clickBounce = 0,
 ) {
 	const latestClick = findLatestInteractionSample(samples, timeMs);
 	const interactionType = latestClick?.interactionType;
@@ -987,7 +1020,13 @@ function getCursorVisualState(
 			: 0;
 
 	return {
-		cursorType: findLatestStableCursorType(samples, timeMs),
+		cursorType: resolvePixelGlovePose(
+			style,
+			findLatestStableCursorType(samples, timeMs),
+			latestClick && isClickEvent ? ageMs : Number.POSITIVE_INFINITY,
+			clickBounceDuration,
+			clickBounce,
+		),
 		interactionType,
 		clickSample: latestClick && isClickEvent ? latestClick : null,
 		clickBounceProgress,
@@ -1341,6 +1380,8 @@ export class PixiCursorOverlay {
 				timeMs,
 				this.config.clickBounceDuration,
 				this.config.clickEffectDurationMs,
+				this.config.style,
+				this.config.clickBounce,
 			);
 		const projectedClickSample = clickSample
 			? projectCursorPositionToViewport(clickSample, viewport.sourceCrop)
@@ -1651,6 +1692,8 @@ export function drawCursorOnCanvas(
 		timeMs,
 		config.clickBounceDuration,
 		config.clickEffectDurationMs,
+		config.style,
+		config.clickBounce,
 	);
 	const projectedClickSample = clickSample
 		? projectCursorPositionToViewport(clickSample, viewport.sourceCrop)
@@ -1693,6 +1736,9 @@ export function drawCursorOnCanvas(
 	ctx.save();
 	if (config.style !== "figma") {
 		ctx.filter = CURSOR_SVG_DROP_SHADOW_FILTER;
+	}
+	if (config.style === "pixel-hand") {
+		ctx.imageSmoothingEnabled = false;
 	}
 
 	const drawWidth = drawHeight * asset.aspectRatio;

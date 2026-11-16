@@ -63,6 +63,7 @@ export type CursorStyle =
 	| "windows11"
 	| "dot"
 	| "figma"
+	| "pixel-hand"
 	| (string & {});
 export const DEFAULT_CURSOR_STYLE: CursorStyle = "tahoe";
 

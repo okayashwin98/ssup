@@ -27,11 +27,12 @@ import windows11ResizeEwUrl from "../../../assets/cursors/windows11/resize-horiz
 import windows11ResizeNsUrl from "../../../assets/cursors/windows11/resize-vertical__48-50.svg";
 import windows11TextUrl from "../../../assets/cursors/windows11/text__50-50.svg";
 import type { CursorStyle, CursorTelemetryPoint } from "../types";
+import { pixelGloveAssets } from "./pixelGloveAssets";
 
 type CursorAssetKey = NonNullable<CursorTelemetryPoint["cursorType"]>;
 type CursorSetStyle = Extract<
 	CursorStyle,
-	"macos" | "tahoe" | "tahoe-inverted" | "snap" | "windows11"
+	"macos" | "tahoe" | "tahoe-inverted" | "snap" | "windows11" | "pixel-hand"
 >;
 
 const MACOS_POINTER_ASSET_HEIGHT = 746;
@@ -133,6 +134,7 @@ export const cursorSetAssets: Record<
 		"resize-ns": windowsSystemAsset(windows11ResizeNsUrl, 4, 11),
 		"not-allowed": windowsSystemAsset(windows11NotAllowedUrl, 8, 8),
 	},
+	"pixel-hand": pixelGloveAssets,
 };
 
 export const cursorStyleSizeMultipliers: Record<CursorSetStyle, number> = {
@@ -141,6 +143,8 @@ export const cursorStyleSizeMultipliers: Record<CursorSetStyle, number> = {
 	"tahoe-inverted": 1,
 	snap: 1,
 	windows11: WINDOWS11_CURSOR_VIEWBOX_HEIGHT / WINDOWS11_ARROW_CONTENT_HEIGHT,
+	// 48 px canvas; the pointing glove's visible body is 29 px tall.
+	"pixel-hand": 48 / 29,
 };
 
 export function getCursorStyleSizeMultiplier(style: CursorStyle) {

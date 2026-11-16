@@ -280,6 +280,25 @@ describe("ModernVideoExporter native static-layout eligibility", () => {
 		expect(exporter.getNativeStaticLayoutCursorSize(480)).toBeCloseTo(21, 6);
 	});
 
+	it("falls back to the shared renderer for the Pixel Glove cursor", () => {
+		const cursorTelemetry = [
+			{ timeMs: 0, cx: 0.25, cy: 0.35 },
+			{ timeMs: 1_000, cx: 0.5, cy: 0.55 },
+		];
+		const audioPlan = { audioMode: "copy-source", audioSourcePath: "recording.mp4" };
+		const reasons = (overrides: Record<string, unknown>) =>
+			createExporter({
+				showCursor: true,
+				cursorTelemetry,
+				...overrides,
+			}).getNativeStaticLayoutSkipReasons(audioPlan, videoInfo, 60);
+		expect(reasons({ cursorStyle: "pixel-hand" })).toContain("unsupported-pixel-cursor");
+		expect(reasons({ cursorStyle: "tahoe" })).not.toContain("unsupported-pixel-cursor");
+		expect(reasons({ cursorStyle: "pixel-hand", showCursor: false })).not.toContain(
+			"unsupported-pixel-cursor",
+		);
+	});
+
 	it("falls back to the shared renderer when the cursor fades during a long pause", () => {
 		const cursorTelemetry = [
 			{ timeMs: 0, cx: 0.25, cy: 0.35 },
