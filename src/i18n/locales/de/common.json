@@ -4,8 +4,7 @@
 		"editorTitle": "SuperShare Editor",
 		"subtitle": "Bildschirmaufzeichnung und -bearbeitung",
 		"language": "Sprache",
-		"manageRecordings": "Aufzeichnungsordner öffnen",
-		"website": "example.com"
+		"manageRecordings": "Aufzeichnungsordner öffnen"
 	},
 	"actions": {
 		"cancel": "Abbrechen",

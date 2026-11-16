@@ -4,8 +4,7 @@
 		"editorTitle": "Editor SuperShare",
 		"subtitle": "Registrazione e modifica dello schermo",
 		"language": "Lingua",
-		"manageRecordings": "Apri cartella registrazioni",
-		"website": "example.com"
+		"manageRecordings": "Apri cartella registrazioni"
 	},
 	"actions": {
 		"cancel": "Annulla",

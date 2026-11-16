@@ -4,17 +4,7 @@ import { SidebarCards } from "./SidebarCards";
 import { FolderRow } from "./FolderRow";
 import { StorageCard } from "./StorageCard";
 import { CLOUD_SHARE_ENDPOINT, CLOUD_SHARE_PERSONAL_TOKEN } from "../cloud/endpoint";
-import {
-	ArrowSquareOut,
-	Cloud,
-	File,
-	GearSix,
-	House,
-	Plus,
-	UserCircle,
-} from "@/components/ui/icons";
-import { toast } from "@/components/ui/toast";
-import { useScopedT } from "@/contexts/I18nContext";
+import { Cloud, File, GearSix, House, Plus, UserCircle } from "@/components/ui/icons";
 
 import { Button } from "@/components/ui/button";
 
@@ -22,8 +12,6 @@ import type { DashboardProps } from "./types";
 
 import type { DashboardModel } from "./useDashboardModel";
 import { FOLDER_COLORS } from "./useProjectFolders";
-
-const WEBSITE_URL = "https://www.example.com";
 
 export function DashboardSidebar({
 	busy,
@@ -53,17 +41,6 @@ export function DashboardSidebar({
 	| "accountLabel"
 	| "authToken"
 >) {
-	const t = useScopedT("common");
-	const tEditor = useScopedT("editor");
-	const openWebsite = () => {
-		const failed = tEditor("feedback.openFailed", "Failed to open link.");
-		void window.electronAPI
-			.openExternalUrl(WEBSITE_URL)
-			.then((result) => {
-				if (!result.success) toast.error(result.error || failed);
-			})
-			.catch((error) => toast.error(`${failed} ${String(error)}`));
-	};
 	return (
 		<>
 			<aside
@@ -184,10 +161,6 @@ export function DashboardSidebar({
 							<StorageCard />
 						</>
 					)}
-					<Button variant="ghost" className={navClass(false)} onClick={openWebsite}>
-						<ArrowSquareOut className="size-[18px] shrink-0" />
-						<span className="truncate">{t("app.website", "example.com")}</span>
-					</Button>
 				</div>
 			</aside>
 		</>

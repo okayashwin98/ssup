@@ -4,8 +4,7 @@
 		"editorTitle": "SuperShare Editor",
 		"subtitle": "Screen recording and editing",
 		"language": "Language",
-		"manageRecordings": "Open recordings folder",
-		"website": "example.com"
+		"manageRecordings": "Open recordings folder"
 	},
 	"actions": {
 		"cancel": "Cancel",

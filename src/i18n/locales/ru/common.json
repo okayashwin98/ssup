@@ -4,8 +4,7 @@
 		"editorTitle": "SuperShare Editor",
 		"subtitle": "Запись экрана и редактирование видео",
 		"language": "Язык",
-		"manageRecordings": "Открыть папку с записями",
-		"website": "example.com"
+		"manageRecordings": "Открыть папку с записями"
 	},
 	"actions": {
 		"cancel": "Отмена",

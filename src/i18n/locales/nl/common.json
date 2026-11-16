@@ -4,8 +4,7 @@
 		"editorTitle": "SuperShare Editor",
 		"subtitle": "Schermopname en bewerking",
 		"language": "Taal",
-		"manageRecordings": "Opnamemap openen",
-		"website": "example.com"
+		"manageRecordings": "Opnamemap openen"
 	},
 	"actions": {
 		"cancel": "Annuleren",

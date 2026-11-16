@@ -4,8 +4,7 @@
 		"editorTitle": "Editor do SuperShare",
 		"subtitle": "Gravação e edição de tela",
 		"language": "Idioma",
-		"manageRecordings": "Abrir pasta de gravações",
-		"website": "example.com"
+		"manageRecordings": "Abrir pasta de gravações"
 	},
 	"actions": {
 		"cancel": "Cancelar",

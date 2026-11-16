@@ -4,8 +4,7 @@
 		"editorTitle": "SuperShare 编辑器",
 		"subtitle": "屏幕录制与编辑",
 		"language": "语言",
-		"manageRecordings": "打开录制文件夹",
-		"website": "example.com"
+		"manageRecordings": "打开录制文件夹"
 	},
 	"actions": {
 		"cancel": "取消",
