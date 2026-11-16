@@ -746,9 +746,9 @@ test("sidebar cards, separate Import, and shortcut settings use the dashboard fl
 	);
 	await settings.click();
 	await home.getByRole("row", { name: "General", exact: true }).click();
-	await home.getByRole("button", { name: "Customize", exact: true }).click();
-	const shortcuts = page.getByRole("dialog", { name: "Keyboard Shortcuts", exact: true });
-	await expect(shortcuts).toBeVisible();
+	// The shortcut editor sits in the General section itself, with no dialog in between.
+	await expect(home.getByRole("button", { name: "Customize", exact: true })).toHaveCount(0);
+	const shortcuts = home.getByRole("region", { name: "General settings" });
 	const change = shortcuts.getByRole("button", { name: /^Change Add Zoom shortcut, currently / });
 	await change.click();
 	await expect(shortcuts.getByRole("button", { name: /^Add Zoom: / })).toHaveAccessibleName(
@@ -757,18 +757,28 @@ test("sidebar cards, separate Import, and shortcut settings use the dashboard fl
 	await page.keyboard.press("j");
 	await expect(change).toHaveText("J");
 	await expect(change).toHaveAccessibleName("Change Add Zoom shortcut, currently J");
+	// Split stays on C.
+	await expect(
+		shortcuts.getByRole("button", { name: "Change Split Clip shortcut, currently C" }),
+	).toBeVisible();
 	await shortcuts.getByRole("button", { name: "Save", exact: true }).scrollIntoViewIfNeeded();
 	await page.screenshot({ path: "test-results/dashboard-shortcuts.png", animations: "disabled" });
 	await shortcuts.getByRole("button", { name: "Save", exact: true }).click();
-	await expect(shortcuts).not.toBeVisible();
-	await home.getByRole("button", { name: "Customize", exact: true }).click();
-	await expect(change).toHaveText("J");
+	await expect(page.getByRole("dialog", { name: "Keyboard Shortcuts", exact: true })).toHaveCount(
+		0,
+	);
+	// Saved bindings survive leaving the section; Cancel throws away an unsaved change.
+	await home.getByRole("row", { name: "Profile", exact: true }).click();
+	await home.getByRole("row", { name: "General", exact: true }).click();
 	await expect(change).toHaveAccessibleName("Change Add Zoom shortcut, currently J");
+	await change.click();
+	await page.keyboard.press("k");
+	await expect(change).toHaveText("K");
+	await shortcuts.getByRole("button", { name: "Cancel", exact: true }).click();
+	await expect(change).toHaveText("J");
 	await page.setViewportSize({ width: 800, height: 600 });
+	await shortcuts.getByRole("button", { name: "Save", exact: true }).scrollIntoViewIfNeeded();
 	await expect(shortcuts.getByRole("button", { name: "Save", exact: true })).toBeInViewport();
-	await expect(
-		shortcuts.getByRole("heading", { name: "Keyboard Shortcuts", exact: true }),
-	).toBeInViewport();
 	await page.screenshot({
 		path: "test-results/dashboard-shortcuts-compact.png",
 		animations: "disabled",

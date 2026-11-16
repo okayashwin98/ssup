@@ -27,7 +27,8 @@ import { useScopedT } from "../../contexts/I18nContext";
 
 const MODIFIER_KEYS = new Set(["Control", "Shift", "Alt", "Meta"]);
 
-export function ShortcutsConfigDialog() {
+/** The shortcut editor: a dialog by default, or `inline` as a section of the settings panel. */
+export function ShortcutsConfigDialog({ inline = false }: { inline?: boolean } = {}) {
 	const t = useScopedT("dialogs");
 	const { shortcuts, isMac, isConfigOpen, closeConfig, setShortcuts, persistShortcuts } =
 		useShortcuts();
@@ -40,13 +41,15 @@ export function ShortcutsConfigDialog() {
 		conflictWith: ShortcutConflict;
 	} | null>(null);
 
+	const editorActive = inline || isConfigOpen;
+
 	useEffect(() => {
-		if (isConfigOpen) {
+		if (editorActive) {
 			setDraft(shortcuts);
 			setCaptureFor(null);
 			setConflict(null);
 		}
-	}, [isConfigOpen, shortcuts]);
+	}, [editorActive, shortcuts]);
 
 	useEffect(() => {
 		if (!captureFor) return;
@@ -106,8 +109,8 @@ export function ShortcutsConfigDialog() {
 		setShortcuts(draft);
 		await persistShortcuts(draft);
 		toast.success(t("shortcutsConfig.saved"));
-		closeConfig();
-	}, [draft, setShortcuts, persistShortcuts, closeConfig, t]);
+		if (!inline) closeConfig();
+	}, [draft, setShortcuts, persistShortcuts, closeConfig, t, inline]);
 
 	const handleReset = useCallback(() => {
 		setDraft({ ...DEFAULT_SHORTCUTS });
@@ -117,8 +120,138 @@ export function ShortcutsConfigDialog() {
 	const handleClose = useCallback(() => {
 		setCaptureFor(null);
 		setConflict(null);
-		closeConfig();
-	}, [closeConfig]);
+		if (inline) setDraft(shortcuts);
+		else closeConfig();
+	}, [closeConfig, inline, shortcuts]);
+
+	// Inside the settings panel the section title sits above, so the group names step down.
+	const groupLabelClass = inline
+		? "mb-1 text-xs font-medium text-muted-foreground"
+		: "mb-3 text-[13px] font-medium text-foreground";
+
+	const lists = (
+		<>
+			<div className="space-y-0.5">
+				<p className={groupLabelClass}>{t("shortcutsConfig.configurable")}</p>
+				{SHORTCUT_ACTIONS.map((action) => {
+					const isCapturing = captureFor === action;
+					const hasConflict = conflict?.forAction === action;
+					return (
+						<div key={action}>
+							<div className="flex items-center justify-between gap-4 border-b border-separator py-3">
+								<span className="text-[13px] text-foreground">
+									{SHORTCUT_LABELS[action]}
+								</span>
+								<Button
+									type="button"
+									variant="secondary"
+									size="sm"
+									aria-label={
+										isCapturing
+											? `${SHORTCUT_LABELS[action]}: ${t("shortcutsConfig.pressAKey")}`
+											: `Change ${SHORTCUT_LABELS[action]} shortcut, currently ${formatBinding(draft[action], isMac)}`
+									}
+									onClick={() => {
+										setConflict(null);
+										setCaptureFor(isCapturing ? null : action);
+									}}
+									title={
+										isCapturing
+											? t("shortcutsConfig.pressEscToCancel")
+											: t("shortcutsConfig.clickToChange")
+									}
+									className={[
+										"px-2 py-1 text-xs min-w-[90px] text-center select-none",
+										isCapturing
+											? "animate-pulse"
+											: hasConflict
+												? "text-warning"
+												: "cursor-pointer",
+									].join(" ")}
+								>
+									{isCapturing
+										? t("shortcutsConfig.pressAKey")
+										: formatBinding(draft[action], isMac)}
+								</Button>
+							</div>
+							{hasConflict && conflict?.conflictWith.type === "configurable" && (
+								<div className="flex items-center justify-between px-1 py-1.5 mb-0.5 bg-warning-soft border border-warning/20 rounded text-xs">
+									<span className="text-warning">
+										{t("shortcutsConfig.alreadyUsedBy", undefined, {
+											action: SHORTCUT_LABELS[conflict.conflictWith.action],
+										})}
+									</span>
+									<div className="flex gap-1.5">
+										<Button
+											variant="ghost"
+											type="button"
+											onClick={handleSwap}
+											className="px-2 py-0.5 text-warning"
+										>
+											{t("shortcutsConfig.swap")}
+										</Button>
+										<Button
+											variant="ghost"
+											type="button"
+											onClick={handleCancelConflict}
+											className="px-2 py-0.5"
+										>
+											{t("shortcutsConfig.cancel")}
+										</Button>
+									</div>
+								</div>
+							)}
+						</div>
+					);
+				})}
+			</div>
+
+			<div className="space-y-0.5 mt-2">
+				<p className={groupLabelClass}>{t("shortcutsConfig.fixed")}</p>
+				{FIXED_SHORTCUTS.map(({ label, display }) => (
+					<div
+						key={label}
+						className="flex items-center justify-between gap-4 border-b border-separator py-3 last:border-0"
+					>
+						<span className="text-[13px] text-foreground">{label}</span>
+						<Kbd className="min-w-[90px] justify-center">{display}</Kbd>
+					</div>
+				))}
+			</div>
+		</>
+	);
+
+	const actions = (
+		<>
+			<Button
+				title={t("shortcutsConfig.resetToDefaults")}
+				variant="ghost"
+				size="sm"
+				className="gap-1.5 max-w-[200px]"
+				onClick={handleReset}
+			>
+				<RotateCcw className="w-3 h-3" />
+				<span className="truncate">{t("shortcutsConfig.resetToDefaults")}</span>
+			</Button>
+			<div className="flex gap-2">
+				<Button variant="ghost" size="sm" onClick={handleClose}>
+					{t("shortcutsConfig.cancel")}
+				</Button>
+				<Button size="sm" onClick={handleSave}>
+					{t("shortcutsConfig.save")}
+				</Button>
+			</div>
+		</>
+	);
+
+	if (inline) {
+		return (
+			<div className="flex min-w-0 flex-col gap-4">
+				{lists}
+				<div className="flex flex-wrap items-center justify-between gap-2">{actions}</div>
+			</div>
+		);
+	}
 
 	return (
 		<Dialog
@@ -136,125 +269,14 @@ export function ShortcutsConfigDialog() {
 				</DialogHeader>
 
 				<Modal.Body className="min-h-0 space-y-6 overflow-y-auto">
-					<div className="space-y-0.5">
-						<p className="mb-3 text-[13px] font-medium text-foreground">
-							{t("shortcutsConfig.configurable")}
-						</p>
-						{SHORTCUT_ACTIONS.map((action) => {
-							const isCapturing = captureFor === action;
-							const hasConflict = conflict?.forAction === action;
-							return (
-								<div key={action}>
-									<div className="flex items-center justify-between gap-4 border-b border-separator py-3">
-										<span className="text-[13px] text-foreground">
-											{SHORTCUT_LABELS[action]}
-										</span>
-										<Button
-											type="button"
-											variant="secondary"
-											size="sm"
-											aria-label={
-												isCapturing
-													? `${SHORTCUT_LABELS[action]}: ${t("shortcutsConfig.pressAKey")}`
-													: `Change ${SHORTCUT_LABELS[action]} shortcut, currently ${formatBinding(draft[action], isMac)}`
-											}
-											onClick={() => {
-												setConflict(null);
-												setCaptureFor(isCapturing ? null : action);
-											}}
-											title={
-												isCapturing
-													? t("shortcutsConfig.pressEscToCancel")
-													: t("shortcutsConfig.clickToChange")
-											}
-											className={[
-												"px-2 py-1 text-xs min-w-[90px] text-center select-none",
-												isCapturing
-													? "animate-pulse"
-													: hasConflict
-														? "text-warning"
-														: "cursor-pointer",
-											].join(" ")}
-										>
-											{isCapturing
-												? t("shortcutsConfig.pressAKey")
-												: formatBinding(draft[action], isMac)}
-										</Button>
-									</div>
-									{hasConflict &&
-										conflict?.conflictWith.type === "configurable" && (
-											<div className="flex items-center justify-between px-1 py-1.5 mb-0.5 bg-warning-soft border border-warning/20 rounded text-xs">
-												<span className="text-warning">
-													{t("shortcutsConfig.alreadyUsedBy", undefined, {
-														action: SHORTCUT_LABELS[
-															conflict.conflictWith.action
-														],
-													})}
-												</span>
-												<div className="flex gap-1.5">
-													<Button
-														variant="ghost"
-														type="button"
-														onClick={handleSwap}
-														className="px-2 py-0.5 text-warning"
-													>
-														{t("shortcutsConfig.swap")}
-													</Button>
-													<Button
-														variant="ghost"
-														type="button"
-														onClick={handleCancelConflict}
-														className="px-2 py-0.5"
-													>
-														{t("shortcutsConfig.cancel")}
-													</Button>
-												</div>
-											</div>
-										)}
-								</div>
-							);
-						})}
-					</div>
-
-					<div className="space-y-0.5 mt-2">
-						<p className="mb-3 text-[13px] font-medium text-foreground">
-							{t("shortcutsConfig.fixed")}
-						</p>
-						{FIXED_SHORTCUTS.map(({ label, display }) => (
-							<div
-								key={label}
-								className="flex items-center justify-between gap-4 border-b border-separator py-3 last:border-0"
-							>
-								<span className="text-[13px] text-foreground">{label}</span>
-								<Kbd className="min-w-[90px] justify-center">{display}</Kbd>
-							</div>
-						))}
-					</div>
-
+					{lists}
 					<Description className="mt-2 text-xs">
 						{t("shortcutsConfig.instructions")}
 					</Description>
 				</Modal.Body>
 
 				<DialogFooter className="flex shrink-0 gap-2 sm:justify-between mt-2">
-					<Button
-						title={t("shortcutsConfig.resetToDefaults")}
-						variant="ghost"
-						size="sm"
-						className="gap-1.5 max-w-[200px]"
-						onClick={handleReset}
-					>
-						<RotateCcw className="w-3 h-3" />
-						<span className="truncate">{t("shortcutsConfig.resetToDefaults")}</span>
-					</Button>
-					<div className="flex gap-2">
-						<Button variant="ghost" size="sm" onClick={handleClose}>
-							{t("shortcutsConfig.cancel")}
-						</Button>
-						<Button size="sm" onClick={handleSave}>
-							{t("shortcutsConfig.save")}
-						</Button>
-					</div>
+					{actions}
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>

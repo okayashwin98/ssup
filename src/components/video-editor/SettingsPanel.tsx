@@ -49,8 +49,8 @@ import { loadEditorPreferences, saveEditorPreferences } from "./editorPreference
 import { getDefaultBorderRadiusPercent } from "./projectPersistence";
 import { SliderControl } from "./SliderControl";
 import { WallpaperGrid } from "./WallpaperGrid";
-import { useShortcuts } from "@/contexts/ShortcutsContext";
 import { SettingsRow } from "./SettingsRow";
+import { ShortcutsConfigDialog } from "./ShortcutsConfigDialog";
 import type {
 	AnnotationRegion,
 	AnnotationType,
@@ -1062,7 +1062,6 @@ export function SettingsPanel({
 	);
 	const [experimentalUpdatesEnabled, setExperimentalUpdatesEnabled] = useState(false);
 	const [savingExperimentalUpdates, setSavingExperimentalUpdates] = useState(false);
-	const { openConfig: openShortcutsConfig } = useShortcuts();
 	const [internalActiveEffectSection] = useState<EditorEffectSection>("scene");
 	const activeEffectSection = activeEffectSectionProp ?? internalActiveEffectSection;
 	const removeBackgroundStateRef = useRef<{
@@ -2470,10 +2469,12 @@ export function SettingsPanel({
 					</section>
 				</SettingsCategory>
 				<SettingsCategory category="general">
-					<SettingsRow title={t("editor.keyboardShortcuts.title")}>
-						<Button variant="secondary" size="sm" onClick={openShortcutsConfig}>
-							{t("editor.keyboardShortcuts.customize")}
-						</Button>
+					<SettingsRow
+						stacked
+						title={t("editor.keyboardShortcuts.title")}
+						description={t("dialogs.shortcutsConfig.instructions")}
+					>
+						<ShortcutsConfigDialog inline />
 					</SettingsRow>
 				</SettingsCategory>
 				<SettingsCategory category="advanced">
