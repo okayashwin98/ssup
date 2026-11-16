@@ -119,9 +119,10 @@ export function DashboardGrid({
 		// The fades take the card's own colour and stay clear of the scrollbar.
 		<div className="relative flex min-h-0 flex-1 flex-col bg-inherit">
 			{/* Gap above the grid sits inside the scroller, so hover lifts are not clipped. */}
+			{/* A column, so an empty state can fill the pane and centre itself in it. */}
 			<main
 				ref={scroller}
-				className={`custom-scrollbar min-h-0 flex-1 overflow-y-auto px-7 pb-10 lg:px-10 ${section === "settings" || section === "shared" ? "" : "pt-7"}`}
+				className={`custom-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto px-7 pb-10 lg:px-10 ${section === "settings" || section === "shared" ? "" : "pt-7"}`}
 			>
 				{error && (
 					<p role="alert" className="mb-4 text-sm text-danger">
@@ -132,7 +133,7 @@ export function DashboardGrid({
 					<DashboardSettings onImportFile={onImportFile} />
 				) : section === "shared" ? (
 					authToken && CLOUD_SHARE_ENDPOINT ? (
-						<div>
+						<div className="flex flex-1 flex-col">
 							<SharedRecordings
 								key={authToken}
 								token={authToken}
@@ -141,7 +142,7 @@ export function DashboardGrid({
 							/>
 						</div>
 					) : (
-						<div className="flex h-64 flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
+						<div className="-mb-10 flex min-h-40 flex-1 flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
 							<Cloud weight="fill" className="size-8 opacity-40" />
 							<p>
 								{authToken
@@ -173,12 +174,9 @@ export function DashboardGrid({
 						{cards.map(renderCard)}
 					</ul>
 				) : (
-					<div className="flex h-64 flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
-						{!isRaw && !hasActiveFilters ? (
-							<span aria-hidden="true" className="text-4xl">
-								🦗
-							</span>
-						) : (
+					// The negative margins cancel the scroller's padding: centred in the whole pane.
+					<div className="-mb-10 -mt-7 flex min-h-40 flex-1 flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
+						{(isRaw || hasActiveFilters) && (
 							<ImageSquare weight="fill" className="size-8 opacity-30" />
 						)}
 						<p>

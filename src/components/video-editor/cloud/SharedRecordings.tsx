@@ -145,7 +145,7 @@ export function SharedRecordings({
 			}
 		};
 		return (
-			<div className="-mx-7 lg:-mx-10">
+			<div className="-mx-7 flex flex-1 flex-col lg:-mx-10">
 				<DashboardAnnouncements />
 				<DashboardToolbar
 					query={query}
@@ -172,7 +172,7 @@ export function SharedRecordings({
 					busy={loading || Boolean(deleting)}
 					deleteEntries={async () => undefined}
 				/>
-				<div className="px-7 lg:px-10">
+				<div className="flex flex-1 flex-col px-7 lg:px-10">
 					{error && (
 						<p role="alert" className="mb-4 text-sm text-danger">
 							{error}
@@ -246,10 +246,8 @@ export function SharedRecordings({
 							))}
 						</ul>
 					) : (
-						<div className="flex h-64 flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
-							<span aria-hidden="true" className="text-4xl">
-								🦗
-							</span>
+						// Fills the pane under the filters; the margins cancel the padding around it.
+						<div className="-mb-10 -mt-7 flex min-h-40 flex-1 flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
 							<p>
 								{query || period !== "all"
 									? "No matching projects"
