@@ -55,6 +55,18 @@ export async function installDesktopBridge(page: Page, videoFixture = "preview.m
 				}),
 				requestMediaPermission: async () => ({ success: true, granted: true }),
 				openMediaPermissionPreferences: success,
+				getOpenAtLogin: async () => ({
+					success: true,
+					supported: true,
+					available: true,
+					openAtLogin: false,
+				}),
+				setOpenAtLogin: async (enabled: boolean) => ({
+					success: true,
+					supported: true,
+					available: true,
+					openAtLogin: enabled,
+				}),
 				showPermissionDragHelper: async (permission: string) => {
 					document.documentElement.dataset.permissionDragHelper = permission;
 					return { success: true };

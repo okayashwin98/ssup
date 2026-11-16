@@ -831,6 +831,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		ipcRenderer.invoke("show-permission-drag-helper", permission),
 	startPermissionAccessoryDrag: () => ipcRenderer.invoke("start-permission-accessory-drag"),
 	closePermissionAccessory: () => ipcRenderer.invoke("close-permission-accessory"),
+	getOpenAtLogin: () => ipcRenderer.invoke("get-open-at-login"),
+	setOpenAtLogin: (enabled: boolean) => ipcRenderer.invoke("set-open-at-login", enabled),
 	getMediaPermissionStatus: () => ipcRenderer.invoke("get-media-permission-status"),
 	requestMediaPermission: (device: "microphone" | "camera") =>
 		ipcRenderer.invoke("request-media-permission", device),

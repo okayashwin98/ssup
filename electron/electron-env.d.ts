@@ -58,6 +58,16 @@ interface UpdateToastState {
 	primaryAction?: "install-and-restart" | "retry-check";
 }
 
+interface OpenAtLoginState {
+	success: boolean;
+	/** The platform has login items (Mac and Windows). */
+	supported: boolean;
+	/** Supported and the installed app, so the switch can change it. */
+	available: boolean;
+	openAtLogin: boolean;
+	error?: string;
+}
+
 interface UpdateStatusSummary {
 	status: "idle" | "checking" | "up-to-date" | "available" | "downloading" | "ready" | "error";
 	currentVersion: string;
@@ -773,6 +783,9 @@ interface Window {
 		}>;
 		openScreenRecordingPreferences: () => Promise<{ success: boolean; error?: string }>;
 		openAccessibilityPreferences: () => Promise<{ success: boolean; error?: string }>;
+		/** Open at login, as the system reports it; `available` only in the installed app. */
+		getOpenAtLogin: () => Promise<OpenAtLoginState>;
+		setOpenAtLogin: (enabled: boolean) => Promise<OpenAtLoginState>;
 		/** Opens System Settings at this permission with SuperShare's icon beside it to drag in. */
 		showPermissionDragHelper: (
 			permission: "screen" | "accessibility",

@@ -27,6 +27,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { ChoiceGroup, ChoiceItem } from "@/components/ui/choice-group";
 import { AccentColorSetting } from "@/components/settings/AccentColorSetting";
+import { OpenAtLoginSetting } from "@/components/settings/OpenAtLoginSetting";
 import { useTheme } from "@/contexts/ThemeContext";
 import { getAssetPath, getRenderableVideoUrl, getWallpaperThumbnailUrl } from "@/lib/assetPath";
 import { isGradientWallpaper, PRESET_GRADIENTS } from "@/lib/backgroundGradients";
@@ -2317,6 +2318,8 @@ export function SettingsPanel({
 							</Button>
 						</SettingsRow>
 					)}
+
+					<OpenAtLoginSetting />
 
 					<SettingsRow title={t("editor.theme.appearance", "Appearance")} stacked>
 						<ChoiceGroup
