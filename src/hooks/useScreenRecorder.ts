@@ -1022,6 +1022,11 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 		}
 
 		try {
+			// Without macOS camera access, record without the camera instead of prompting mid-start.
+			const access = await window.electronAPI.getMediaPermissionStatus?.();
+			if (access?.success && access.camera !== "granted") {
+				throw new Error(`Camera access is ${access.camera}`);
+			}
 			webcamStream.current = await navigator.mediaDevices.getUserMedia({
 				video: webcamDeviceId
 					? {

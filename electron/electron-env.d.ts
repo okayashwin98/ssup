@@ -773,6 +773,20 @@ interface Window {
 		}>;
 		openScreenRecordingPreferences: () => Promise<{ success: boolean; error?: string }>;
 		openAccessibilityPreferences: () => Promise<{ success: boolean; error?: string }>;
+		/** macOS camera and microphone access, read without prompting ("granted" elsewhere). */
+		getMediaPermissionStatus: () => Promise<{
+			success: boolean;
+			microphone: string;
+			camera: string;
+			error?: string;
+		}>;
+		/** Shows the macOS prompt only while access is undecided; otherwise reports it. */
+		requestMediaPermission: (
+			device: "microphone" | "camera",
+		) => Promise<{ success: boolean; granted: boolean; error?: string }>;
+		openMediaPermissionPreferences: (
+			device: "microphone" | "camera",
+		) => Promise<{ success: boolean; error?: string }>;
 		saveExportedVideo: (
 			videoData: ArrayBuffer,
 			fileName: string,

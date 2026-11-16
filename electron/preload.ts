@@ -827,6 +827,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	openAccessibilityPreferences: () => {
 		return ipcRenderer.invoke("open-accessibility-preferences");
 	},
+	getMediaPermissionStatus: () => ipcRenderer.invoke("get-media-permission-status"),
+	requestMediaPermission: (device: "microphone" | "camera") =>
+		ipcRenderer.invoke("request-media-permission", device),
+	openMediaPermissionPreferences: (device: "microphone" | "camera") =>
+		ipcRenderer.invoke("open-media-permission-preferences", device),
 	saveExportedVideo: (
 		videoData: ArrayBuffer,
 		fileName: string,

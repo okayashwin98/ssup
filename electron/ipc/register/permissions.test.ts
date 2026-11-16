@@ -2,6 +2,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
 	handlers: new Map<string, (...args: unknown[]) => unknown>(),
 	status: vi.fn(),
+	ask: vi.fn(),
 	sources: vi.fn(),
 	open: vi.fn(),
 }));
@@ -11,7 +12,7 @@ vi.mock("electron", () => ({
 			mocks.handlers.set(key, handler),
 	},
 	desktopCapturer: { getSources: mocks.sources },
-	systemPreferences: { getMediaAccessStatus: mocks.status },
+	systemPreferences: { getMediaAccessStatus: mocks.status, askForMediaAccess: mocks.ask },
 	shell: { openExternal: mocks.open },
 }));
 vi.mock("../utils", () => ({ getMacPrivacySettingsUrl: (pane: string) => `settings:${pane}` }));
@@ -64,4 +65,40 @@ it("leaves native macOS permission controls unused on other platforms", async ()
 	});
 	expect(mocks.sources).not.toHaveBeenCalled();
 	expect(mocks.open).not.toHaveBeenCalled();
+});
+it.each([
+	["not-determined", true, true],
+	["not-determined", false, true],
+	["granted", true, false],
+	["denied", false, false],
+	["restricted", false, false],
+] as const)("camera access %s: prompts only while undecided", async (status, granted, prompts) => {
+	mocks.status.mockReturnValue(status);
+	mocks.ask.mockResolvedValue(granted);
+	expect(await mocks.handlers.get("request-media-permission")!({}, "camera")).toEqual({
+		success: true,
+		granted,
+	});
+	expect(mocks.ask).toHaveBeenCalledTimes(prompts ? 1 : 0);
+});
+it("reads camera and microphone access without prompting", async () => {
+	mocks.status.mockImplementation((device: string) =>
+		device === "camera" ? "denied" : "granted",
+	);
+	expect(await mocks.handlers.get("get-media-permission-status")!()).toEqual({
+		success: true,
+		camera: "denied",
+		microphone: "granted",
+	});
+	expect(mocks.ask).not.toHaveBeenCalled();
+});
+it("opens the Camera and Microphone pages of System Settings, and nothing else", async () => {
+	await mocks.handlers.get("open-media-permission-preferences")!({}, "camera");
+	await mocks.handlers.get("open-media-permission-preferences")!({}, "microphone");
+	expect(
+		(await mocks.handlers.get("open-media-permission-preferences")!({}, "screen")) as {
+			success: boolean;
+		},
+	).toMatchObject({ success: false });
+	expect(mocks.open.mock.calls).toEqual([["settings:camera"], ["settings:microphone"]]);
 });

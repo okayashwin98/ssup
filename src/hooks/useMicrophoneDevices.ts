@@ -8,7 +8,15 @@ export interface MicrophoneDevice {
 
 let hasRequestedMicrophoneLabels = false;
 
-export function useMicrophoneDevices(enabled: boolean = true, preferredDeviceId?: string) {
+/**
+ * `mayOpenMicrophone` false lists the microphones without opening one for their names, so
+ * listing never shows the macOS prompt; the list refreshes when it turns true.
+ */
+export function useMicrophoneDevices(
+	enabled: boolean = true,
+	preferredDeviceId?: string,
+	mayOpenMicrophone: boolean = true,
+) {
 	const [devices, setDevices] = useState<MicrophoneDevice[]>([]);
 	const [selectedDeviceId, setSelectedDeviceId] = useState<string>("default");
 	const [isLoading, setIsLoading] = useState(false);
@@ -40,7 +48,7 @@ export function useMicrophoneDevices(enabled: boolean = true, preferredDeviceId?
 				const needsLabelPermission =
 					audioInputs.length > 0 && audioInputs.every((device) => !device.label.trim());
 
-				if (needsLabelPermission && !hasRequestedMicrophoneLabels) {
+				if (needsLabelPermission && mayOpenMicrophone && !hasRequestedMicrophoneLabels) {
 					hasRequestedMicrophoneLabels = true;
 					permissionStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 					allDevices = await navigator.mediaDevices.enumerateDevices();
@@ -107,7 +115,7 @@ export function useMicrophoneDevices(enabled: boolean = true, preferredDeviceId?
 			mounted = false;
 			navigator.mediaDevices.removeEventListener("devicechange", handleDeviceChange);
 		};
-	}, [enabled, preferredDeviceId]);
+	}, [enabled, preferredDeviceId, mayOpenMicrophone]);
 
 	return {
 		devices,

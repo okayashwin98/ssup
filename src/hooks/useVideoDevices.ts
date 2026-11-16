@@ -6,12 +6,14 @@ export interface VideoDevice {
 	groupId: string;
 }
 
-export function useVideoDevices(enabled: boolean = true) {
+/** `refreshKey` re-lists the cameras when it changes (names appear once access is allowed). */
+export function useVideoDevices(enabled: boolean = true, refreshKey?: unknown) {
 	const [devices, setDevices] = useState<VideoDevice[]>([]);
 	const [selectedDeviceId, setSelectedDeviceId] = useState<string>("default");
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: refreshKey only re-runs the listing.
 	useEffect(() => {
 		if (!enabled) {
 			return;
@@ -83,7 +85,7 @@ export function useVideoDevices(enabled: boolean = true) {
 			mounted = false;
 			navigator.mediaDevices.removeEventListener("devicechange", handleDeviceChange);
 		};
-	}, [enabled]);
+	}, [enabled, refreshKey]);
 
 	return {
 		devices,

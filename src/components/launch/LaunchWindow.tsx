@@ -21,9 +21,11 @@ import { useBarDrag } from "./hooks/useBarDrag";
 import { useBarWindowSize } from "./hooks/useBarWindowSize";
 import { useLaunchWindowActions } from "./hooks/useLaunchWindowActions";
 import { useLaunchWindowSystemState } from "./hooks/useLaunchWindowSystemState";
+import { useMediaPermission } from "./hooks/useMediaPermission";
 import { useMicLevel } from "./hooks/useMicLevel";
 import { useRecordingTimer } from "./hooks/useRecordingTimer";
 import { useWindowGlass } from "./hooks/useWindowGlass";
+import { isMediaAllowed, type MediaPermissionStatus, needsSystemSettings } from "./mediaPermission";
 import { RecordingBarControls } from "./RecordingBar";
 import { resetSlidingHighlight, SlidingHighlight } from "./SlidingHighlight";
 
@@ -38,11 +40,21 @@ const WEBCAM_BUBBLE_STORAGE_KEY = "recordly.webcam-bubble-visible";
 type MenuItem = Parameters<typeof window.electronAPI.hudShowMenu>[0]["items"][number];
 
 const MENU_GAP = 6;
+const OPEN_SETTINGS = "open-system-settings";
+
+/** In place of a device list while macOS refuses access: why, and the way to fix it. */
+function blockedAccessItems(message: string, openLabel: string): MenuItem[] {
+	return [
+		{ type: "header", label: message },
+		{ id: OPEN_SETTINGS, label: openLabel, type: "normal" },
+	];
+}
 
 /** Opens a native menu below the bar, or above it near the bottom of the screen, never over it. */
-function showMenuAt(event: MouseEvent<HTMLElement>, items: MenuItem[]) {
-	const item = event.currentTarget.getBoundingClientRect();
-	const bar = (event.currentTarget.parentElement ?? event.currentTarget).getBoundingClientRect();
+function showMenuAt(event: MouseEvent<HTMLElement> | HTMLElement, items: MenuItem[]) {
+	const target = event instanceof HTMLElement ? event : event.currentTarget;
+	const item = target.getBoundingClientRect();
+	const bar = (target.parentElement ?? target).getBoundingClientRect();
 	return window.electronAPI
 		.hudShowMenu({
 			items,
@@ -126,16 +138,24 @@ export function LaunchWindow() {
 
 	const { elapsed } = useRecordingTimer(recording, paused);
 	const { syncSelectedSource } = useLaunchWindowActions();
+	const { platform } = useLaunchWindowSystemState(preparePermissions);
+	const barVisible = useHudVisible();
+	// macOS camera and microphone access: asked once, when the device is turned on, and
+	// read again whenever the bar comes back so a change in System Settings shows.
+	const cameraAccess = useMediaPermission("camera", platform, barVisible);
+	const microphoneAccess = useMediaPermission("microphone", platform, barVisible);
+	const cameraOn = webcamEnabled && isMediaAllowed(cameraAccess.status);
+	const microphoneOn = microphoneEnabled && isMediaAllowed(microphoneAccess.status);
 	const { devices, selectedDeviceId, setSelectedDeviceId } = useMicrophoneDevices(
 		true,
 		microphoneDeviceId,
+		isMediaAllowed(microphoneAccess.status),
 	);
 	const {
 		devices: videoDevices,
 		selectedDeviceId: selectedVideoDeviceId,
 		setSelectedDeviceId: setSelectedVideoDeviceId,
-	} = useVideoDevices(true);
-	useLaunchWindowSystemState(preparePermissions);
+	} = useVideoDevices(true, cameraAccess.status);
 
 	useEffect(() => {
 		if (!selectedDeviceId) return;
@@ -151,13 +171,12 @@ export function LaunchWindow() {
 	// The webcam bubble is its own window, shown while the webcam is on outside the editor.
 	const [showBubble, setShowBubble] = useState(readBubblePreference);
 	const [editorMode, setEditorMode] = useState(true);
-	const barVisible = useHudVisible();
 
 	// The level line listens only while the bar is on screen, and lets go of the
 	// microphone from the moment a recording starts (countdown included).
 	useMicLevel(
 		meterRef,
-		microphoneEnabled &&
+		microphoneOn &&
 			barVisible &&
 			!editorMode &&
 			!starting &&
@@ -188,10 +207,10 @@ export function LaunchWindow() {
 	}, []);
 	useEffect(() => {
 		window.electronAPI.hudSetWebcamBubble({
-			visible: webcamEnabled && showBubble && !editorMode,
+			visible: cameraOn && showBubble && !editorMode,
 			deviceId: webcamDeviceId,
 		});
-	}, [webcamEnabled, showBubble, editorMode, webcamDeviceId]);
+	}, [cameraOn, showBubble, editorMode, webcamDeviceId]);
 	useEffect(() => () => window.electronAPI.hudSetWebcamBubble({ visible: false }), []);
 
 	// The recording bar is another window: send it the time, and take its commands.
@@ -333,47 +352,73 @@ export function LaunchWindow() {
 		videoDevices.find((device) => device.deviceId === selectedVideoDeviceId)?.label ||
 		t("recording.webcam");
 
+	const openSystemSettingsLabel = t("recording.openSystemSettings", "Open System Settings…");
+
 	const openMicrophoneMenu = async (event: MouseEvent<HTMLElement>) => {
-		const choice = await showMenuAt(event, [
+		// The button is read before waiting: React clears the event's target afterwards.
+		const button = event.currentTarget;
+		const access: MediaPermissionStatus = await microphoneAccess.refresh();
+		const blocked = needsSystemSettings(access);
+		const choice = await showMenuAt(button, [
 			{ type: "header", label: t("recording.microphone") },
-			...devices.map((device) => ({
-				id: `device:${device.deviceId}`,
-				label: device.label,
-				type: "radio" as const,
-				checked: microphoneEnabled && device.deviceId === selectedDeviceId,
-			})),
+			...(blocked
+				? blockedAccessItems(
+						t(
+							"recording.microphoneAccessOff",
+							"Microphone access is off for SuperShare",
+						),
+						openSystemSettingsLabel,
+					)
+				: devices.map((device) => ({
+						id: `device:${device.deviceId}`,
+						label: device.label,
+						type: "radio" as const,
+						checked: microphoneOn && device.deviceId === selectedDeviceId,
+					}))),
 			{ type: "separator" },
 			{
 				id: "off",
 				label: t("recording.noMicrophone", "No microphone"),
 				type: "radio",
-				checked: !microphoneEnabled,
+				checked: blocked || !microphoneOn,
 			},
 		]);
-		if (choice === "off") setMicrophoneEnabled(false);
+		if (choice === OPEN_SETTINGS)
+			void window.electronAPI.openMediaPermissionPreferences("microphone");
+		else if (choice === "off") setMicrophoneEnabled(false);
 		else if (choice?.startsWith("device:")) {
 			const deviceId = choice.slice("device:".length);
 			setMicrophoneEnabled(true);
 			setSelectedDeviceId(deviceId);
 			setMicrophoneDeviceId(deviceId === "default" ? undefined : deviceId);
+			// The one macOS prompt, if SuperShare has never asked.
+			void microphoneAccess.request();
 		}
 	};
 
 	const openCameraMenu = async (event: MouseEvent<HTMLElement>) => {
-		const choice = await showMenuAt(event, [
+		const button = event.currentTarget;
+		const access: MediaPermissionStatus = await cameraAccess.refresh();
+		const blocked = needsSystemSettings(access);
+		const choice = await showMenuAt(button, [
 			{ type: "header", label: t("recording.webcam") },
-			...videoDevices.map((device) => ({
-				id: `device:${device.deviceId}`,
-				label: device.label,
-				type: "radio" as const,
-				checked: webcamEnabled && device.deviceId === selectedVideoDeviceId,
-			})),
+			...(blocked
+				? blockedAccessItems(
+						t("recording.cameraAccessOff", "Camera access is off for SuperShare"),
+						openSystemSettingsLabel,
+					)
+				: videoDevices.map((device) => ({
+						id: `device:${device.deviceId}`,
+						label: device.label,
+						type: "radio" as const,
+						checked: cameraOn && device.deviceId === selectedVideoDeviceId,
+					}))),
 			{ type: "separator" },
 			{
 				id: "off",
 				label: t("recording.noCamera", "No camera"),
 				type: "radio",
-				checked: !webcamEnabled,
+				checked: blocked || !cameraOn,
 			},
 			{ type: "separator" },
 			{
@@ -381,10 +426,12 @@ export function LaunchWindow() {
 				label: t("recording.showFloatingWebcamPreview"),
 				type: "checkbox",
 				checked: showBubble,
-				enabled: webcamEnabled,
+				enabled: cameraOn,
 			},
 		]);
-		if (choice === "off") setWebcamEnabled(false);
+		if (choice === OPEN_SETTINGS)
+			void window.electronAPI.openMediaPermissionPreferences("camera");
+		else if (choice === "off") setWebcamEnabled(false);
 		else if (choice === "bubble") {
 			const next = !showBubble;
 			setShowBubble(next);
@@ -398,6 +445,8 @@ export function LaunchWindow() {
 			setWebcamEnabled(true);
 			setSelectedVideoDeviceId(deviceId);
 			setWebcamDeviceId(deviceId);
+			// The one macOS prompt, if SuperShare has never asked.
+			void cameraAccess.request();
 		}
 	};
 
@@ -472,29 +521,29 @@ export function LaunchWindow() {
 				<button
 					type="button"
 					className={`${styles.item} ${styles.camera}`}
-					data-off={!webcamEnabled || undefined}
+					data-off={!cameraOn || undefined}
 					title={t("recording.webcam")}
 					onClick={(event) => void openCameraMenu(event)}
 				>
 					<CameraIcon className={styles.largeIcon} />
 					<span className={styles.label}>
-						{webcamEnabled ? cameraLabel : t("recording.noCamera", "No camera")}
+						{cameraOn ? cameraLabel : t("recording.noCamera", "No camera")}
 					</span>
 				</button>
 				<button
 					type="button"
 					className={`${styles.item} ${styles.device}`}
-					data-off={!microphoneEnabled || undefined}
+					data-off={!microphoneOn || undefined}
 					title={t("recording.microphone")}
 					onClick={(event) => void openMicrophoneMenu(event)}
 				>
 					<MicrophoneIcon className={styles.largeIcon} />
 					<span className={styles.label}>
-						{microphoneEnabled
+						{microphoneOn
 							? microphoneLabel
 							: t("recording.noMicrophone", "No microphone")}
 					</span>
-					{microphoneEnabled && (
+					{microphoneOn && (
 						<span className={styles.meter}>
 							<span ref={meterRef} className={styles.meterFill} />
 						</span>

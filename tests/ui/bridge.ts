@@ -48,6 +48,13 @@ export async function installDesktopBridge(page: Page, videoFixture = "preview.m
 					status: "granted",
 				}),
 				getAccessibilityPermissionStatus: async () => ({ success: true, trusted: true }),
+				getMediaPermissionStatus: async () => ({
+					success: true,
+					camera: "granted",
+					microphone: "granted",
+				}),
+				requestMediaPermission: async () => ({ success: true, granted: true }),
+				openMediaPermissionPreferences: success,
 				getPlatform: async () => "darwin",
 				getWindowChrome: async () => ({ trafficLightsVisible: true }),
 				onWindowChromeChanged: (

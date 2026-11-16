@@ -66,6 +66,61 @@ export function registerPermissionHandlers() {
 		}
 	});
 
+	// Camera and microphone: read without prompting; the one macOS prompt comes from
+	// request-media-permission, which the start bar calls when the device is turned on.
+	ipcMain.handle("get-media-permission-status", () => {
+		if (process.platform !== "darwin") {
+			return { success: true, microphone: "granted", camera: "granted" };
+		}
+		try {
+			return {
+				success: true,
+				microphone: systemPreferences.getMediaAccessStatus("microphone"),
+				camera: systemPreferences.getMediaAccessStatus("camera"),
+			};
+		} catch (error) {
+			console.error("Failed to get media permission status:", error);
+			return {
+				success: false,
+				microphone: "unknown",
+				camera: "unknown",
+				error: String(error),
+			};
+		}
+	});
+
+	ipcMain.handle("request-media-permission", async (_, device: unknown) => {
+		if (device !== "microphone" && device !== "camera") {
+			return { success: false, granted: false, error: "Invalid media permission device" };
+		}
+		if (process.platform !== "darwin") return { success: true, granted: true };
+		try {
+			const status = systemPreferences.getMediaAccessStatus(device);
+			// Only a first-time choice shows the macOS prompt; afterwards it is System Settings' call.
+			const granted =
+				status === "not-determined"
+					? await systemPreferences.askForMediaAccess(device)
+					: status === "granted";
+			return { success: true, granted };
+		} catch (error) {
+			return { success: false, granted: false, error: String(error) };
+		}
+	});
+
+	ipcMain.handle("open-media-permission-preferences", async (_, device: unknown) => {
+		if (device !== "microphone" && device !== "camera") {
+			return { success: false, error: "Invalid media permission device" };
+		}
+		if (process.platform !== "darwin") return { success: true };
+		try {
+			await shell.openExternal(getMacPrivacySettingsUrl(device));
+			return { success: true };
+		} catch (error) {
+			console.error(`Failed to open ${device} preferences:`, error);
+			return { success: false, error: String(error) };
+		}
+	});
+
 	ipcMain.handle("open-screen-recording-preferences", async () => {
 		if (process.platform !== "darwin") {
 			return { success: true };
