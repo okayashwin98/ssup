@@ -106,8 +106,6 @@ VITE_CLOUD_SHARE_SECRET=<the password from step 4>
 VITE_PROFILE_NAME=<your display name>
 ```
 
-Leave the `VITE_SUPABASE_*` lines empty. They are for Recordly's sign-in service; when they're set, the app stops sending the password.
-
 ## 6. Build and install the app
 
 ```sh
