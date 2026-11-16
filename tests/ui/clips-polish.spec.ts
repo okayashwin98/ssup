@@ -53,7 +53,7 @@ test("annotations can be dragged into the canvas background and survive undo", a
 		.toBeGreaterThan(overlay.x + 8);
 });
 
-test("cloud sharing is reachable from Export and the account control", async ({ page }) => {
+test("cloud sharing is reachable from Export", async ({ page }) => {
 	const errors: string[] = [];
 	page.on("pageerror", (error) => errors.push(error.message));
 	await page.getByRole("button", { name: "Export", exact: true }).click();
@@ -66,8 +66,5 @@ test("cloud sharing is reachable from Export and the account control", async ({ 
 	const dialog = page.getByRole("dialog");
 	await expect(dialog.locator(".modal__body")).toBeVisible();
 	expect(await dialog.evaluate((node) => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
-	await page.getByRole("button", { name: "Close", exact: true }).click();
-	await page.getByRole("button", { name: "SuperShare account", exact: true }).click();
-	await expect(page.getByRole("heading", { name: "Sign into SuperShare" })).toBeVisible();
 	expect(errors).toEqual([]);
 });

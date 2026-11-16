@@ -110,23 +110,18 @@ for (const [label, provider] of [
 	});
 }
 
-test("restored Supabase sessions show the account and sign-out requires authentication again", async ({
+test("restored Supabase sessions open the editor with no account button in the tool rail", async ({
 	page,
 }) => {
 	await installDesktopBridge(page);
 	await page.goto("/?windowType=editor");
-	await page.getByRole("button", { name: "SuperShare account", exact: true }).click();
-	const account = page.getByRole("dialog", { name: "Your account", exact: true });
-	await expect(account.getByText("test@email.com")).toBeVisible();
-	await expect(account.locator('img[src$="login-banner.png"]')).toBeVisible();
-	const logout = page.waitForRequest((request) => request.url().includes("/auth/v1/logout"));
-	await account.getByRole("button", { name: "Sign out", exact: true }).click();
-	await logout;
-	const login = page.locator('[data-onboarding-state="login"]');
-	await expect(login).toBeVisible();
-	await page.reload();
-	await expect(login).toBeVisible();
-	await expect(login.getByRole("button", { name: "Continue", exact: true })).toHaveCount(0);
+	const rail = page.getByRole("navigation", { name: "Editor tools" });
+	await expect(rail.getByRole("radio", { name: "Scene", exact: true })).toBeVisible();
+	await expect(rail.getByRole("button")).toHaveCount(0);
+	await expect(page.getByRole("button", { name: "SuperShare account", exact: true })).toHaveCount(
+		0,
+	);
+	await expect(page.locator('[data-onboarding-state="login"]')).toHaveCount(0);
 });
 
 test("sign-in banner fills spare space and keeps the email action usable in a short window", async ({

@@ -1,16 +1,6 @@
-import {
-	Button,
-	Card,
-	Label,
-	Switch,
-	ToggleButton,
-	ToggleButtonGroup,
-	Tooltip,
-} from "@heroui/react";
-import type { User } from "@supabase/supabase-js";
+import { Card, Label, Switch, ToggleButton, ToggleButtonGroup, Tooltip } from "@heroui/react";
 import type { ComponentProps, ReactNode } from "react";
 import { useMemo, useState } from "react";
-import { AccountAvatar } from "@/components/ui/account-avatar";
 import { Camera, ClosedCaptioning, Cursor, FrameCorners, Gauge } from "@/components/ui/icons";
 import type { useI18n } from "@/contexts/I18nContext";
 import ExtensionManager from "../ExtensionManager";
@@ -18,9 +8,7 @@ import { SettingsPanel } from "../SettingsPanel";
 import type { EditorEffectSection } from "../types";
 
 type Props = {
-	accountUser?: User | null;
 	panelContent?: ReactNode;
-	onAccountClick?: () => void;
 	t: ReturnType<typeof useI18n>["t"];
 	activeSection: EditorEffectSection;
 	setActiveSection: (section: EditorEffectSection) => void;
@@ -29,12 +17,10 @@ type Props = {
 
 export function EditorSidebar({
 	t,
-	accountUser,
 	activeSection,
 	setActiveSection,
 	settingsPanelProps,
 	panelContent,
-	onAccountClick,
 }: Props) {
 	const [advancedSections, setAdvancedSections] = useState<Record<string, boolean>>({});
 	// Motion shows everything; other sections keep their Advanced switch.
@@ -68,7 +54,7 @@ export function EditorSidebar({
 		<div className="flex min-h-0 shrink-0 pb-3 pr-2">
 			<nav
 				aria-label={t("settings.sections.title", "Editor tools")}
-				className="flex w-16 shrink-0 flex-col items-center gap-3 py-2.5"
+				className="flex w-16 shrink-0 flex-col items-center py-2.5"
 			>
 				<ToggleButtonGroup
 					orientation="vertical"
@@ -104,19 +90,6 @@ export function EditorSidebar({
 						</Tooltip>
 					))}
 				</ToggleButtonGroup>
-				<Tooltip>
-					<Button
-						variant="ghost"
-						isIconOnly
-						className="mt-auto"
-						aria-label="SuperShare account"
-						data-no-auto-tooltip=""
-						onPress={onAccountClick}
-					>
-						<AccountAvatar user={accountUser} className="!size-7" />
-					</Button>
-					<Tooltip.Content placement="right">Account</Tooltip.Content>
-				</Tooltip>
 			</nav>
 			<aside
 				aria-label={panelContent ? "Clips" : undefined}
