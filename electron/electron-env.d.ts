@@ -1068,6 +1068,17 @@ interface Window {
 			message?: string;
 			canceled?: boolean;
 			error?: string;
+			/** Why it couldn't open, for the error screen. */
+			code?:
+				| "project-missing"
+				| "no-access"
+				| "unreadable"
+				| "corrupt"
+				| "missing-recording"
+				| "drive-disconnected";
+			projectPath?: string;
+			recordingPath?: string;
+			driveName?: string;
 		}>;
 		openProjectsDirectory: () => Promise<{
 			success: boolean;

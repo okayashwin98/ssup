@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { ProjectLibraryEntry } from "../ProjectBrowserDialog";
+import type { ProjectLoadFailure } from "../project/projectLoadError";
 import type { EditorProjectData } from "../projectPersistence";
 
 export function useProjectState() {
@@ -21,6 +22,8 @@ export function useProjectState() {
 	const [lastSavedSnapshot, setLastSavedSnapshot] = useState<EditorProjectData | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
+	/** Details of a project that failed to open, shown with project.error. */
+	const [loadFailure, setLoadFailure] = useState<ProjectLoadFailure | null>(null);
 
 	return {
 		videoPath,
@@ -57,5 +60,7 @@ export function useProjectState() {
 		setLoading,
 		error,
 		setError,
+		loadFailure,
+		setLoadFailure,
 	};
 }

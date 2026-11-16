@@ -532,34 +532,81 @@ export async function readProjectPreview(projectPath: string): Promise<ProjectPr
 	};
 }
 
+/** Why a project couldn't open, in terms the error screen can explain. */
+export type ProjectLoadFailureCode =
+	| "project-missing"
+	| "no-access"
+	| "unreadable"
+	| "corrupt"
+	| "missing-recording"
+	| "drive-disconnected";
+
+/** A recording under /Volumes/<drive>/ whose drive isn't mounted: the drive's name. */
+export async function disconnectedDriveName(filePath: string): Promise<string | null> {
+	const match = /^\/Volumes\/([^/]+)\//.exec(filePath);
+	if (!match) return null;
+	return (await fs.access(path.join("/Volumes", match[1])).then(
+		() => true,
+		() => false,
+	))
+		? null
+		: match[1];
+}
+
 export async function loadProjectFromPath(projectPath: string) {
 	const normalizedPath = normalizePath(projectPath);
+	const failure = (
+		code: ProjectLoadFailureCode,
+		message: string,
+		extra: { recordingPath?: string; driveName?: string } = {},
+	) => ({
+		success: false,
+		canceled: false,
+		code,
+		message,
+		projectPath: normalizedPath,
+		...extra,
+	});
+	let content: string;
+	try {
+		content = await fs.readFile(normalizedPath, "utf-8");
+	} catch (error) {
+		const code = (error as NodeJS.ErrnoException).code;
+		return failure(
+			code === "ENOENT" || code === "ENOTDIR"
+				? "project-missing"
+				: code === "EACCES" || code === "EPERM"
+					? "no-access"
+					: "unreadable",
+			`Failed to read project file: ${error instanceof Error ? error.message : String(error)}`,
+		);
+	}
 	let project: unknown;
 	try {
-		const content = await fs.readFile(normalizedPath, "utf-8");
 		project = parseJsonWithByteOrderMark(content);
 	} catch (error) {
-		return {
-			success: false,
-			canceled: false,
-			message: `Failed to read project file: ${error instanceof Error ? error.message : String(error)}`,
-		};
+		return failure(
+			"corrupt",
+			`Failed to read project file: ${error instanceof Error ? error.message : String(error)}`,
+		);
 	}
 	if (!isLoadableProjectData(project)) {
-		return {
-			success: false,
-			canceled: false,
-			message: "Invalid project file format",
-		};
+		return failure("corrupt", "Invalid project file format");
 	}
 	const mediaSources = await resolveProjectMediaSources(project);
 
 	if (!mediaSources.success) {
-		return {
-			success: false,
-			canceled: false,
-			message: mediaSources.message,
-		};
+		const recordingPath = normalizeVideoSourcePath(
+			(project as { videoPath?: unknown }).videoPath as string,
+		);
+		if (!recordingPath || !mediaSources.message.startsWith("Project video file not found"))
+			return failure("corrupt", mediaSources.message);
+		const driveName = await disconnectedDriveName(recordingPath);
+		return failure(
+			driveName ? "drive-disconnected" : "missing-recording",
+			mediaSources.message,
+			driveName ? { recordingPath, driveName } : { recordingPath },
+		);
 	}
 	const projectObj = project as Record<string, unknown>;
 	const editorObj = projectObj?.editor as Record<string, unknown> | undefined;

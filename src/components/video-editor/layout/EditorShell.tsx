@@ -27,6 +27,7 @@ import { getStartupView } from "@/lib/startupView";
 import { setReportContext } from "@/lib/feedback/errorReport";
 import { HomeLoadingSkeleton } from "../dashboard/HomeLoadingSkeleton";
 import { EditorLoadingSkeleton } from "./EditorLoadingSkeleton";
+import { ProjectLoadError } from "./ProjectLoadError";
 import { EditorHeader } from "./EditorHeader";
 import { EditorPreviewPanel } from "./EditorPreviewPanel";
 import { EditorSidebar } from "./EditorSidebar";
@@ -136,6 +137,24 @@ export function EditorShell(props: Props) {
 		handleAutoSuggestZoomsConsumed,
 	} = editing;
 	const { dialogActions, status: exportStatus, exportMessage } = exportController;
+	const [retryingProject, setRetryingProject] = useState(false);
+	/** Try again: reopen the failed project, or reload a recording that wouldn't play. */
+	const retryFailedProject = useCallback(
+		async (projectPath?: string | null) => {
+			if (!projectPath) {
+				project.setError(null);
+				remountRecoveredVideo();
+				return;
+			}
+			setRetryingProject(true);
+			try {
+				await openActions.openProjectAtPath(projectPath);
+			} finally {
+				setRetryingProject(false);
+			}
+		},
+		[openActions, project, remountRecoveredVideo],
+	);
 	const dashboardSettingsContent = useMemo(
 		() => (
 			<SettingsPanel
@@ -201,28 +220,32 @@ export function EditorShell(props: Props) {
 				<Toaster className="pointer-events-auto" />
 			</>
 		);
-	if (project.error)
+	if (project.error) {
+		// Details from a failed open apply only while its message is the one showing.
+		const failure =
+			project.loadFailure && project.loadFailure.message === project.error
+				? project.loadFailure
+				: { message: project.error, projectPath: project.currentProjectPath };
 		return (
-			<div className="flex h-screen items-center justify-center bg-background">
-				<div className="flex flex-col items-center gap-3">
-					<div role="alert" className="max-w-xl break-words text-center text-destructive">
-						{project.error}
-					</div>
-					<Button
-						variant="ghost"
-						ref={ui.projectBrowserFallbackTriggerRef}
-						type="button"
-						onClick={openActions.handleOpenProjectBrowser}
-						className="px-3 py-1.5 text-sm"
-					>
-						Open Projects
-					</Button>
-				</div>
+			<>
+				<ProjectLoadError
+					key={project.error}
+					failure={failure}
+					busy={retryingProject}
+					onRetry={() => void retryFailedProject(failure.projectPath)}
+					onHome={() => {
+						// Home opens without saving: this render still has the error set.
+						project.setLoadFailure(null);
+						project.setError(null);
+						void openActions.handleOpenProjectBrowser();
+					}}
+				/>
 				{editorDialogs}
 				{onboarding}
 				<Toaster className="pointer-events-auto" />
-			</div>
+			</>
 		);
+	}
 
 	return (
 		<div className="flex h-screen flex-col overflow-hidden bg-editor-bg text-foreground">

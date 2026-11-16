@@ -184,7 +184,8 @@ export function useProjectSaveActions({
 		[saveProject],
 	);
 	useEffect(() => {
-		if (project.loading || !currentSourcePath || !hasUnsavedChanges) {
+		// Never write a project while its error screen shows.
+		if (project.loading || project.error || !currentSourcePath || !hasUnsavedChanges) {
 			clearPendingAutosave();
 			return;
 		}
@@ -198,7 +199,14 @@ export function useProjectSaveActions({
 			});
 		}, PROJECT_AUTOSAVE_DELAY_MS);
 		return clearPendingAutosave;
-	}, [clearPendingAutosave, hasUnsavedChanges, saveProject, project.loading, currentSourcePath]);
+	}, [
+		clearPendingAutosave,
+		hasUnsavedChanges,
+		saveProject,
+		project.loading,
+		project.error,
+		currentSourcePath,
+	]);
 	useEffect(() => clearPendingAutosave, [clearPendingAutosave]);
 
 	const saveProjectWithName = useCallback(

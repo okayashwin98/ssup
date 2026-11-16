@@ -304,6 +304,41 @@ describe("local media path policy", () => {
 		await expect(resolveApprovedLocalMediaPath(videoPath)).resolves.toBeNull();
 	});
 
+	it("says why a project can't open, without touching its file", async () => {
+		const { loadProjectFromPath } = await import("./manager");
+		const missing = await loadProjectFromPath(path.join(tempPath, "gone.ssup"));
+		expect(missing).toMatchObject({ success: false, code: "project-missing" });
+
+		const corruptPath = path.join(tempPath, "corrupt.ssup");
+		await fs.writeFile(corruptPath, "{ not json", "utf-8");
+		expect(await loadProjectFromPath(corruptPath)).toMatchObject({ code: "corrupt" });
+		expect(await fs.readFile(corruptPath, "utf-8")).toBe("{ not json");
+
+		const movedPath = path.join(tempPath, "moved.ssup");
+		const recordingPath = path.join(tempPath, "moved-away.mp4");
+		const contents = JSON.stringify({ version: 1, videoPath: recordingPath, editor: {} });
+		await fs.writeFile(movedPath, contents, "utf-8");
+		expect(await loadProjectFromPath(movedPath)).toMatchObject({
+			code: "missing-recording",
+			recordingPath,
+			projectPath: movedPath,
+		});
+
+		const drivePath = path.join(tempPath, "drive.ssup");
+		const onDrive = "/Volumes/SuperShare Test Drive That Is Not Here/take.mp4";
+		await fs.writeFile(
+			drivePath,
+			JSON.stringify({ version: 1, videoPath: onDrive, editor: {} }),
+			"utf-8",
+		);
+		expect(await loadProjectFromPath(drivePath)).toMatchObject({
+			code: "drive-disconnected",
+			driveName: "SuperShare Test Drive That Is Not Here",
+			recordingPath: onDrive,
+		});
+		expect(await fs.readFile(movedPath, "utf-8")).toBe(contents);
+	});
+
 	it("approves editor audioRegions audioPath entries when loading a project", async () => {
 		const downloadsPath = path.join(tempRoot, "Downloads");
 		const videoPath = path.join(tempPath, "recording.mp4");

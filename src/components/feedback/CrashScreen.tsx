@@ -93,11 +93,12 @@ export function ReportStatus({ state }: { state: SaveState }) {
 }
 
 /** Copy details, with a brief tick once copied. */
-export function CopyDetailsButton({ text }: { text: string }) {
+export function CopyDetailsButton({ text, size }: { text: string; size?: "sm" }) {
 	const [copied, setCopied] = useState(false);
 	return (
 		<Button
 			variant="ghost"
+			size={size}
 			onClick={() =>
 				void copyText(text).then(
 					() => {

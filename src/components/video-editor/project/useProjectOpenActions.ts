@@ -9,6 +9,7 @@ import {
 import type { useProjectSaveActions } from "./useProjectSaveActions";
 import { toast } from "@/components/ui/toast";
 import { fromFileUrl, resolveVideoUrl } from "../projectPersistence";
+import type { ProjectLoadFailure } from "./projectLoadError";
 import type { useAppearanceState } from "../state/useAppearanceState";
 import type { useProjectState } from "../state/useProjectState";
 import { DEFAULT_WEBCAM_TIME_OFFSET_MS } from "../types";
@@ -60,35 +61,61 @@ export function useProjectOpenActions({
 		[hasUnsavedChanges, saveProject],
 	);
 
-	const handleOpenProjectFromLibrary = useCallback(
+	// A project that can't open gets the full error screen, so Home steps aside for it.
+	const showLoadFailure = useCallback(
+		(failure: ProjectLoadFailure) => {
+			project.setLoadFailure(failure);
+			project.setError(failure.message);
+			project.setProjectBrowserOpen(false);
+		},
+		[project],
+	);
+
+	/** Opens a project without saving the current one first: the error screen's Try again. */
+	const openProjectAtPath = useCallback(
 		async (projectPath: string) => {
-			if (!(await confirmReplaceSourceWithUnsavedChanges("open another project"))) return;
 			try {
 				const result = await window.electronAPI.openProjectFileAtPath(projectPath);
 				if (result.canceled) return;
 				if (!result.success) {
-					project.setError(result.error || result.message || "Failed to load project");
+					showLoadFailure({
+						message: result.error || result.message || "Failed to load project",
+						code: result.code,
+						projectPath: result.projectPath ?? projectPath,
+						recordingPath: result.recordingPath,
+						driveName: result.driveName,
+					});
 					return;
 				}
 				if (!(await applyLoadedProject(result.project, result.path ?? null))) {
-					project.setError("Could not load project: invalid project file format");
+					showLoadFailure({
+						message: "Could not load project: invalid project file format",
+						code: "corrupt",
+						projectPath,
+					});
 					return;
 				}
+				project.setLoadFailure(null);
+				project.setError(null);
 				project.setProjectBrowserOpen(false);
 				await refreshProjectLibrary();
 				return true;
 			} catch (error) {
-				project.setError(
-					`Could not load project: ${error instanceof Error ? error.message : String(error)}`,
-				);
+				showLoadFailure({
+					message: `Could not load project: ${error instanceof Error ? error.message : String(error)}`,
+					projectPath,
+				});
 			}
 		},
-		[
-			applyLoadedProject,
-			confirmReplaceSourceWithUnsavedChanges,
-			project,
-			refreshProjectLibrary,
-		],
+		[applyLoadedProject, project, refreshProjectLibrary, showLoadFailure],
+	);
+
+	const handleOpenProjectFromLibrary = useCallback(
+		async (projectPath: string) => {
+			if (!(await confirmReplaceSourceWithUnsavedChanges("open another project"))) return;
+			return openProjectAtPath(projectPath);
+		},
+		[confirmReplaceSourceWithUnsavedChanges, openProjectAtPath],
 	);
 
 	const handleImportMediaOrProject = useCallback(async () => {
@@ -257,6 +284,7 @@ export function useProjectOpenActions({
 	return {
 		handleRenameLibraryProject,
 		handleOpenProjectFromLibrary,
+		openProjectAtPath,
 		handleImportMediaOrProject,
 		handleOpenProjectBrowser,
 		handleDeleteProjects,
