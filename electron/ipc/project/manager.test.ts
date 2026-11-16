@@ -418,6 +418,68 @@ describe("local media path policy", () => {
 		expect(generate).not.toHaveBeenCalled();
 	});
 
+	it("stores a finished-edit preview only for listed, unchanged projects and marks it current", async () => {
+		vi.doMock("./firstFrameThumbnail", () => ({
+			createProjectFirstFrameThumbnail: vi.fn().mockResolvedValue(Buffer.from("raw frame")),
+		}));
+		const manager = await import("./manager");
+		const { crc32, deflateSync } = await import("node:zlib");
+		const chunk = (type: string, data: Buffer) => {
+			const out = Buffer.alloc(data.length + 12);
+			out.writeUInt32BE(data.length, 0);
+			out.write(type, 4);
+			data.copy(out, 8);
+			out.writeUInt32BE(crc32(out.subarray(4, -4)), out.length - 4);
+			return out;
+		};
+		const ihdr = Buffer.alloc(13);
+		ihdr.writeUInt32BE(640, 0);
+		ihdr.writeUInt32BE(480, 4);
+		ihdr[8] = 8;
+		ihdr[9] = 2;
+		const dataUrl = `data:image/png;base64,${Buffer.concat([
+			Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+			chunk("IHDR", ihdr),
+			chunk("IDAT", deflateSync(Buffer.alloc(1921 * 480))),
+			chunk("IEND", Buffer.alloc(0)),
+		]).toString("base64")}`;
+		const source = path.join(tempRoot, "source.mp4");
+		const projectPath = path.join(tempRoot, "composed.recordly");
+		await fs.writeFile(source, "video");
+		await fs.writeFile(
+			projectPath,
+			JSON.stringify({ version: 2, videoPath: source, editor: {} }),
+		);
+		const { mtimeMs } = await fs.stat(projectPath);
+		// Not in the library yet: nothing is written.
+		await expect(
+			manager.cacheProjectThumbnail(projectPath, mtimeMs, dataUrl),
+		).rejects.toThrow();
+		await manager.rememberRecentProject(projectPath);
+		// A stale revision is ignored.
+		expect(await manager.cacheProjectThumbnail(projectPath, mtimeMs - 1, dataUrl)).toBeNull();
+		const thumbnail = manager.getProjectThumbnailPath(projectPath);
+		expect(await manager.cacheProjectThumbnail(projectPath, mtimeMs, dataUrl)).toBe(thumbnail);
+		const entry = await manager.buildProjectLibraryEntry(projectPath, tempRoot);
+		expect(entry?.thumbnailPath).toBe(thumbnail);
+		expect(entry?.thumbnailComposed).toBe(true);
+		// A later edit (an autosave without a new preview) makes it stale again.
+		const later = new Date(Date.now() + 60_000);
+		await fs.utimes(projectPath, later, later);
+		const edited = await manager.buildProjectLibraryEntry(projectPath, tempRoot);
+		expect(edited?.thumbnailPath).toBe(thumbnail);
+		expect(edited?.thumbnailComposed).toBe(false);
+		// The editor's own save (project file, then its render) marks the render as current.
+		await fs.writeFile(
+			projectPath,
+			JSON.stringify({ version: 2, videoPath: source, editor: {} }),
+		);
+		await manager.saveProjectThumbnail(projectPath, dataUrl);
+		expect(
+			(await manager.buildProjectLibraryEntry(projectPath, tempRoot))?.thumbnailComposed,
+		).toBe(true);
+	});
+
 	it("replaces a thumbnail symlink without overwriting its target", async () => {
 		vi.doMock("./firstFrameThumbnail", () => ({
 			createProjectFirstFrameThumbnail: vi.fn().mockResolvedValue(Buffer.from("new poster")),

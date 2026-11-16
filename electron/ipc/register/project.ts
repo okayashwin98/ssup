@@ -30,6 +30,7 @@ import { buildMediaUrl, getMediaServerBaseUrl } from "../../mediaServer";
 import { LEGACY_PROJECT_FILE_EXTENSIONS, PROJECT_FILE_EXTENSION } from "../constants";
 import { getProjectBackupPath, writeProjectFileAtomically } from "../project/atomicSave";
 import {
+	cacheProjectThumbnail,
 	getProjectThumbnailPath,
 	isPathInsideDirectory,
 	isTrustedProjectPath,
@@ -411,6 +412,19 @@ export function registerProjectHandlers() {
 			};
 		}
 	});
+	ipcMain.handle(
+		"cache-project-thumbnail",
+		async (_, projectPath: unknown, updatedAt: unknown, dataUrl: unknown) => {
+			try {
+				return {
+					success: true,
+					value: await cacheProjectThumbnail(projectPath, updatedAt, dataUrl),
+				};
+			} catch (error) {
+				return { success: false, error: String(error) };
+			}
+		},
+	);
 	ipcMain.handle("get-project-preview", async (_, projectPath: string) => {
 		try {
 			return { success: true, value: await readProjectPreview(projectPath) };

@@ -111,6 +111,7 @@ export function ProjectCard({
 						key={`${entry.thumbnailPath}-${entry.updatedAt}`}
 						revision={entry.updatedAt}
 						path={entry.thumbnailPath}
+						composed={entry.thumbnailComposed === true}
 						videoSource={
 							webUrl && webReady
 								? new URL(`/v/${entry.path}`, webUrl).href

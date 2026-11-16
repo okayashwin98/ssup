@@ -105,6 +105,8 @@ export type ProjectLibraryEntry = {
 	createdAt?: number;
 	updatedAt: number;
 	thumbnailPath: string | null;
+	/** True when the preview already shows the finished edit for this revision. */
+	thumbnailComposed?: boolean;
 	isCurrent: boolean;
 	isInProjectsDirectory: boolean;
 	bytes?: number;

@@ -938,6 +938,12 @@ interface Window {
 			commit?: boolean,
 		) => Promise<{ success: boolean; error?: string }>;
 		cancelRecordingImport: () => Promise<{ success: boolean }>;
+		/** Store a finished-edit preview rendered on Home; null when the project changed meanwhile. */
+		cacheProjectThumbnail?: (
+			projectPath: string,
+			updatedAt: number,
+			dataUrl: string,
+		) => Promise<{ success: boolean; value?: string | null; error?: string }>;
 		getProjectPreview: (
 			projectPath: string,
 		) => Promise<
@@ -1051,6 +1057,7 @@ interface Window {
 				createdAt?: number;
 				updatedAt: number;
 				thumbnailPath: string | null;
+				thumbnailComposed?: boolean;
 				isCurrent: boolean;
 				isInProjectsDirectory: boolean;
 				bytes?: number;

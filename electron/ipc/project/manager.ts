@@ -3,6 +3,7 @@ import { createProjectFirstFrameThumbnail } from "./firstFrameThumbnail";
 import { buildMediaUrl, getMediaServerBaseUrl } from "../../mediaServer";
 import type { ProjectPreviewData } from "../../../src/types/projectPreview";
 import { hasFreshProjectThumbnail } from "./thumbnailFreshness";
+import { encodeComposedThumbnail, hasCurrentComposedThumbnail } from "./composedThumbnail";
 import { getCachedMediaDurationMs } from "../recording/mediaDuration";
 import { type Stats, existsSync, constants as fsConstants, realpathSync } from "node:fs";
 import fs from "node:fs/promises";
@@ -276,8 +277,49 @@ export async function saveProjectThumbnail(projectPath: string, thumbnailDataUrl
 		throw new Error("Project thumbnail must be a PNG data URL.");
 	}
 
-	await fs.writeFile(thumbnailPath, Buffer.from(match[1], "base64"));
+	let png: Buffer;
+	try {
+		// Mark the editor's finished-edit render so Home does not render it again.
+		png = encodeComposedThumbnail(thumbnailDataUrl);
+	} catch {
+		png = Buffer.from(match[1], "base64");
+	}
+	await fs.writeFile(thumbnailPath, png);
 	return thumbnailPath;
+}
+
+/** Store a finished-edit preview Home rendered in the background, if the project is unchanged. */
+export async function cacheProjectThumbnail(
+	projectPath: unknown,
+	updatedAt: unknown,
+	dataUrl: unknown,
+) {
+	if (typeof projectPath !== "string" || typeof updatedAt !== "number")
+		throw new Error("Invalid project revision");
+	if (typeof dataUrl !== "string") throw new Error("Invalid project thumbnail");
+	const normalizedPath = normalizePath(projectPath);
+	if (!hasProjectFileExtension(normalizedPath)) throw new Error("Not a project file");
+	if (
+		!isLibraryProjectPath(await getRecordingsDir(), normalizedPath) &&
+		!(await loadRecentProjectPaths()).some((item) => normalizePath(item) === normalizedPath)
+	)
+		throw new Error("Project is not in the library");
+	const stats = await fs.stat(normalizedPath);
+	if (stats.mtimeMs !== updatedAt) return null;
+	const png = encodeComposedThumbnail(dataUrl);
+	const target = getProjectThumbnailPath(normalizedPath);
+	const temporary = `${target}.${randomUUID()}.tmp`;
+	try {
+		await fs.writeFile(temporary, png, { flag: "wx" });
+		// Stamp the project's revision so a later edit makes this preview stale.
+		await fs.utimes(temporary, new Date(), Math.ceil(stats.mtimeMs) / 1000);
+		if (!sameProjectRevision(stats, await fs.stat(normalizedPath))) return null;
+		// Rename replaces a sidecar symlink itself; it never writes through its target.
+		await fs.rename(temporary, target);
+		return target;
+	} finally {
+		await fs.rm(temporary, { force: true }).catch(() => undefined);
+	}
 }
 
 export async function loadRecentProjectPaths() {
@@ -436,6 +478,9 @@ export async function buildProjectLibraryEntry(
 				.catch(() => undefined);
 		}
 
+		const thumbnailComposed =
+			thumbnailExists && (await hasCurrentComposedThumbnail(thumbnailPath, stats.mtimeMs));
+
 		return {
 			path: normalizedPath,
 			name: path
@@ -450,6 +495,7 @@ export async function buildProjectLibraryEntry(
 			updatedAt: stats.mtimeMs,
 			createdAt: stats.birthtimeMs || stats.ctimeMs,
 			thumbnailPath: thumbnailExists ? thumbnailPath : null,
+			thumbnailComposed,
 			isCurrent: Boolean(
 				currentProjectPath && normalizePath(currentProjectPath) === normalizedPath,
 			),
