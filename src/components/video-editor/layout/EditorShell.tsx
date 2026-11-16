@@ -24,6 +24,7 @@ import type { useProjectState } from "../state/useProjectState";
 import type { useTimelineState } from "../state/useTimelineState";
 import { EditorDialogs } from "./EditorDialogs";
 import { getStartupView } from "@/lib/startupView";
+import { setReportContext } from "@/lib/feedback/errorReport";
 import { HomeLoadingSkeleton } from "../dashboard/HomeLoadingSkeleton";
 import { EditorLoadingSkeleton } from "./EditorLoadingSkeleton";
 import { EditorHeader } from "./EditorHeader";
@@ -84,6 +85,17 @@ export function EditorShell(props: Props) {
 		effectiveShowCursor,
 		previewAspectRatioValue,
 	} = props;
+	// Error reports name the screen that was showing and the open project.
+	useEffect(() => {
+		setReportContext({
+			screen: project.projectBrowserOpen
+				? "home"
+				: project.error
+					? "project error"
+					: "editor",
+			projectPath: project.currentProjectPath,
+		});
+	}, [project.projectBrowserOpen, project.error, project.currentProjectPath]);
 	const library = useRecordingLibrary(project, timeline, ui, appearance);
 	// biome-ignore lint/correctness/useExhaustiveDependencies: Changing the active inspector closes the Videos view.
 	useEffect(() => {

@@ -79,6 +79,7 @@ import {
 	RECENT_PROJECTS_FILE,
 } from "./ipc/constants";
 import { getRecordingsDir } from "./ipc/utils";
+import { saveReport } from "./ipc/register/errorReport";
 
 const electronMainDir = path.dirname(fileURLToPath(import.meta.url));
 const IS_SMOKE_EXPORT = process.env.RECORDLY_SMOKE_EXPORT === "1";
@@ -467,6 +468,35 @@ function sendEditorMenuAction(
 	targetWindow.webContents.send(channel);
 }
 
+/** The editor adds its recent warnings and errors; with no editor open, the app writes what it knows. */
+async function saveDiagnosticReportFromMenu() {
+	const focused = BrowserWindow.getFocusedWindow();
+	const target =
+		focused && !focused.isDestroyed() && isEditorWindow(focused)
+			? focused
+			: mainWindow && !mainWindow.isDestroyed() && isEditorWindow(mainWindow)
+				? mainWindow
+				: null;
+	if (target) {
+		target.webContents.send("menu-save-diagnostic-report");
+		return;
+	}
+	try {
+		const result = await saveReport({ reason: "menu" }, null);
+		if (!result.success) return;
+		const choice = await dialog.showMessageBox({
+			type: "info",
+			message: "Diagnostic report saved",
+			detail: result.path,
+			buttons: ["Show in Finder", "OK"],
+			defaultId: 1,
+		});
+		if (choice.response === 0) shell.showItemInFolder(result.path);
+	} catch (error) {
+		dialog.showErrorBox("Couldn’t save the report", String(error));
+	}
+}
+
 function setupApplicationMenu() {
 	const isMac = process.platform === "darwin";
 	const template: Electron.MenuItemConstructorOptions[] = [];
@@ -560,6 +590,11 @@ function setupApplicationMenu() {
 					click: () => {
 						void checkForAppUpdates(getUpdateDialogWindow, { manual: true });
 					},
+				},
+				{ type: "separator" },
+				{
+					label: "Save Diagnostic Report…",
+					click: () => void saveDiagnosticReportFromMenu(),
 				},
 			],
 		},

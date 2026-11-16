@@ -1,5 +1,16 @@
+import { scrubSecrets } from "./scrubSecrets";
+
 const entries: string[] = [];
 let installed = false;
+
+/** The share password and address and the other .env values never reach a report. */
+export function rendererSecrets() {
+	return [
+		import.meta.env.VITE_CLOUD_SHARE_SECRET,
+		import.meta.env.VITE_CLOUD_SHARE_ENDPOINT,
+		import.meta.env.VITE_PROFILE_NAME,
+	];
+}
 export function redactDiagnostic(value: string): string {
 	return value
 		.replace(/Bearer\s+[^\s"']+/gi, "Bearer [redacted]")
@@ -18,13 +29,16 @@ function record(level: string, args: unknown[]) {
 	const message = args
 		.map((value) =>
 			value instanceof Error
-				? value.message
+				? (value.stack ?? value.message)
 				: typeof value === "string"
 					? value
 					: `[${typeof value}]`,
 		)
 		.join(" ");
-	entries.push(`${new Date().toISOString()} ${level}: ${redactDiagnostic(message)}`);
+	// Full file paths stay: the owner reads these reports to debug. Secrets never do.
+	entries.push(
+		`${new Date().toISOString()} ${level}: ${scrubSecrets(message, rendererSecrets()).slice(0, 2000)}`,
+	);
 	if (entries.length > 100) entries.shift();
 }
 export function installFeedbackDiagnostics() {
@@ -37,8 +51,18 @@ export function installFeedbackDiagnostics() {
 			original(...args);
 		};
 	}
-	window.addEventListener("error", (event) => record("error", [event.message]));
+	window.addEventListener("error", (event) =>
+		record("uncaught", [
+			event.error instanceof Error && event.error.stack
+				? event.error.stack
+				: `${event.message} (${event.filename}:${event.lineno}:${event.colno})`,
+		]),
+	);
 	window.addEventListener("unhandledrejection", (event) => record("rejection", [event.reason]));
+}
+/** The last 100 warnings, errors and uncaught errors, oldest first, in UTC. */
+export function recentDiagnosticLogs() {
+	return [...entries];
 }
 const MAX_DIAGNOSTIC_BYTES = 290_000;
 export function feedbackDiagnostics() {

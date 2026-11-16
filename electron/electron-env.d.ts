@@ -1106,6 +1106,19 @@ interface Window {
 				isPreview?: boolean;
 			}) => void,
 		) => () => void;
+		/** Writes a readable error report into Documents (asks where only if it can't). Sends nothing anywhere. */
+		saveErrorReport: (input: {
+			reason: "crash" | "project-load" | "menu";
+			screen?: string;
+			error?: { message?: string; stack?: string; componentStack?: string };
+			logs?: string[];
+			exportSettings?: Record<string, unknown> | null;
+			editorProjectPath?: string | null;
+		}) => Promise<
+			| { success: true; path: string; askedWhere: boolean }
+			| { success: false; canceled?: boolean; error?: string }
+		>;
+		onMenuSaveDiagnosticReport: (callback: () => void) => () => void;
 		onMenuLoadProject: (callback: () => void) => () => void;
 		onMenuSaveProject: (callback: () => void) => () => void;
 		onMenuSaveProjectAs: (callback: () => void) => () => void;

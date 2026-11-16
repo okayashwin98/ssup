@@ -4,6 +4,7 @@ import { registerCapturePickerHandlers } from "./register/capturePicker";
 import { registerAssetHandlers } from "./register/assets";
 import { registerCaptionHandlers } from "./register/captions";
 import { registerCloudShareHandlers } from "./register/cloudShare";
+import { registerErrorReportHandlers } from "./register/errorReport";
 import { registerExportHandlers } from "./register/export";
 import { registerLoginItemHandlers } from "./register/loginItem";
 import { registerPermissionHandlers } from "./register/permissions";
@@ -74,6 +75,7 @@ export function registerIpcHandlers(
 	registerAnnouncementHandlers();
 	registerAssetHandlers();
 	registerExportHandlers();
+	registerErrorReportHandlers();
 	registerCaptionHandlers();
 	registerCloudShareHandlers();
 	registerProjectHandlers();

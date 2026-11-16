@@ -1,5 +1,7 @@
 import { Card } from "@heroui/react";
 import { lazy, Suspense, useEffect, useState } from "react";
+import { AppErrorBoundary } from "./components/feedback/AppErrorBoundary";
+import { DiagnosticReportMenu } from "./components/feedback/DiagnosticReportMenu";
 import { AutoTooltips } from "./components/ui/auto-tooltip";
 import { HomeLoadingSkeleton } from "./components/video-editor/dashboard/HomeLoadingSkeleton";
 import { EditorLoadingSkeleton } from "./components/video-editor/layout/EditorLoadingSkeleton";
@@ -137,18 +139,23 @@ export default function App() {
 	}
 
 	return (
-		<Suspense
-			fallback={
-				windowType === "editor" ? (
-					getStartupView() === "home" ? (
-						<HomeLoadingSkeleton />
-					) : (
-						<EditorLoadingSkeleton />
-					)
-				) : null
-			}
-		>
-			{content}
-		</Suspense>
+		<>
+			<AppErrorBoundary key={windowType} windowType={windowType}>
+				<Suspense
+					fallback={
+						windowType === "editor" ? (
+							getStartupView() === "home" ? (
+								<HomeLoadingSkeleton />
+							) : (
+								<EditorLoadingSkeleton />
+							)
+						) : null
+					}
+				>
+					{content}
+				</Suspense>
+			</AppErrorBoundary>
+			{windowType === "editor" && <DiagnosticReportMenu />}
+		</>
 	);
 }

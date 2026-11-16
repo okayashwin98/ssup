@@ -1131,6 +1131,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		ipcRenderer.on("update-ready-toast", listener);
 		return () => ipcRenderer.removeListener("update-ready-toast", listener);
 	},
+	saveErrorReport: (input: unknown) => ipcRenderer.invoke("save-error-report", input),
+	onMenuSaveDiagnosticReport: (callback: () => void) => {
+		const listener = () => callback();
+		ipcRenderer.on("menu-save-diagnostic-report", listener);
+		return () => ipcRenderer.removeListener("menu-save-diagnostic-report", listener);
+	},
 	onMenuLoadProject: (callback: () => void) => {
 		const listener = () => callback();
 		ipcRenderer.on("menu-load-project", listener);
