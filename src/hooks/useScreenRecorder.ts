@@ -277,6 +277,20 @@ export type DiscardNativeCaptureResult = {
 	error?: unknown;
 };
 
+/**
+ * Stop (menu bar, shortcut, toggle) is ignored while a take is being thrown away by
+ * Cancel or Restart: the discard owns the cleanup, and a stop there would save the take.
+ */
+export function shouldIgnoreStopRequest({
+	cancelInFlight,
+	restartInFlight,
+}: {
+	cancelInFlight: boolean;
+	restartInFlight: boolean;
+}): boolean {
+	return cancelInFlight || restartInFlight;
+}
+
 export async function stopAndDiscardNativeCapture({
 	stopNativeScreenRecording,
 	deleteRecordingFile,
@@ -393,6 +407,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 	const [countdownActive, setCountdownActive] = useState(false);
 	const [restarting, setRestarting] = useState(false);
 	const restartInFlight = useRef(false);
+	const cancelInFlight = useRef(false);
 	const [isMacOS, setIsMacOS] = useState(false);
 	const [microphoneEnabled, setMicrophoneEnabled] = useState(false);
 	const [microphoneDeviceId, setMicrophoneDeviceId] = useState<string | undefined>(undefined);
@@ -1251,6 +1266,14 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 	}, []);
 
 	const stopRecording = useRef(() => {
+		if (
+			shouldIgnoreStopRequest({
+				cancelInFlight: cancelInFlight.current,
+				restartInFlight: restartInFlight.current,
+			})
+		) {
+			return;
+		}
 		recordingStartGeneration.current += 1;
 		setPaused(false);
 		if (nativeScreenRecording.current && nativeWarmStartActive.current) {
@@ -2411,64 +2434,69 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 	const cancelRecording = useCallback(async () => {
 		recordingStartGeneration.current += 1;
 		if (!recordingActive.current) return false;
-		setPaused(false);
-		markRecordingResumed(Date.now());
+		cancelInFlight.current = true;
+		try {
+			setPaused(false);
+			markRecordingResumed(Date.now());
 
-		// Discard the webcam recording regardless of recording mode. Its handlers come off
-		// first: the last chunk it hands over on stop must not be saved after the discard.
-		const camera = webcamRecorder.current;
-		if (camera) {
-			camera.ondataavailable = null;
-			camera.onstop = null;
-			camera.onerror = null;
-			if (camera.state !== "inactive") camera.stop();
-		}
-		webcamStopResolver.current?.(null);
-		webcamStopResolver.current = null;
-		webcamStopPromise.current = null;
-		webcamChunks.current = [];
-		webcamRecorder.current = null;
-		webcamStartTime.current = null;
-		webcamTimeOffsetMs.current = 0;
-		webcamStream.current?.getTracks().forEach((t) => t.stop());
-		webcamStream.current = null;
-		pendingWebcamPathPromise.current = null;
-		resolvedWebcamPath.current = null;
-
-		if (nativeScreenRecording.current) {
-			setRecording(false);
-			const stateReset = window.electronAPI?.setRecordingState(false);
-			const [discarded] = await Promise.allSettled([
-				discardActiveNativeCapture(),
-				stopMicFallbackRecorder(),
-				stateReset,
-			]);
-			return (
-				discarded.status === "fulfilled" &&
-				discarded.value &&
-				!nativeScreenRecording.current
-			);
-		}
-
-		const recorder = mediaRecorder.current;
-		if (recorder) {
-			chunks.current = [];
-			// Unhooked like the webcam, so a late chunk cannot be saved as a recording.
-			recorder.ondataavailable = null;
-			recorder.onstop = null;
-			recorder.onerror = null;
-			if (recorder.state !== "inactive") {
-				await new Promise<void>((resolve) => {
-					recorder.addEventListener("stop", () => resolve(), { once: true });
-					recorder.stop();
-				});
+			// Discard the webcam recording regardless of recording mode. Its handlers come off
+			// first: the last chunk it hands over on stop must not be saved after the discard.
+			const camera = webcamRecorder.current;
+			if (camera) {
+				camera.ondataavailable = null;
+				camera.onstop = null;
+				camera.onerror = null;
+				if (camera.state !== "inactive") camera.stop();
 			}
-			mediaRecorder.current = null;
-			cleanupCapturedMedia();
-			setRecording(false);
-			await Promise.allSettled([window.electronAPI?.setRecordingState(false)]);
+			webcamStopResolver.current?.(null);
+			webcamStopResolver.current = null;
+			webcamStopPromise.current = null;
+			webcamChunks.current = [];
+			webcamRecorder.current = null;
+			webcamStartTime.current = null;
+			webcamTimeOffsetMs.current = 0;
+			webcamStream.current?.getTracks().forEach((t) => t.stop());
+			webcamStream.current = null;
+			pendingWebcamPathPromise.current = null;
+			resolvedWebcamPath.current = null;
+
+			if (nativeScreenRecording.current) {
+				setRecording(false);
+				const stateReset = window.electronAPI?.setRecordingState(false);
+				const [discarded] = await Promise.allSettled([
+					discardActiveNativeCapture(),
+					stopMicFallbackRecorder(),
+					stateReset,
+				]);
+				return (
+					discarded.status === "fulfilled" &&
+					discarded.value &&
+					!nativeScreenRecording.current
+				);
+			}
+
+			const recorder = mediaRecorder.current;
+			if (recorder) {
+				chunks.current = [];
+				// Unhooked like the webcam, so a late chunk cannot be saved as a recording.
+				recorder.ondataavailable = null;
+				recorder.onstop = null;
+				recorder.onerror = null;
+				if (recorder.state !== "inactive") {
+					await new Promise<void>((resolve) => {
+						recorder.addEventListener("stop", () => resolve(), { once: true });
+						recorder.stop();
+					});
+				}
+				mediaRecorder.current = null;
+				cleanupCapturedMedia();
+				setRecording(false);
+				await Promise.allSettled([window.electronAPI?.setRecordingState(false)]);
+			}
+			return true;
+		} finally {
+			cancelInFlight.current = false;
 		}
-		return true;
 	}, [
 		cleanupCapturedMedia,
 		discardActiveNativeCapture,

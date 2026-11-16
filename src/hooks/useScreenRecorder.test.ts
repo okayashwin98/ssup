@@ -5,6 +5,7 @@ import {
 	createProcessedMicrophoneConstraints,
 	normalizeBrowserMicrophoneProfile,
 	resolveBrowserCaptureCursorPolicy,
+	shouldIgnoreStopRequest,
 	shouldUseNativeWindowsCaptureForSource,
 	stopAndDiscardNativeCapture,
 } from "./useScreenRecorder";
@@ -171,6 +172,26 @@ describe("shouldUseNativeWindowsCaptureForSource", () => {
 
 	it("keeps browser capture for non-desktop sources", () => {
 		expect(shouldUseNativeWindowsCaptureForSource({ id: "browser-tab:abc" })).toBe(false);
+	});
+});
+
+describe("shouldIgnoreStopRequest", () => {
+	it("lets Stop through during a normal recording", () => {
+		expect(shouldIgnoreStopRequest({ cancelInFlight: false, restartInFlight: false })).toBe(
+			false,
+		);
+	});
+
+	it("ignores Stop while a cancelled recording is being discarded", () => {
+		expect(shouldIgnoreStopRequest({ cancelInFlight: true, restartInFlight: false })).toBe(
+			true,
+		);
+	});
+
+	it("ignores Stop while a restart is discarding the take and starting again", () => {
+		expect(shouldIgnoreStopRequest({ cancelInFlight: false, restartInFlight: true })).toBe(
+			true,
+		);
 	});
 });
 
