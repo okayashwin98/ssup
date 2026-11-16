@@ -1,6 +1,6 @@
-import { Button, Input, Label, Skeleton, TextField } from "@heroui/react";
-import { ArrowClockwiseIcon, IconContext } from "@phosphor-icons/react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Button, Input, Label, Popover, Skeleton, TextField } from "@heroui/react";
+import { ArrowClockwiseIcon, ArrowUpIcon, IconContext } from "@phosphor-icons/react";
+import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
 import {
 	type Comment,
 	fetchReactions,
@@ -14,6 +14,7 @@ import {
 	type ShareData,
 	verifyPassword,
 } from "../scripts/api";
+import { isSingleEmoji } from "../scripts/shareModel";
 import ShareFeedback from "./ShareFeedback";
 import SharePlayer from "./SharePlayer";
 import {
@@ -31,13 +32,162 @@ import ThemeToggle from "./ThemeToggle";
 const LINE_ICONS = { weight: "thin" } as const;
 
 const reactions = [
-	{ emoji: "👍", label: "Approve" },
-	{ emoji: "❤️", label: "Good" },
-	{ emoji: "🤔", label: "Not sure" },
+	{ emoji: "👎", label: "Dislike" },
 	{ emoji: "❓", label: "Question" },
-	{ emoji: "⚠️", label: "Concern" },
-	{ emoji: "👎", label: "Reject" },
+	{ emoji: "🤔", label: "Doubt" },
+	{ emoji: "👍", label: "Like" },
+	{ emoji: "❤️", label: "Love" },
 ];
+
+// The "more" grid, eight to a row: praise, reactions, notes, then problems.
+const MORE_REACTIONS = [
+	..."🎉🔥👏🙌💯🚀✅⭐",
+	..."😂😍😮🤯👀💡🙏🤝",
+	"💬",
+	"📌",
+	"✏️",
+	"🔁",
+	"⏳",
+	"🐢",
+	"🔇",
+	"🔍",
+	"😕",
+	"😬",
+	"😢",
+	"⚠️",
+	"🐞",
+	"❌",
+	"🛑",
+	"💤",
+];
+const MORE_COLUMNS = 8;
+
+/** A face with a plus, drawn as a 1.25px line like the page's other icons. */
+function AddReactionIcon() {
+	return (
+		<svg
+			className="add-reaction-icon"
+			width="16"
+			height="16"
+			viewBox="0 0 16 16"
+			fill="none"
+			aria-hidden="true"
+		>
+			<path d="M9.2 2.4a6 6 0 1 0 4.4 4.4" />
+			<path d="M5.4 9.6a3 3 0 0 0 4.4 0" />
+			<path d="M5.6 6.6v.01M9.6 6.6v.01" />
+			<path d="M12.75 1v4.5M10.5 3.25H15" />
+		</svg>
+	);
+}
+
+/** The last button in the row: opens a small panel to react with any emoji. */
+function MoreReactions({
+	isDisabled,
+	onPick,
+}: {
+	isDisabled: boolean;
+	onPick: (emoji: string) => void;
+}) {
+	const [open, setOpen] = useState(false);
+	const [typed, setTyped] = useState("");
+	const value = typed.trim();
+	const valid = isSingleEmoji(value);
+
+	function pick(emoji: string) {
+		setOpen(false);
+		setTyped("");
+		onPick(emoji);
+	}
+	// Arrow keys move through the grid; Tab still leaves it for the field.
+	function moveFocus(event: KeyboardEvent<HTMLDivElement>) {
+		const step = {
+			ArrowLeft: -1,
+			ArrowRight: 1,
+			ArrowUp: -MORE_COLUMNS,
+			ArrowDown: MORE_COLUMNS,
+		}[event.key];
+		if (!step) return;
+		const buttons = [...event.currentTarget.querySelectorAll("button")];
+		const next = buttons[buttons.indexOf(document.activeElement as HTMLButtonElement) + step];
+		if (next) {
+			event.preventDefault();
+			next.focus();
+		}
+	}
+
+	return (
+		<Popover
+			isOpen={open}
+			onOpenChange={(next) => {
+				setOpen(next);
+				if (!next) setTyped("");
+			}}
+		>
+			<Button
+				size="sm"
+				variant="ghost"
+				aria-label="More reactions"
+				render={(props) => <button {...props} title="More reactions" />}
+				isDisabled={isDisabled}
+			>
+				<AddReactionIcon />
+			</Button>
+			<Popover.Content className="reaction-popover" placement="bottom end" offset={12}>
+				<Popover.Dialog aria-label="More reactions">
+					<div
+						className="reaction-grid"
+						role="group"
+						aria-label="Common reactions"
+						onKeyDown={moveFocus}
+					>
+						{MORE_REACTIONS.map((emoji) => (
+							<button
+								key={emoji}
+								type="button"
+								aria-label={`React with ${emoji}`}
+								onClick={() => pick(emoji)}
+							>
+								<span aria-hidden="true">{emoji}</span>
+							</button>
+						))}
+					</div>
+					<form
+						className="reaction-custom"
+						onSubmit={(event) => {
+							event.preventDefault();
+							if (valid) pick(value);
+						}}
+					>
+						<Input
+							value={typed}
+							onChange={(event) => setTyped(event.currentTarget.value)}
+							placeholder="Type any emoji"
+							aria-label="Type any emoji"
+							aria-describedby={value && !valid ? "reaction-hint" : undefined}
+							autoComplete="off"
+							maxLength={64}
+						/>
+						<Button
+							type="submit"
+							isIconOnly
+							className="send-button"
+							aria-label="Send reaction"
+							isDisabled={!valid}
+						>
+							<ArrowUpIcon size={16} />
+						</Button>
+					</form>
+					{value && !valid && (
+						<p className="reaction-hint" id="reaction-hint" role="status">
+							Enter a single emoji
+						</p>
+					)}
+				</Popover.Dialog>
+			</Popover.Content>
+		</Popover>
+	);
+}
 
 function Recording({ data }: { data: ShareData }) {
 	const videoRef = useRef<HTMLVideoElement>(null);
@@ -133,6 +283,10 @@ function Recording({ data }: { data: ShareData }) {
 									<span aria-hidden="true">{emoji}</span>
 								</Button>
 							))}
+							<MoreReactions
+								isDisabled={reacting !== null}
+								onPick={(emoji) => void react(emoji)}
+							/>
 						</div>
 					</div>
 				</main>
@@ -208,9 +362,13 @@ export default function SharePage() {
 			if (result === "unlocked" || result === "gone") {
 				// A correct password that still lands on the gate means the browser refused the unlock cookie.
 				if ((await load()) === "password")
-					setError("Your browser blocked the unlock. Allow cookies for this site and try again.");
-			} else if (result === "wrong") setError("That password didn’t match. Please try again.");
-			else if (result === "too-many") setError("Too many tries. Wait a few minutes, then try again.");
+					setError(
+						"Your browser blocked the unlock. Allow cookies for this site and try again.",
+					);
+			} else if (result === "wrong")
+				setError("That password didn’t match. Please try again.");
+			else if (result === "too-many")
+				setError("Too many tries. Wait a few minutes, then try again.");
 			else setError("Could not unlock the recording. Please try again.");
 		} catch {
 			setError("Could not unlock the recording. Please try again.");

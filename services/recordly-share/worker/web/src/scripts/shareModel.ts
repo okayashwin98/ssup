@@ -49,3 +49,25 @@ export interface TimelineItem {
 }
 export const clusterTimeline = (items: TimelineItem[], duration: number, width: number) =>
 	clusterMarkers(items, duration, width, 28);
+
+// One part of an emoji: a pictograph, optionally with the emoji selector and a skin tone.
+const EMOJI_PART = "\\p{Extended_Pictographic}\\uFE0F?\\p{Emoji_Modifier}?";
+const EMOJI_SHAPES = [
+	// One part, or several joined into one (families, professions, 🏳️‍🌈).
+	new RegExp(`^${EMOJI_PART}(?:\\u200D${EMOJI_PART})*$`, "u"),
+	// Country flags.
+	/^\p{Regional_Indicator}{2}$/u,
+	// Keycaps: digits, # and * count only with the keycap mark.
+	/^[0-9#*]\uFE0F?\u20E3$/u,
+	// Region flags (England, Scotland, Wales).
+	/^\u{1F3F4}[\u{E0020}-\u{E007E}]+\u{E007F}$/u,
+];
+// Symbols that are text by default (©, ⚠, ☝) count only when marked as emoji.
+const SHOWN_AS_EMOJI = /\p{Emoji_Presentation}|\uFE0F|\p{Emoji_Modifier}|\u20E3/u;
+
+/** True for exactly one emoji. The server applies the same rule (worker/src/feedback.js). */
+export const isSingleEmoji = (value: string) =>
+	value.length > 0 &&
+	new TextEncoder().encode(value).length <= 64 &&
+	SHOWN_AS_EMOJI.test(value) &&
+	EMOJI_SHAPES.some((shape) => shape.test(value));

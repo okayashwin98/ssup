@@ -4,6 +4,7 @@ import {
 	clusterComments,
 	clusterReactions,
 	clusterTimeline,
+	isSingleEmoji,
 	timestampParts,
 } from "./shareModel.ts";
 
@@ -73,4 +74,37 @@ test("shared timeline groups overlapping comments and reactions into one numbere
 		groups[0].members.map((item) => item.kind),
 		["comment", "reaction"],
 	);
+});
+
+test("a reaction is exactly one emoji, whatever it is built from", () => {
+	for (const emoji of [
+		"👎",
+		"❓",
+		"🤔",
+		"👍",
+		"❤️",
+		"🎉",
+		"👍🏽",
+		"🇮🇳",
+		"👨‍👩‍👧",
+		"1️⃣",
+		"⚠️",
+		"🏳️‍🌈",
+	])
+		assert.equal(isSingleEmoji(emoji), true, emoji);
+	for (const text of [
+		"a",
+		"1",
+		"#",
+		"",
+		" ",
+		"ok👍",
+		"👍 ",
+		"👍👍",
+		"🇮🇳🇺🇸",
+		"⚠",
+		"©",
+		"x".repeat(200),
+	])
+		assert.equal(isSingleEmoji(text), false, JSON.stringify(text));
 });

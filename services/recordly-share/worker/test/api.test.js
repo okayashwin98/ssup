@@ -279,22 +279,64 @@ describe("reactions", () => {
 		});
 	}
 
-	it("accepts the current set and rejects retired emoji for new reactions", async () => {
+	it("accepts any single emoji and rejects everything else", async () => {
 		const { shareCode } = await createShare();
 		await completeUpload(shareCode);
 
-		for (const emoji of ["👍", "❤️", "🤔", "❓", "⚠️", "👎"]) {
-			expect((await react(shareCode, emoji)).status).toBe(200);
+		const accepted = [
+			"👎",
+			"❓",
+			"🤔",
+			"👍",
+			"❤️",
+			"🎉",
+			"👍🏽",
+			"🇮🇳",
+			"👨‍👩‍👧",
+			"1️⃣",
+			"#️⃣",
+			"⚠️",
+			"🏳️‍🌈",
+			"🏴󠁧󠁢󠁳󠁣󠁴󠁿",
+			"🧑🏽‍❤️‍💋‍🧑🏿",
+		];
+		for (const emoji of accepted) {
+			expect((await react(shareCode, emoji)).status, emoji).toBe(200);
 		}
-		// Retired, and the warning sign without its emoji variation selector.
-		for (const emoji of ["😂", "🔥", "⚠"]) {
-			expect((await react(shareCode, emoji)).status).toBe(400);
+		const rejected = [
+			"a",
+			"1",
+			"#",
+			"*",
+			"",
+			" ",
+			"ok👍",
+			"👍 ",
+			"👍👍",
+			"🇮🇳🇺🇸",
+			"👍\n",
+			"\u0000",
+			"\u200D",
+			"\uFE0F",
+			// Text symbols without the emoji selector.
+			"⚠",
+			"©",
+			"x".repeat(200),
+			"👍".repeat(50),
+			// One joined emoji that is over the 64-byte cap.
+			Array(12)
+				.fill("👨")
+				.join("\u200D"),
+			7,
+			null,
+			["👍"],
+		];
+		for (const emoji of rejected) {
+			expect((await react(shareCode, emoji)).status, JSON.stringify(emoji)).toBe(400);
 		}
 
 		const listed = await (await SELF.fetch(`${BASE}/s/${shareCode}/reactions`)).json();
-		expect(listed.reactions.map((r) => r.emoji).sort()).toEqual(
-			["👍", "❤️", "🤔", "❓", "⚠️", "👎"].sort(),
-		);
+		expect(listed.reactions.map((r) => r.emoji).sort()).toEqual([...accepted].sort());
 	});
 });
 

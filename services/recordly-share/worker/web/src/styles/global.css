@@ -231,6 +231,84 @@
 	}
 }
 
+/* The face-with-plus on the last reaction button: same 1.25px line as the other icons. */
+.add-reaction-icon path {
+	stroke: currentColor;
+	stroke-width: 1.25px;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+.reaction-buttons .button[aria-expanded="true"] {
+	background: var(--surface-secondary);
+}
+/* More reactions: a grid of emoji and a field for any other one. */
+.share-body .popover.reaction-popover {
+	border-radius: 12px;
+	max-width: calc(100vw - 24px);
+}
+.reaction-popover .popover__dialog {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding: 8px;
+}
+.reaction-grid {
+	display: grid;
+	grid-template-columns: repeat(8, 32px);
+	gap: 2px;
+}
+.reaction-grid button {
+	display: grid;
+	place-items: center;
+	width: 32px;
+	height: 32px;
+	padding: 0;
+	border: 0;
+	border-radius: 8px;
+	background: none;
+	font-size: 18px;
+	line-height: 1;
+	cursor: pointer;
+}
+.reaction-grid button:focus-visible {
+	outline: 2px solid var(--focus);
+	outline-offset: -2px;
+}
+@media (hover: hover) {
+	.reaction-grid button:hover {
+		background: var(--surface-secondary);
+	}
+}
+.reaction-custom {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+.reaction-custom .input {
+	flex: 1;
+	min-width: 0;
+}
+.reaction-custom .send-button {
+	width: 40px;
+	min-width: 40px;
+	height: 32px;
+	padding: 0;
+	border-radius: 999px;
+	flex-shrink: 0;
+}
+.reaction-custom .send-button:is(:disabled, [data-disabled="true"], [aria-disabled="true"]) {
+	background: var(--surface-secondary);
+	color: var(--foreground);
+	opacity: 0.5;
+}
+.reaction-hint {
+	margin: 0;
+	padding: 0 4px;
+	color: var(--muted);
+	font-size: 12px;
+	line-height: 18px;
+}
+
 /* ---------- Feedback card ---------- */
 .feedback-card {
 	height: 100%;
