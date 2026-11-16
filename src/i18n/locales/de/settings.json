@@ -173,6 +173,10 @@
 		"crop": "Zuschneiden"
 	},
 	"captions": {
+		"style": "Stil",
+		"styleClassic": "Klassisch",
+		"styleReveal": "Einblenden",
+		"styleTiktok": "TikTok",
 		"selectOnTimeline": "Wählen Sie einen Untertitel auf der Zeitleiste aus, um ihn zu bearbeiten.",
 		"enabled": "Anzeigen",
 		"timelineQuickAdd": "Mit der Maus darüberfahren, um zur Zeitleiste hinzuzufügen",
@@ -248,6 +252,10 @@
 		"removeColor": "Farbe entfernen"
 	},
 	"export": {
+		"burnInCaptions": {
+			"title": "Untertitel ins Video zeichnen",
+			"hint": "Immer sichtbar, wie in der Vorschau. Die Untertitelspur ist weiterhin enthalten."
+		},
 		"title": "Exportieren",
 		"mp4": "MP4",
 		"gif": "GIF",

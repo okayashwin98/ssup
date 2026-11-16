@@ -23,6 +23,7 @@ export interface ExportPreferences {
 	publishDestination: "link" | "local";
 	shareResolution: ShareResolution;
 	includeCaptionSidecar: boolean;
+	burnInCaptions: boolean;
 }
 
 export function normalizeExportEncodingMode(value: unknown): ExportEncodingMode {
@@ -85,5 +86,6 @@ export function normalizeExportPreferences(raw: Partial<ExportPreferences>): Exp
 			? (raw.shareResolution as ShareResolution)
 			: 1080,
 		includeCaptionSidecar: raw.includeCaptionSidecar === true,
+		burnInCaptions: raw.burnInCaptions === true,
 	};
 }

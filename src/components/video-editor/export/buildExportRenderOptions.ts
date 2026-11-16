@@ -18,6 +18,8 @@ type BuildExportRenderOptionsInput = {
 	previewWidth: number;
 	previewHeight: number;
 	shadowIntensity: number;
+	/** Draw the captions into the picture; otherwise they travel only as a subtitle track. */
+	burnInCaptions?: boolean;
 	onProgress: (progress: ExportProgress) => void;
 };
 
@@ -31,6 +33,7 @@ export function buildExportRenderOptions({
 	previewWidth,
 	previewHeight,
 	shadowIntensity,
+	burnInCaptions = false,
 	onProgress,
 }: BuildExportRenderOptionsInput) {
 	return {
@@ -67,9 +70,10 @@ export function buildExportRenderOptions({
 			appearance.hiddenTimelineLayers,
 			"annotation",
 		),
-		// Captions are never drawn into the picture: MP4s carry them as a
-		// subtitle track and share links as CC, so viewers can turn them off.
-		autoCaptions: [],
+		// Captions are drawn into the picture only when asked for; MP4s always carry them as a
+		// subtitle track and share links as CC, so viewers can turn those off.
+		autoCaptions:
+			burnInCaptions && timeline.autoCaptionSettings.enabled ? timeline.autoCaptions : [],
 		autoCaptionSettings: timeline.autoCaptionSettings,
 		zoomRegions: effectiveZoomRegions,
 		cursorTelemetry: effectiveCursorTelemetry,

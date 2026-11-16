@@ -5,7 +5,11 @@ import { MotionBlurFilter } from "pixi-filters/motion-blur";
 import { ZoomBlurFilter } from "pixi-filters/zoom-blur";
 import { buildActiveCaptionLayout } from "@/components/video-editor/captionLayout";
 import {
-	CAPTION_FONT_WEIGHT,
+	ensureCaptionFontLoaded,
+	getCaptionFontFamily,
+} from "@/components/video-editor/captionFonts";
+import { getCaptionFontWeight } from "@/components/video-editor/captionPresets";
+import {
 	CAPTION_LINE_HEIGHT,
 	getCaptionPadding,
 	getCaptionScaledFontSize,
@@ -29,10 +33,8 @@ import type {
 	ZoomRegion,
 	ZoomTransitionEasing,
 } from "@/components/video-editor/types";
-import {
-	DEFAULT_WEBCAM_ROUNDNESS,
-	getDefaultCaptionFontFamily,
-} from "@/components/video-editor/types";
+import { DEFAULT_WEBCAM_ROUNDNESS } from "@/components/video-editor/types";
+import { drawCaptionWord } from "./captionRenderer";
 import { DEFAULT_FOCUS } from "@/components/video-editor/videoPlayback/constants";
 import {
 	type CursorFollowCameraState,
@@ -621,7 +623,7 @@ export class FrameRenderer {
 		this.annotationScaleFactor = this.calculateAnnotationScaleFactor();
 		this.annotationAssets = await preloadAnnotationAssets(this.config.annotationRegions ?? []);
 		await this.setupAnnotationLayer();
-		this.setupCaptionResources();
+		await this.setupCaptionResources();
 
 		if (this.shouldUseZoomMotionBlur()) {
 			this.zoomBlurFilter = new ZoomBlurFilter({
@@ -1608,10 +1610,12 @@ export class FrameRenderer {
 		}
 	}
 
-	private setupCaptionResources(): void {
+	private async setupCaptionResources(): Promise<void> {
 		if (!this.config.autoCaptions?.length || !this.config.autoCaptionSettings) {
 			return;
 		}
+		// A style with a bundled typeface must be loaded before anything is measured.
+		await ensureCaptionFontLoaded(this.config.autoCaptionSettings);
 
 		this.captionMeasureCanvas = document.createElement("canvas");
 		this.captionMeasureCanvas.width = 1;
@@ -1630,13 +1634,13 @@ export class FrameRenderer {
 			return null;
 		}
 
-		const fontFamily = settings.fontFamily || getDefaultCaptionFontFamily();
+		const fontFamily = getCaptionFontFamily(settings);
 		const fontSize = getCaptionScaledFontSize(
 			settings.fontSize,
 			this.config.width,
 			settings.maxWidth,
 		);
-		measureCtx.font = `${CAPTION_FONT_WEIGHT} ${fontSize}px ${fontFamily}`;
+		measureCtx.font = `${getCaptionFontWeight(settings.style)} ${fontSize}px ${fontFamily}`;
 
 		const layout = buildActiveCaptionLayout({
 			cues,
@@ -1666,7 +1670,11 @@ export class FrameRenderer {
 			this.config.height - (this.config.height * settings.bottomOffset) / 100 - boxHeight / 2;
 
 		return {
-			key: `${layout.blockKey}:${layout.visiblePageIndex}:${layout.activeWordIndex}`,
+			// Reveal changes the picture every frame while a word fades in.
+			key: `${layout.blockKey}:${layout.visiblePageIndex}:${layout.activeWordIndex}${layout.visibleLines
+				.flatMap((line) => line.words)
+				.map((word) => (word.revealProgress === undefined ? "" : `:${word.revealProgress}`))
+				.join("")}`,
 			layout,
 			fontFamily,
 			fontSize,
@@ -1729,7 +1737,7 @@ export class FrameRenderer {
 		}
 
 		ctx.clearRect(0, 0, this.captionCanvas.width, this.captionCanvas.height);
-		ctx.font = `${CAPTION_FONT_WEIGHT} ${state.fontSize}px ${state.fontFamily}`;
+		ctx.font = `${getCaptionFontWeight(settings.style)} ${state.fontSize}px ${state.fontFamily}`;
 		ctx.fillStyle = `rgba(0, 0, 0, ${settings.backgroundOpacity})`;
 		drawSquircleOnCanvas(ctx, {
 			x: 0,
@@ -1749,23 +1757,19 @@ export class FrameRenderer {
 			const lineY = padding.y + state.lineHeight * lineIndex + state.lineHeight / 2;
 
 			line.words.forEach((word) => {
-				const segmentText = `${word.leadingSpace ? " " : ""}${word.text}`;
-				const segmentWidth = ctx.measureText(segmentText).width;
 				const visualState = getCaptionWordVisualState(
 					state.layout.hasWordTimings,
 					word.state,
 				);
-
-				ctx.save();
-				ctx.translate(cursorX, lineY);
-				ctx.fillStyle = visualState.isInactive
-					? settings.inactiveTextColor
-					: settings.textColor;
-				ctx.globalAlpha = visualState.opacity;
-				ctx.fillText(segmentText, 0, 0);
-				ctx.restore();
-
-				cursorX += segmentWidth;
+				cursorX += drawCaptionWord(ctx, {
+					word,
+					settings,
+					fontSize: state.fontSize,
+					x: cursorX,
+					y: lineY,
+					color: visualState.isInactive ? settings.inactiveTextColor : settings.textColor,
+					alpha: visualState.opacity,
+				});
 			});
 		});
 

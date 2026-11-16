@@ -598,6 +598,9 @@ export interface CaptionCueWord {
 
 export type AutoCaptionAnimation = "none" | "fade" | "rise" | "pop";
 
+/** Absent means "classic", the original look; saved projects without it stay unchanged. */
+export type AutoCaptionStyle = "classic" | "reveal" | "tiktok";
+
 export interface AutoCaptionSettings {
 	enabled: boolean;
 	/** Show the hover ghost on the timeline caption track for click-to-add. */
@@ -613,6 +616,7 @@ export interface AutoCaptionSettings {
 	textColor: string;
 	inactiveTextColor: string;
 	backgroundOpacity: number;
+	style?: AutoCaptionStyle;
 }
 
 export const DEFAULT_AUTO_CAPTION_SETTINGS: AutoCaptionSettings = {

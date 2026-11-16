@@ -173,6 +173,10 @@
 		"crop": "Bijsnijden"
 	},
 	"captions": {
+		"style": "Stijl",
+		"styleClassic": "Klassiek",
+		"styleReveal": "Onthullen",
+		"styleTiktok": "TikTok",
 		"selectOnTimeline": "Selecteer een ondertitel op de tijdlijn om deze te bewerken.",
 		"enabled": "Tonen",
 		"timelineQuickAdd": "Aanwijzen om toe te voegen op tijdlijn",
@@ -248,6 +252,10 @@
 		"removeColor": "Kleur verwijderen"
 	},
 	"export": {
+		"burnInCaptions": {
+			"title": "Ondertiteling in de video tekenen",
+			"hint": "Altijd zichtbaar, zoals in de voorvertoning. Het ondertitelspoor blijft inbegrepen."
+		},
 		"title": "Exporteren",
 		"mp4": "MP4",
 		"gif": "GIF",

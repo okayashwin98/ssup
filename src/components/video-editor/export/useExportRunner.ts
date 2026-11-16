@@ -184,6 +184,7 @@ export function useExportRunner(input: ExportRunnerInput) {
 							previewWidth,
 							previewHeight,
 							shadowIntensity: effectiveShadowIntensity,
+							burnInCaptions: settings.burnInCaptions === true,
 							onProgress: (progress) => {
 								if (exportWasCancelled()) return;
 								recordSmokeProgress(progress);
@@ -352,6 +353,7 @@ export function useExportRunner(input: ExportRunnerInput) {
 							previewWidth,
 							previewHeight,
 							shadowIntensity: effectiveShadowIntensity,
+							burnInCaptions: settings.burnInCaptions === true,
 							onProgress: (progress) => {
 								if (exportWasCancelled()) return;
 								recordSmokeProgress(progress);

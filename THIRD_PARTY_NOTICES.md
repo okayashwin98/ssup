@@ -122,3 +122,9 @@ Audio and video processing uses [FFmpeg](https://ffmpeg.org) binaries provided b
 The share page uses Inter Display Medium (`public/fonts`, `services/recordly-share/worker/web/public/fonts`).
 
 Copyright (c) 2016 The Inter Project Authors (https://github.com/rsms/inter). Licensed under the [SIL Open Font License, Version 1.1](https://openfontlicense.org).
+
+## TikTok Sans
+
+The TikTok caption style uses TikTok Sans (`src/assets/fonts/tiktok-sans`), the unmodified variable font from the [Google Fonts distribution](https://github.com/google/fonts/tree/2750b521bd22ce141f12617194ab0e04cf5d12d5/ofl/tiktoksans), loaded only when that style is used.
+
+Copyright 2024 TikTok Inc. (https://github.com/tiktok/TikTokSans). Licensed under the SIL Open Font License, Version 1.1; the full licence is in `src/assets/fonts/tiktok-sans/OFL.txt`.

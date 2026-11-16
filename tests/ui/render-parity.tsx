@@ -2,11 +2,16 @@
 import { useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
+	type AutoCaptionSettings,
+	type AutoCaptionStyle,
+	type CaptionCue,
 	type CursorStyle,
+	DEFAULT_AUTO_CAPTION_SETTINGS,
 	type CursorTelemetryPoint,
 	DEFAULT_WEBCAM_OVERLAY,
 	type WebcamOverlaySettings,
 } from "@/components/video-editor/types";
+import { applyCaptionPreset } from "@/components/video-editor/captionPresets";
 import VideoPlayback, { type VideoPlaybackRef } from "@/components/video-editor/VideoPlayback";
 import { I18nProvider } from "@/contexts/I18nContext";
 import { FrameRenderer as LegacyFrameRenderer } from "@/lib/exporter/frameRenderer";
@@ -28,6 +33,9 @@ type ParityConfig = {
 	cursorTelemetry?: CursorTelemetryPoint[];
 	webcam?: Partial<WebcamOverlaySettings>;
 	webcamVideo?: string;
+	captions?: CaptionCue[];
+	captionSettings?: Partial<AutoCaptionSettings>;
+	captionStyle?: AutoCaptionStyle;
 };
 
 const config: ParityConfig = location.hash
@@ -54,6 +62,15 @@ const shared = {
 	cursorIdleHide: config.cursorIdleHide ?? false,
 	cursorTelemetry: config.cursorTelemetry ?? [],
 };
+const captionProps = config.captions
+	? {
+			autoCaptions: config.captions,
+			autoCaptionSettings: applyCaptionPreset(
+				{ ...DEFAULT_AUTO_CAPTION_SETTINGS, enabled: true, ...config.captionSettings },
+				config.captionStyle ?? "classic",
+			),
+		}
+	: {};
 const clips = [{ id: "clip", startMs: 0, endMs: 6000, speed: 1 }];
 const noop = () => undefined;
 const noZooms: never[] = [];
@@ -110,6 +127,7 @@ async function exportFrame(kind: "legacy" | "modern", seconds: number, width = 1
 		videoWidth: video.videoWidth,
 		videoHeight: video.videoHeight,
 		...shared,
+		...captionProps,
 	});
 	try {
 		await renderer.initialize();
@@ -211,6 +229,7 @@ function Parity() {
 					webcam={webcam}
 					webcamVideoPath={webcam.enabled ? webcamVideoPath : null}
 					{...shared}
+					{...captionProps}
 				/>
 			</div>
 		</main>

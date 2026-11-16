@@ -173,6 +173,10 @@
 		"crop": "Corte"
 	},
 	"captions": {
+		"style": "Estilo",
+		"styleClassic": "Clássico",
+		"styleReveal": "Revelar",
+		"styleTiktok": "TikTok",
 		"selectOnTimeline": "Selecione uma legenda na linha do tempo para editá-la.",
 		"enabled": "Mostrar",
 		"timelineQuickAdd": "Passe o cursor para adicionar na linha do tempo",
@@ -248,6 +252,10 @@
 		"removeColor": "Remover cor"
 	},
 	"export": {
+		"burnInCaptions": {
+			"title": "Desenhar legendas no vídeo",
+			"hint": "Sempre visíveis, como na prévia. A faixa de legendas continua incluída."
+		},
 		"title": "Exportar",
 		"mp4": "MP4",
 		"gif": "GIF",

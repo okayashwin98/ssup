@@ -87,6 +87,7 @@ import {
 import { isVideoWallpaperSource } from "@/lib/wallpapers";
 import { renderAnnotations } from "./annotationRenderer";
 import { renderCaptions } from "./captionRenderer";
+import { ensureCaptionFontLoaded } from "@/components/video-editor/captionFonts";
 import { ForwardFrameSource } from "./forwardFrameSource";
 import { resolveMediaElementSource } from "./localMediaSource";
 
@@ -369,6 +370,10 @@ export class FrameRenderer {
 	}
 
 	async initialize(): Promise<void> {
+		if (this.config.autoCaptions?.length && this.config.autoCaptionSettings) {
+			// A style with a bundled typeface must be loaded before anything is measured.
+			await ensureCaptionFontLoaded(this.config.autoCaptionSettings);
+		}
 		let cursorOverlayEnabled = true;
 		try {
 			await preloadCursorAssets();

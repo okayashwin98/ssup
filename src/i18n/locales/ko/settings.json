@@ -173,6 +173,10 @@
 		"crop": "자르기"
 	},
 	"captions": {
+		"style": "스타일",
+		"styleClassic": "클래식",
+		"styleReveal": "리빌",
+		"styleTiktok": "TikTok",
 		"selectOnTimeline": "타임라인에서 자막을 선택하여 편집하세요.",
 		"enabled": "표시",
 		"timelineQuickAdd": "타임라인에 마우스를 올려 추가",
@@ -248,6 +252,10 @@
 		"removeColor": "색상 제거"
 	},
 	"export": {
+		"burnInCaptions": {
+			"title": "자막을 영상에 입히기",
+			"hint": "미리보기처럼 항상 표시됩니다. 자막 트랙도 그대로 포함됩니다."
+		},
 		"title": "내보내기",
 		"mp4": "MP4",
 		"gif": "GIF",

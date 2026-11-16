@@ -26,6 +26,8 @@ interface ExportSettingsMenuProps {
 	showCaptionSidecarOption?: boolean;
 	includeCaptionSidecar?: boolean;
 	onIncludeCaptionSidecarChange?: (enabled: boolean) => void;
+	burnInCaptions?: boolean;
+	onBurnInCaptionsChange?: (enabled: boolean) => void;
 	mp4OutputDimensions?: Record<ExportQuality, { width: number; height: number }>;
 	onExport?: () => void;
 	className?: string;
@@ -99,6 +101,8 @@ export function ExportSettingsMenu({
 	showCaptionSidecarOption = false,
 	includeCaptionSidecar = false,
 	onIncludeCaptionSidecarChange,
+	burnInCaptions = false,
+	onBurnInCaptionsChange,
 	mp4OutputDimensions,
 	onExport,
 	className,
@@ -160,6 +164,24 @@ export function ExportSettingsMenu({
 					>
 						<Label>{tSettings("export.nvidiaCuda.title", "NVIDIA CUDA")}</Label>
 					</Switch>
+				)}
+				{showCaptionSidecarOption && (
+					<div>
+						<Switch checked={burnInCaptions} onCheckedChange={onBurnInCaptionsChange}>
+							<Label>
+								{tSettings(
+									"export.burnInCaptions.title",
+									"Draw captions into the video",
+								)}
+							</Label>
+						</Switch>
+						<Description>
+							{tSettings(
+								"export.burnInCaptions.hint",
+								"Always visible, as in the preview. The subtitle track is still included.",
+							)}
+						</Description>
+					</div>
 				)}
 				{showCaptionSidecarOption && (
 					<div>

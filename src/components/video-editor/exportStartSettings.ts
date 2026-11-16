@@ -17,6 +17,7 @@ export function resolveExportStartSettings({
 	sourceHeight,
 	exportFormat,
 	includeCaptionSidecar,
+	burnInCaptions = false,
 	exportEncodingMode,
 	exportQuality,
 	mp4FrameRate,
@@ -30,6 +31,7 @@ export function resolveExportStartSettings({
 	sourceHeight: number;
 	exportFormat: ExportFormat;
 	includeCaptionSidecar: boolean;
+	burnInCaptions?: boolean;
 	exportEncodingMode: ExportEncodingMode;
 	exportQuality: ExportQuality;
 	mp4FrameRate: ExportMp4FrameRate;
@@ -47,6 +49,7 @@ export function resolveExportStartSettings({
 	return {
 		format: exportFormat,
 		includeCaptionSidecar: exportFormat === "mp4" ? includeCaptionSidecar : false,
+		...(burnInCaptions ? { burnInCaptions: true } : {}),
 		encodingMode: exportFormat === "mp4" ? exportEncodingMode : undefined,
 		mp4FrameRate: exportFormat === "mp4" ? mp4FrameRate : undefined,
 		backendPreference: exportFormat === "mp4" ? exportBackendPreference : undefined,
@@ -69,8 +72,10 @@ export function resolveShareExportSettings(
 	settings: ExportSettings,
 	shareResolution: ExportSettings["shareResolution"] = 1080,
 ): ExportSettings {
+	// Share links keep captions as closed captions viewers can turn on, never in the picture.
+	const { burnInCaptions: _localOnly, ...rest } = settings;
 	return {
-		...settings,
+		...rest,
 		shareResolution,
 		format: "mp4",
 		quality: "source",

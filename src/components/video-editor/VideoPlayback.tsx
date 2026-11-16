@@ -54,7 +54,13 @@ import { AnnotationOverlay } from "./AnnotationOverlay";
 import { type CaptionEditTarget, normalizeCaptionEditText } from "./captionEditing";
 import { buildActiveCaptionLayout } from "./captionLayout";
 import {
-	CAPTION_FONT_WEIGHT,
+	getCaptionDisplayText,
+	getCaptionFontWeight,
+	getCaptionOutlineEm,
+	getCaptionRevealBlurPx,
+} from "./captionPresets";
+import { useCaptionFont } from "./useCaptionFont";
+import {
 	CAPTION_LINE_HEIGHT,
 	getCaptionPadding,
 	getCaptionScaledFontSize,
@@ -97,7 +103,6 @@ import {
 	DEFAULT_ZOOM_OUT_DURATION_MS,
 	DEFAULT_ZOOM_OUT_EASING,
 	findClipAtTimelineTime,
-	getDefaultCaptionFontFamily,
 	mapTimelineTimeToSourceTime,
 	type Padding,
 	type WebcamOverlaySettings,
@@ -622,6 +627,11 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			[],
 		);
 
+		const captionFont = useCaptionFont(autoCaptionSettings);
+		const captionFontFamily = captionFont.fontFamily;
+		const captionFontReady = captionFont.ready;
+		const captionFontWeight = getCaptionFontWeight(autoCaptionSettings?.style);
+		// biome-ignore lint/correctness/useExhaustiveDependencies: The bundled font changes the measurements once it has loaded.
 		const activeCaptionLayout = useMemo(() => {
 			if (
 				!autoCaptionSettings?.enabled ||
@@ -648,7 +658,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				return null;
 			}
 
-			measurementContext.font = `${CAPTION_FONT_WEIGHT} ${fontSize}px ${autoCaptionSettings.fontFamily || getDefaultCaptionFontFamily()}`;
+			measurementContext.font = `${captionFontWeight} ${fontSize}px ${captionFontFamily}`;
 
 			return buildActiveCaptionLayout({
 				cues: autoCaptions,
@@ -657,7 +667,14 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				maxWidthPx: maxTextWidthPx,
 				measureText: (text) => measurementContext.measureText(text).width,
 			});
-		}, [autoCaptionSettings, autoCaptions, currentTime]);
+		}, [
+			autoCaptionSettings,
+			autoCaptions,
+			currentTime,
+			captionFontFamily,
+			captionFontWeight,
+			captionFontReady,
+		]);
 		const isCaptionEditing = captionEditSession !== null;
 		const captionEditDraft = captionEditSession?.draft ?? "";
 		const captionEditTargetId = captionEditSession?.target.id ?? null;
@@ -683,7 +700,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				return null;
 			}
 
-			measurementContext.font = `${CAPTION_FONT_WEIGHT} ${fontSize}px ${autoCaptionSettings.fontFamily || getDefaultCaptionFontFamily()}`;
+			measurementContext.font = `${captionFontWeight} ${fontSize}px ${captionFontFamily}`;
 			const measuredWidth = Math.max(
 				...captionEditSession.draft
 					.split(/\r?\n/)
@@ -697,7 +714,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 					Math.min(maxTextWidthPx, Math.max(fontSize * 2, measuredWidth + 2)),
 				),
 			};
-		}, [autoCaptionSettings, captionEditSession]);
+		}, [autoCaptionSettings, captionEditSession, captionFontFamily, captionFontWeight]);
 		const captionEditSizeKey = captionEditSession
 			? `${captionEditTextMetrics?.widthPx ?? 0}:${captionEditDraft}`
 			: "";
@@ -2590,7 +2607,6 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			backgroundBlur,
 			shadowIntensity: showShadow ? shadowIntensity : 0,
 		});
-		const captionFontFamily = autoCaptionSettings?.fontFamily || getDefaultCaptionFontFamily();
 		// Overscan blurred wallpaper layers so the browser never samples transparent
 		// pixels beyond the preview bounds, which otherwise looks like a vignette.
 		const backgroundBlurOverscan = sceneEffects.backgroundOverscanPx;
@@ -2804,7 +2820,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 											)}px`,
 											lineHeight: CAPTION_LINE_HEIGHT,
 											textAlign: "center",
-											fontWeight: CAPTION_FONT_WEIGHT,
+											fontWeight: captionFontWeight,
 											padding: `${
 												getCaptionPadding(
 													getCaptionScaledFontSize(
@@ -2944,19 +2960,50 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 																word.state,
 															);
 
+														const outlineEm = getCaptionOutlineEm(
+															autoCaptionSettings.style,
+														);
+														const revealBlur = getCaptionRevealBlurPx(
+															word.revealProgress,
+															getCaptionScaledFontSize(
+																autoCaptionSettings.fontSize,
+																overlayRef.current?.clientWidth ||
+																	960,
+																autoCaptionSettings.maxWidth,
+															),
+														);
+
 														return (
 															<span
 																key={`${activeCaptionLayout.blockKey}-${word.index}`}
+																data-caption-word=""
 																style={{
 																	display: "inline-block",
 																	whiteSpace: "pre",
 																	color: visualState.isInactive
 																		? autoCaptionSettings.inactiveTextColor
 																		: autoCaptionSettings.textColor,
-																	opacity: visualState.opacity,
+																	opacity:
+																		visualState.opacity *
+																		(word.revealProgress ?? 1),
+																	filter:
+																		revealBlur > 0
+																			? `blur(${revealBlur}px)`
+																			: undefined,
+																	WebkitTextStroke:
+																		outlineEm > 0
+																			? `${outlineEm}em #000000`
+																			: undefined,
+																	paintOrder:
+																		outlineEm > 0
+																			? "stroke fill"
+																			: undefined,
 																}}
 															>
-																{`${word.leadingSpace ? " " : ""}${word.text}`}
+																{`${word.leadingSpace ? " " : ""}${getCaptionDisplayText(
+																	word.text,
+																	autoCaptionSettings.style,
+																)}`}
 															</span>
 														);
 													})}

@@ -109,6 +109,8 @@ import {
 	cursorSetAssets,
 	getCursorStyleSizeMultiplier,
 } from "./videoPlayback/uploadedCursorAssets";
+import { applyCaptionPreset } from "./captionPresets";
+import { CaptionStylePicker } from "./captions/CaptionStylePicker";
 import { useCaptionGlossary } from "./captions/useCaptionGlossary";
 import { WebcamCropControl } from "./WebcamCropControl";
 import {
@@ -2210,6 +2212,27 @@ export function SettingsPanel({
 						/>
 					</div>
 				)}
+
+				<div className="space-y-2 pb-1">
+					<div className="text-sm font-medium text-foreground">
+						{tSettings("captions.style", "Style")}
+					</div>
+					<CaptionStylePicker
+						value={autoCaptionSettings.style}
+						label={tSettings("captions.style", "Style")}
+						getLabel={(style, fallback) =>
+							tSettings(
+								`captions.style${style.charAt(0).toUpperCase()}${style.slice(1)}`,
+								fallback,
+							)
+						}
+						onChange={(style) =>
+							onAutoCaptionSettingsChange?.(
+								applyCaptionPreset(autoCaptionSettings, style),
+							)
+						}
+					/>
+				</div>
 
 				<div className="mb-1 text-sm font-medium text-foreground">
 					{tSettings("captions.fontSettings", "Font Settings")}

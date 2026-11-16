@@ -1,6 +1,15 @@
-import { buildActiveCaptionLayout } from "@/components/video-editor/captionLayout";
+import { getCaptionFontFamily } from "@/components/video-editor/captionFonts";
 import {
-	CAPTION_FONT_WEIGHT,
+	buildActiveCaptionLayout,
+	type CaptionWordLayout,
+} from "@/components/video-editor/captionLayout";
+import {
+	getCaptionDisplayText,
+	getCaptionFontWeight,
+	getCaptionOutlineEm,
+	getCaptionRevealBlurPx,
+} from "@/components/video-editor/captionPresets";
+import {
 	CAPTION_LINE_HEIGHT,
 	getCaptionPadding,
 	getCaptionScaledFontSize,
@@ -8,11 +17,7 @@ import {
 	getCaptionTextMaxWidth,
 	getCaptionWordVisualState,
 } from "@/components/video-editor/captionStyle";
-import {
-	type AutoCaptionSettings,
-	type CaptionCue,
-	getDefaultCaptionFontFamily,
-} from "@/components/video-editor/types";
+import type { AutoCaptionSettings, CaptionCue } from "@/components/video-editor/types";
 import { drawSquircleOnCanvas } from "@/lib/geometry/squircle";
 
 /** Draw the active caption using the same typography and timing as preview. */
@@ -31,7 +36,7 @@ export function renderCaptions(
 	ctx.save();
 
 	const fontSize = getCaptionScaledFontSize(settings.fontSize, width, settings.maxWidth);
-	ctx.font = `${CAPTION_FONT_WEIGHT} ${fontSize}px ${settings.fontFamily || getDefaultCaptionFontFamily()}`;
+	ctx.font = `${getCaptionFontWeight(settings.style)} ${fontSize}px ${getCaptionFontFamily(settings)}`;
 	const padding = getCaptionPadding(fontSize);
 
 	const activeCaptionLayout = buildActiveCaptionLayout({
@@ -84,25 +89,96 @@ export function renderCaptions(
 		const lineY = -boxHeight / 2 + paddingY + lineHeight * lineIndex + lineHeight / 2;
 
 		line.words.forEach((word) => {
-			const segmentText = `${word.leadingSpace ? " " : ""}${word.text}`;
-			const segmentWidth = ctx.measureText(segmentText).width;
 			const visualState = getCaptionWordVisualState(
 				activeCaptionLayout.hasWordTimings,
 				word.state,
 			);
-
-			ctx.save();
-			ctx.translate(cursorX, lineY);
-			ctx.fillStyle = visualState.isInactive
-				? settings.inactiveTextColor
-				: settings.textColor;
-			ctx.globalAlpha = activeCaptionLayout.opacity * visualState.opacity;
-			ctx.fillText(segmentText, 0, 0);
-			ctx.restore();
-
-			cursorX += segmentWidth;
+			cursorX += drawCaptionWord(ctx, {
+				word,
+				settings,
+				fontSize,
+				x: cursorX,
+				y: lineY,
+				color: visualState.isInactive ? settings.inactiveTextColor : settings.textColor,
+				alpha: activeCaptionLayout.opacity * visualState.opacity,
+			});
 		});
 	});
 
 	ctx.restore();
+}
+
+/**
+ * One caption word, shared by both export renderers so they match the preview: the style's
+ * casing, its dark outline (stroke under the fill, like CSS paint-order) and Reveal's fade-in.
+ * `y` is the middle of the line. Returns the advance width.
+ */
+export function drawCaptionWord(
+	ctx: CanvasRenderingContext2D,
+	options: {
+		word: CaptionWordLayout;
+		settings: AutoCaptionSettings;
+		fontSize: number;
+		x: number;
+		y: number;
+		color: string;
+		alpha: number;
+	},
+) {
+	const { word, settings, fontSize } = options;
+	const segmentText = `${word.leadingSpace ? " " : ""}${getCaptionDisplayText(word.text, settings.style)}`;
+	const metrics = ctx.measureText(segmentText);
+	const outlineEm = getCaptionOutlineEm(settings.style);
+	const lineHeight = fontSize * CAPTION_LINE_HEIGHT;
+	const baseline = getPreviewCaptionBaseline(ctx.font, lineHeight);
+
+	ctx.save();
+	if (baseline === null) {
+		ctx.translate(options.x, options.y);
+	} else {
+		ctx.translate(options.x, options.y - lineHeight / 2 + baseline);
+		ctx.textBaseline = "alphabetic";
+	}
+	ctx.fillStyle = options.color;
+	ctx.globalAlpha = options.alpha;
+	if (word.revealProgress !== undefined) {
+		ctx.globalAlpha *= word.revealProgress;
+		const blur = getCaptionRevealBlurPx(word.revealProgress, fontSize);
+		if (blur > 0) ctx.filter = `blur(${blur}px)`;
+	}
+	if (outlineEm > 0) {
+		ctx.strokeStyle = "#000000";
+		ctx.lineWidth = fontSize * outlineEm;
+		ctx.lineJoin = "round";
+		ctx.strokeText(segmentText, 0, 0);
+	}
+	ctx.fillText(segmentText, 0, 0);
+	ctx.restore();
+
+	return metrics.width;
+}
+
+const previewBaselineCache = new Map<string, number>();
+
+/**
+ * Where the editor preview puts the text baseline inside one caption line, read from the
+ * browser's own layout of that font, so exported captions sit at exactly the same height.
+ * Null when there is no document to measure in.
+ */
+function getPreviewCaptionBaseline(font: string, lineHeight: number): number | null {
+	if (typeof document === "undefined" || !document.body) return null;
+	const key = `${font}|${lineHeight}`;
+	const cached = previewBaselineCache.get(key);
+	if (cached !== undefined) return cached;
+	const line = document.createElement("div");
+	line.style.cssText = `position:absolute;left:-10000px;top:0;visibility:hidden;white-space:pre;font:${font};line-height:${lineHeight}px`;
+	const marker = document.createElement("span");
+	marker.style.cssText = "display:inline-block;width:0;height:0;vertical-align:baseline";
+	line.append(document.createTextNode("Hg"), marker);
+	document.body.append(line);
+	const baseline = marker.getBoundingClientRect().bottom - line.getBoundingClientRect().top;
+	line.remove();
+	if (!Number.isFinite(baseline) || baseline <= 0) return null;
+	previewBaselineCache.set(key, baseline);
+	return baseline;
 }

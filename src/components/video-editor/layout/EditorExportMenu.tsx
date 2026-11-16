@@ -103,6 +103,8 @@ export function EditorExportMenu(props: Props) {
 		setShareResolution,
 		includeCaptionSidecar,
 		setIncludeCaptionSidecar,
+		burnInCaptions,
+		setBurnInCaptions,
 	} = exportSettings;
 	const {
 		isExporting,
@@ -156,6 +158,8 @@ export function EditorExportMenu(props: Props) {
 			showCaptionSidecarOption={hasCaptionsForSidecar && exportFormat === "mp4"}
 			includeCaptionSidecar={includeCaptionSidecar}
 			onIncludeCaptionSidecarChange={setIncludeCaptionSidecar}
+			burnInCaptions={burnInCaptions}
+			onBurnInCaptionsChange={setBurnInCaptions}
 			mp4OutputDimensions={mp4OutputDimensions}
 			onExport={handleStartExportFromDropdown}
 			hideHeading

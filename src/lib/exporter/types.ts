@@ -198,6 +198,8 @@ export const SHARE_RESOLUTIONS: readonly ShareResolution[] = [720, 1080, 1440, 2
 export interface ExportSettings {
 	format: ExportFormat;
 	includeCaptionSidecar?: boolean;
+	/** Draw the captions into the picture, as the preview shows them (local exports only). */
+	burnInCaptions?: boolean;
 	/** Share uploads only: the largest short side the upload is scaled down to. */
 	shareResolution?: ShareResolution;
 	// MP4 settings

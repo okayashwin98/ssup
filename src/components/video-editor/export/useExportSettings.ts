@@ -23,6 +23,7 @@ export function useExportSettings(
 	const [includeCaptionSidecar, setIncludeCaptionSidecar] = useState(
 		preferences.includeCaptionSidecar,
 	);
+	const [burnInCaptions, setBurnInCaptions] = useState(preferences.burnInCaptions);
 	const [publishDestination, setPublishDestination] = useState(preferences.publishDestination);
 	const [shareResolution, setShareResolution] = useState(preferences.shareResolution);
 	const [exportQuality, setExportQuality] = useState<ExportQuality>(preferences.exportQuality);
@@ -47,6 +48,7 @@ export function useExportSettings(
 			publishDestination,
 			shareResolution,
 			includeCaptionSidecar,
+			burnInCaptions,
 			exportQuality,
 			exportEncodingMode,
 			exportBackendPreference,
@@ -61,6 +63,7 @@ export function useExportSettings(
 		publishDestination,
 		shareResolution,
 		includeCaptionSidecar,
+		burnInCaptions,
 		exportQuality,
 		exportEncodingMode,
 		exportBackendPreference,
@@ -84,6 +87,8 @@ export function useExportSettings(
 		setShareResolution,
 		includeCaptionSidecar,
 		setIncludeCaptionSidecar,
+		burnInCaptions,
+		setBurnInCaptions,
 		exportQuality,
 		setExportQuality,
 		exportEncodingMode,

@@ -173,6 +173,10 @@
 		"crop": "Recadrage"
 	},
 	"captions": {
+		"style": "Style",
+		"styleClassic": "Classique",
+		"styleReveal": "Révélation",
+		"styleTiktok": "TikTok",
 		"selectOnTimeline": "Sélectionnez un sous-titre sur la timeline pour le modifier.",
 		"enabled": "Afficher",
 		"timelineQuickAdd": "Survoler pour ajouter sur la timeline",
@@ -248,6 +252,10 @@
 		"removeColor": "Retirer la couleur"
 	},
 	"export": {
+		"burnInCaptions": {
+			"title": "Incruster les sous-titres dans la vidéo",
+			"hint": "Toujours visibles, comme dans l’aperçu. La piste de sous-titres reste incluse."
+		},
 		"title": "Exportation",
 		"mp4": "MP4",
 		"gif": "GIF",

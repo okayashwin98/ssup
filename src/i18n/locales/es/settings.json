@@ -173,6 +173,10 @@
 		"crop": "Recorte"
 	},
 	"captions": {
+		"style": "Estilo",
+		"styleClassic": "Clásico",
+		"styleReveal": "Revelar",
+		"styleTiktok": "TikTok",
 		"selectOnTimeline": "Selecciona un subtítulo en la línea de tiempo para editarlo.",
 		"enabled": "Mostrar",
 		"timelineQuickAdd": "Pasar el cursor para añadir en la línea de tiempo",
@@ -248,6 +252,10 @@
 		"removeColor": "Quitar color"
 	},
 	"export": {
+		"burnInCaptions": {
+			"title": "Dibujar subtítulos en el vídeo",
+			"hint": "Siempre visibles, como en la vista previa. La pista de subtítulos se sigue incluyendo."
+		},
 		"title": "Exportar",
 		"mp4": "MP4",
 		"gif": "GIF",

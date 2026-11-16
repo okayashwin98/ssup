@@ -179,6 +179,10 @@
 		"crop": "Crop"
 	},
 	"captions": {
+		"style": "Style",
+		"styleClassic": "Classic",
+		"styleReveal": "Reveal",
+		"styleTiktok": "TikTok",
 		"selectOnTimeline": "Select a caption on the timeline to edit it.",
 		"enabled": "Show",
 		"timelineQuickAdd": "Hover to add on timeline",
@@ -254,6 +258,10 @@
 		"removeColor": "Remove color"
 	},
 	"export": {
+		"burnInCaptions": {
+			"title": "Draw captions into the video",
+			"hint": "Always visible, as in the preview. The subtitle track is still included."
+		},
 		"title": "Export",
 		"mp4": "MP4",
 		"gif": "GIF",

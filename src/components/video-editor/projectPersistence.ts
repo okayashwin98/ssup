@@ -754,6 +754,10 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 		backgroundOpacity: isFiniteNumber(rawAutoCaptionSettings.backgroundOpacity)
 			? clamp(rawAutoCaptionSettings.backgroundOpacity, 0, 1)
 			: DEFAULT_AUTO_CAPTION_SETTINGS.backgroundOpacity,
+		// Only Reveal and TikTok are stored; projects without a style keep the classic look.
+		...(rawAutoCaptionSettings.style === "reveal" || rawAutoCaptionSettings.style === "tiktok"
+			? { style: rawAutoCaptionSettings.style }
+			: {}),
 	};
 
 	const rawCropX = isFiniteNumber(editor.cropRegion?.x)
@@ -1107,6 +1111,7 @@ export function stripProjectUserPreferences<T extends object>(editor: T): T {
 		"publishDestination",
 		"shareResolution",
 		"includeCaptionSidecar",
+		"burnInCaptions",
 		"whisperExecutablePath",
 		"whisperModelPath",
 	]) {

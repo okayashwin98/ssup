@@ -173,6 +173,10 @@
 		"crop": "裁切"
 	},
 	"captions": {
+		"style": "樣式",
+		"styleClassic": "經典",
+		"styleReveal": "逐字顯示",
+		"styleTiktok": "TikTok",
 		"selectOnTimeline": "在時間軸上選擇字幕進行編輯。",
 		"enabled": "顯示",
 		"timelineQuickAdd": "懸停以在時間軸上新增",
@@ -248,6 +252,10 @@
 		"removeColor": "移除顏色"
 	},
 	"export": {
+		"burnInCaptions": {
+			"title": "將字幕繪製到影片中",
+			"hint": "始終可見，與預覽一致。字幕軌道仍會包含在內。"
+		},
 		"title": "匯出",
 		"mp4": "MP4",
 		"gif": "GIF",

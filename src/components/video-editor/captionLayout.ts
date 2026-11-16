@@ -1,4 +1,5 @@
 import type { CaptionEditTarget } from "./captionEditing";
+import { CAPTION_REVEAL_MS, getCaptionDisplayText, getCaptionPreset } from "./captionPresets";
 import type {
 	AutoCaptionAnimation,
 	AutoCaptionSettings,
@@ -19,6 +20,8 @@ export interface CaptionWordLayout {
 	endMs: number;
 	hasRealTiming: boolean;
 	state: CaptionWordState;
+	/** Reveal style only: 0–1 as the word fades in, sampled from media time. */
+	revealProgress?: number;
 }
 
 export interface CaptionLineLayout {
@@ -481,10 +484,13 @@ export function buildActiveCaptionLayout(options: {
 		};
 	});
 
+	// Styles shown in capitals are measured in capitals.
+	const measureText = (text: string) =>
+		options.measureText(getCaptionDisplayText(text, options.settings.style));
 	const lines = buildCaptionLines({
 		words,
 		maxWidthPx: options.maxWidthPx,
-		measureText: options.measureText,
+		measureText,
 	});
 
 	const pages = buildCaptionPages({
@@ -504,7 +510,14 @@ export function buildActiveCaptionLayout(options: {
 		return null;
 	}
 	const visiblePage = pages[visiblePageIndex] ?? null;
-	const visibleLines = visiblePage?.lines ?? lines.slice(0, maxRows);
+	const pageLines = visiblePage?.lines ?? lines.slice(0, maxRows);
+	// Reveal: only words already spoken are shown, each fading in, and the box grows with them.
+	const visibleLines = getCaptionPreset(options.settings.style).revealWords
+		? revealCaptionLines(pageLines, options.timeMs, measureText)
+		: pageLines;
+	if (visibleLines.length === 0) {
+		return null;
+	}
 	const activeWord = activeWordIndex >= 0 ? words[activeWordIndex] : null;
 	const activeWordProgress = activeWord
 		? clamp01(
@@ -514,8 +527,8 @@ export function buildActiveCaptionLayout(options: {
 		: 0;
 	const animationStartMs = visiblePage?.startMs ?? sourceWords[0].startMs;
 	const animationEndMs = visiblePage?.endMs ?? sourceWords[sourceWords.length - 1].endMs;
-	const pageStartWordIndex = visibleLines[0]?.startWordIndex ?? 0;
-	const visibleWords = visibleLines.flatMap((line) => line.words);
+	const pageStartWordIndex = pageLines[0]?.startWordIndex ?? 0;
+	const visibleWords = pageLines.flatMap((line) => line.words);
 	const visibleHasWordTimings = visibleWords.every((word) => word.hasRealTiming);
 	const pageCueId = sourceWords[pageStartWordIndex]?.cueId ?? sourceWords[0].cueId;
 	const activeCue =
@@ -564,7 +577,7 @@ export function buildActiveCaptionLayout(options: {
 				.join("|")}`,
 			startMs: animationStartMs,
 			endMs: animationEndMs,
-			text: getVisibleCaptionText(visibleLines),
+			text: getVisibleCaptionText(pageLines),
 			words: visibleWords.map((word) => ({
 				cueId: word.cueId,
 				cueWordIndex: word.cueWordIndex,
@@ -579,6 +592,39 @@ export function buildActiveCaptionLayout(options: {
 		translateY: animation.translateY,
 		scale: animation.scale,
 	} satisfies ActiveCaptionLayout;
+}
+
+function revealCaptionLines(
+	lines: CaptionLineLayout[],
+	timeMs: number,
+	measureText: (text: string) => number,
+): CaptionLineLayout[] {
+	return lines.flatMap((line) => {
+		const revealed = line.words
+			.filter((word) => timeMs >= word.startMs)
+			.map((word) => ({
+				...word,
+				revealProgress: 1 - (1 - clamp01((timeMs - word.startMs) / CAPTION_REVEAL_MS)) ** 3,
+			}));
+		if (revealed.length === 0) {
+			return [];
+		}
+		return [
+			{
+				words: revealed,
+				width: revealed.reduce(
+					(total, word, index) =>
+						total +
+						measureText(
+							`${index === 0 ? "" : word.leadingSpace ? " " : ""}${word.text}`,
+						),
+					0,
+				),
+				startWordIndex: revealed[0].index,
+				endWordIndex: revealed[revealed.length - 1].index,
+			},
+		];
+	});
 }
 
 function isFiniteNumber(value: unknown): value is number {
