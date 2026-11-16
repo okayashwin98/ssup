@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { loadAppSetting, saveAppSetting } from "./appSettings";
 
-/** Name and photo used when no sign-in service is configured. */
+/** Your name and photo, shown on dashboard cards and share pages. */
 export type LocalProfile = { name: string; avatarDataUrl: string | null };
 
 const STORAGE_KEY = "recordly.localProfile";

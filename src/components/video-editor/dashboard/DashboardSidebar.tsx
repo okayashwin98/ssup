@@ -3,8 +3,8 @@ import { RecordNewButton } from "./RecordNewButton";
 import { SidebarCards } from "./SidebarCards";
 import { FolderRow } from "./FolderRow";
 import { StorageCard } from "./StorageCard";
-import { CLOUD_SHARE_ENDPOINT, CLOUD_SHARE_PERSONAL_TOKEN } from "../cloud/endpoint";
-import { Cloud, File, GearSix, House, Plus, UserCircle } from "@/components/ui/icons";
+import { CLOUD_SHARE_ENDPOINT } from "../cloud/endpoint";
+import { Cloud, File, GearSix, House, Plus } from "@/components/ui/icons";
 
 import { Button } from "@/components/ui/button";
 
@@ -23,9 +23,7 @@ export function DashboardSidebar({
 	metadata,
 	update,
 	navClass,
-	onSignIn,
-	accountLabel,
-	authToken,
+	shareToken,
 }: Pick<
 	DashboardProps & DashboardModel,
 	| "busy"
@@ -37,9 +35,7 @@ export function DashboardSidebar({
 	| "metadata"
 	| "update"
 	| "navClass"
-	| "onSignIn"
-	| "accountLabel"
-	| "authToken"
+	| "shareToken"
 >) {
 	return (
 		<>
@@ -150,17 +146,8 @@ export function DashboardSidebar({
 						/>
 						Settings
 					</Button>
-					{CLOUD_SHARE_PERSONAL_TOKEN && CLOUD_SHARE_ENDPOINT && authToken ? (
-						<StorageCard token={authToken} />
-					) : (
-						<>
-							<Button variant="ghost" className={navClass(false)} onClick={onSignIn}>
-								<UserCircle weight="fill" className="size-[18px] shrink-0" />
-								<span className="truncate">{accountLabel || "Sign in"}</span>
-							</Button>
-							<StorageCard />
-						</>
-					)}
+					{/* Without the share password and endpoint, only this computer's storage shows. */}
+					<StorageCard token={CLOUD_SHARE_ENDPOINT ? shareToken : undefined} />
 				</div>
 			</aside>
 		</>

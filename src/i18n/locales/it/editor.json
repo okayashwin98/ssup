@@ -1,6 +1,5 @@
 {
 	"cloud": {
-		"signInRequired": "Accedi a SuperShare prima di creare un link condiviso.",
 		"prepareFailed": "Impossibile preparare il montaggio attuale per la condivisione.",
 		"uploadFailed": "Caricamento sul cloud non riuscito.",
 		"linkCreated": "Link di condivisione creato",
@@ -19,24 +18,7 @@
 		"notesPlaceholder": "Aggiungi contesto, istruzioni o un breve riepilogo per gli spettatori…",
 		"description": "Pubblica il montaggio attuale su una pagina SuperShare per visualizzarlo e commentarlo. Non è necessario scaricarlo. I video vengono preparati fino a 1080p.",
 		"uploading": "Caricamento… {progress}%",
-		"googleUnavailable": "L’accesso con Google non è ancora abilitato. Usa l’e-mail o chiedi all’amministratore di SuperShare di collegare Google.",
-		"xUnavailable": "L’accesso con X non è ancora abilitato. Usa l’e-mail o chiedi all’amministratore di SuperShare di collegare X.",
-		"providerUnavailable": "Questo metodo di accesso non è ancora abilitato. Usa l’e-mail.",
-		"enterEmail": "Inserisci prima il tuo indirizzo e-mail.",
-		"resetSent": "E-mail per reimpostare la password inviata.",
-		"accountHeading": "Il tuo account SuperShare",
-		"signInHeading": "Accedi a SuperShare",
-		"signInShareDescription": "Accedi per pubblicare questo video e gestirne il link condiviso.",
-		"signInDescription": "Accedi alle tue registrazioni e ai link condivisi.",
-		"signingOut": "Disconnessione…",
-		"signOut": "Esci",
-		"signingIn": "Accesso…",
-		"signIn": "Accedi",
 		"or": "oppure",
-		"email": "E-mail",
-		"password": "Password",
-		"forgotPassword": "Password dimenticata?",
-		"unavailable": "L’accesso al cloud non è ancora disponibile in questa versione. Puoi comunque salvare i video sul computer.",
 		"createShareLink": "Crea link di condivisione",
 		"done": "Fine",
 		"addingVideo": "Aggiunta del video…",
@@ -168,10 +150,6 @@
 		"autoZooms": "Suggerimento: Disattiva gli zoom applicati automaticamente nelle impostazioni",
 		"experimentalBuilds": "Suggerimento: Attiva l’accesso alle build sperimentali nelle impostazioni",
 		"cursorAppearance": "Suggerimento: Puoi personalizzare l’aspetto del cursore"
-	},
-	"account": {
-		"title": "Account",
-		"comingSoon": "Account in arrivo"
 	},
 	"nativeCaptureUnavailable": {
 		"title": "Niente è rotto, ma non sarà possibile renderizzare un overlay del cursore animato.",

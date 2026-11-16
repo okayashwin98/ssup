@@ -1,6 +1,5 @@
 {
 	"cloud": {
-		"signInRequired": "建立分享連結前，請先登入 SuperShare。",
 		"prepareFailed": "無法準備目前的剪輯以供分享。",
 		"uploadFailed": "雲端上傳失敗。",
 		"linkCreated": "分享連結已建立",
@@ -19,24 +18,7 @@
 		"notesPlaceholder": "為觀眾新增背景資訊、說明或簡短摘要…",
 		"description": "將目前的剪輯發布到 SuperShare 觀看及回饋頁面，無需下載。分享的影片最高為 1080p。",
 		"uploading": "正在上傳… {progress}%",
-		"googleUnavailable": "尚未啟用 Google 登入。請使用電子郵件，或請 SuperShare 管理員連結 Google。",
-		"xUnavailable": "尚未啟用 X 登入。請使用電子郵件，或請 SuperShare 管理員連結 X。",
-		"providerUnavailable": "尚未啟用此登入方式，請先使用電子郵件。",
-		"enterEmail": "請先輸入電子郵件地址。",
-		"resetSent": "密碼重設郵件已寄出。",
-		"accountHeading": "你的 SuperShare 帳戶",
-		"signInHeading": "登入 SuperShare",
-		"signInShareDescription": "登入後即可發布此影片並管理分享連結。",
-		"signInDescription": "存取你的錄影內容和分享連結。",
-		"signingOut": "正在登出…",
-		"signOut": "登出",
-		"signingIn": "正在登入…",
-		"signIn": "登入",
 		"or": "或",
-		"email": "電子郵件",
-		"password": "密碼",
-		"forgotPassword": "忘記密碼？",
-		"unavailable": "此版本尚不支援雲端登入，你仍可將影片儲存到電腦。",
 		"createShareLink": "建立分享連結",
 		"done": "完成",
 		"addingVideo": "正在新增影片…",
@@ -168,10 +150,6 @@
 		"autoZooms": "提示：可在設定中關閉自動套用的縮放",
 		"experimentalBuilds": "提示：可在設定中開啟實驗版本存取權",
 		"cursorAppearance": "提示：你可以自訂游標外觀"
-	},
-	"account": {
-		"title": "帳號",
-		"comingSoon": "帳號功能即將推出"
 	},
 	"nativeCaptureUnavailable": {
 		"title": "沒有出錯，但我們無法轉譯動畫游標覆蓋層。",

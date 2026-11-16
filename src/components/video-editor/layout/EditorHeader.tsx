@@ -57,10 +57,8 @@ type Props = {
 	revealExportedFile: () => void;
 	exportMessage: string | null;
 	prepareExportForShare: (resolution?: ShareResolution) => Promise<string | undefined>;
-	onRequestShareSignIn: () => void;
 	shareRequestNonce: number;
-	authToken?: string;
-	accountId?: string;
+	shareToken?: string;
 };
 
 export function EditorHeader(props: Props) {
@@ -246,10 +244,8 @@ export function EditorHeader(props: Props) {
 					projectPath={project.currentProjectPath}
 					projectTitle={projectDisplayName}
 					prepareExportForShare={props.prepareExportForShare}
-					onRequestShareSignIn={props.onRequestShareSignIn}
 					shareRequestNonce={props.shareRequestNonce}
-					authToken={props.authToken}
-					accountId={props.accountId}
+					shareToken={props.shareToken}
 				/>
 			</div>
 		</header>

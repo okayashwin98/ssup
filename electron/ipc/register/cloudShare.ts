@@ -368,7 +368,7 @@ export function registerCloudShareHandlers() {
 					!input.token ||
 					Buffer.byteLength(input.token) > MAX_AUTH_TOKEN_BYTES
 				)
-					throw new Error("Sign in to manage shared recordings.");
+					throw new Error("Cloud sharing is not available in this build yet.");
 				if (
 					input.action !== "list" &&
 					input.action !== "delete" &&
@@ -470,7 +470,7 @@ export function registerCloudShareHandlers() {
 
 				const token = typeof input.token === "string" ? input.token.trim() : "";
 				if (!token || Buffer.byteLength(token) > MAX_AUTH_TOKEN_BYTES) {
-					throw new Error("Sign in to SuperShare before creating a shared link.");
+					throw new Error("Cloud sharing is not available in this build yet.");
 				}
 				const controlHeaders: Record<string, string> = {
 					"content-type": "application/json",

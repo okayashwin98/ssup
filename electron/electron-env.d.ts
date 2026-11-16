@@ -1079,9 +1079,6 @@ interface Window {
 		isWindowFullscreen: () => Promise<boolean>;
 		onWindowFullscreenChanged: (callback: (isFullscreen: boolean) => void) => () => void;
 		getLinuxWindowSystem: () => Promise<"wayland" | "x11" | null>;
-		ackAuthCallbackUrl: (url: string) => Promise<void>;
-		getPendingAuthCallbackUrl: () => Promise<string | null>;
-		onAuthCallbackUrl: (callback: (url: string) => void) => () => void;
 		revealInFolder: (
 			filePath: string,
 		) => Promise<{ success: boolean; error?: string; message?: string }>;

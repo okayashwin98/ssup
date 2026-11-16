@@ -1,5 +1,4 @@
 import { expect, test } from "@playwright/test";
-import { completeSupabaseSignIn } from "./auth";
 import { installDesktopBridge } from "./bridge";
 import { openDashboardSettings } from "./settings";
 
@@ -34,7 +33,9 @@ test("settings opens the permissions welcome and Start recording opens the recor
 	await expect(tour.getByRole("heading", { name: "Allow SuperShare to record" })).toBeVisible();
 });
 
-test("first launch persists completion and signed-in users can continue", async ({ page }) => {
+test("first launch opens the permissions welcome, never sign-in, and persists completion", async ({
+	page,
+}) => {
 	await installDesktopBridge(page);
 	await page.addInitScript(() => {
 		window.electronAPI.getAppSetting = (key) => JSON.parse(localStorage.getItem(key) || "null");
@@ -46,6 +47,9 @@ test("first launch persists completion and signed-in users can continue", async 
 	await page.goto("/?windowType=editor");
 	const tour = page.getByRole("dialog", { name: "Welcome to SuperShare" });
 	await expect(tour.getByRole("heading", { name: "Allow SuperShare to record" })).toBeVisible();
+	await expect(tour).toHaveAttribute("data-onboarding-state", "permissions");
+	await expect(tour.getByPlaceholder("you@example.com")).toHaveCount(0);
+	await expect(page.getByText(/sign in/i)).toHaveCount(0);
 	await expect(tour.locator("[data-permissions-confetti]")).toBeVisible();
 	await tour.getByRole("button", { name: "Start recording", exact: true }).click();
 	await expect
@@ -119,57 +123,6 @@ test("short dark windows fit the permissions page without scrolling", async ({ p
 		.toBeLessThanOrEqual(1);
 	await expect(tour.locator("[data-permissions-confetti]")).toHaveCount(0);
 	await page.screenshot({ path: "test-results/onboarding-narrow-permissions.png" });
-});
-
-test("sign-in is mandatory even after onboarding was completed", async ({ page }) => {
-	await installDesktopBridge(page, "preview.mp4", { signedIn: false });
-	await page.addInitScript(() => sessionStorage.setItem("recordly.demo-session", "1"));
-	await page.goto("/?windowType=editor");
-	const tour = page.getByRole("dialog", { name: "Welcome to SuperShare" });
-	await expect(tour).toHaveAttribute("data-onboarding-state", "login");
-	await expect(tour.getByRole("button", { name: "Continue without signing in" })).toHaveCount(0);
-	await expect(tour.getByText("Optional", { exact: true })).toHaveCount(0);
-	await expect(tour.getByText("Sign in to continue", { exact: true })).toHaveCount(0);
-	await expect(tour.getByRole("button", { name: "Start recording" })).toHaveCount(0);
-	await expect(tour.getByRole("button", { name: "Close", exact: true })).toHaveCount(0);
-	await page.keyboard.press("Escape");
-	await page.mouse.click(5, 5);
-	await expect(tour).toBeVisible();
-	await page.reload();
-	await expect(tour).toHaveAttribute("data-onboarding-state", "login");
-});
-
-test("Supabase email callback advances to permissions only after a session is returned", async ({
-	page,
-}) => {
-	await installDesktopBridge(page, "preview.mp4", { signedIn: false });
-	await page.goto("/?windowType=editor");
-	const tour = page.getByRole("dialog", { name: "Welcome to SuperShare" });
-	await tour.getByPlaceholder("you@example.com").fill("test@email.com");
-	const otpRequest = page.waitForRequest((request) => request.url().includes("/auth/v1/otp"));
-	await tour.getByRole("button", { name: "Email me a magic link" }).click();
-	expect((await otpRequest).postDataJSON()).toMatchObject({
-		email: "test@email.com",
-		create_user: true,
-	});
-	await expect(tour.getByText(/Check your inbox to verify your email/)).toBeVisible();
-	await expect(tour).toHaveAttribute("data-onboarding-state", "login");
-	const exchange = page.waitForRequest((request) => request.url().includes("/auth/v1/token"));
-	await completeSupabaseSignIn(page);
-	expect((await exchange).postDataJSON()).toMatchObject({
-		auth_code: "ui-auth-code",
-		code_verifier: expect.any(String),
-	});
-	await expect(tour).toHaveAttribute("data-onboarding-state", "permissions");
-	await expect(tour.getByRole("heading", { name: "Allow SuperShare to record" })).toBeVisible();
-	await expect(tour.getByRole("button", { name: "Start recording", exact: true })).toBeEnabled();
-	await tour.getByRole("button", { name: "Start recording", exact: true }).click();
-	await expect(tour).not.toBeVisible();
-	await page.reload();
-	await expect(page.getByRole("button", { name: "Home", exact: true })).toBeVisible({
-		timeout: 15000,
-	});
-	await expect(tour).not.toBeVisible();
 });
 
 test("missing macOS permissions gate Start recording until access is allowed", async ({ page }) => {
@@ -309,18 +262,4 @@ test("a permission request opens its page even after onboarding was already comp
 	await page.goto("/?windowType=editor");
 	const tour = page.getByRole("dialog", { name: "Welcome to SuperShare" });
 	await expect(tour.getByRole("heading", { name: "Allow SuperShare to record" })).toBeVisible();
-	await expect(
-		tour.getByRole("button", { name: "Continue without signing in" }),
-	).not.toBeVisible();
 });
-
-for (const platform of ["darwin", "win32", "linux"]) {
-	test(`${platform} HUD requires a Supabase session before recording`, async ({ page }) => {
-		await installDesktopBridge(page, "preview.mp4", { signedIn: false });
-		await page.addInitScript((platform) => {
-			window.electronAPI.getPlatform = async () => platform;
-		}, platform);
-		await page.goto("/?windowType=hud-overlay");
-		await expect(page.locator("html")).toHaveAttribute("data-permissions-opened", "true");
-	});
-}

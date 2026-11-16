@@ -28,8 +28,7 @@ export function DashboardGrid({
 	refreshRaw,
 	error,
 	section,
-	authToken,
-	onSignIn,
+	shareToken,
 	onShareProject,
 	visible,
 	busy,
@@ -58,8 +57,7 @@ export function DashboardGrid({
 	| "refreshRaw"
 	| "error"
 	| "section"
-	| "authToken"
-	| "onSignIn"
+	| "shareToken"
 	| "onShareProject"
 	| "visible"
 	| "busy"
@@ -132,11 +130,11 @@ export function DashboardGrid({
 				{section === "settings" ? (
 					<DashboardSettings onImportFile={onImportFile} />
 				) : section === "shared" ? (
-					authToken && CLOUD_SHARE_ENDPOINT ? (
+					shareToken && CLOUD_SHARE_ENDPOINT ? (
 						<div className="flex flex-1 flex-col">
 							<SharedRecordings
-								key={authToken}
-								token={authToken}
+								key={shareToken}
+								token={shareToken}
 								endpoint={CLOUD_SHARE_ENDPOINT}
 								standalone
 							/>
@@ -144,16 +142,7 @@ export function DashboardGrid({
 					) : (
 						<div className="-mb-10 flex min-h-40 flex-1 flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
 							<Cloud weight="fill" className="size-8 opacity-40" />
-							<p>
-								{authToken
-									? "Cloud sharing is not available in this build yet."
-									: "Sign in to manage shared videos."}
-							</p>
-							{!authToken && (
-								<Button variant="secondary" onClick={onSignIn}>
-									Sign in
-								</Button>
-							)}
+							<p>Cloud sharing is not available in this build yet.</p>
 						</div>
 					)
 				) : (isRaw ? rawLoading : loading) ? (

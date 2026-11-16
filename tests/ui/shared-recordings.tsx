@@ -51,12 +51,7 @@ createRoot(document.getElementById("root")!).render(
 	<I18nProvider>
 		<main className="dashboard-surface mx-auto mt-3 max-w-6xl rounded-2xl bg-background px-7 pb-10 lg:px-10">
 			{new URLSearchParams(location.search).has("capacity") && (
-				<CloudShareButton
-					inline
-					projectTitle="Fixture"
-					authToken="fixture"
-					accountId="fixture-account"
-				/>
+				<CloudShareButton inline projectTitle="Fixture" shareToken="fixture" />
 			)}
 			<SharedRecordings
 				token="fixture"

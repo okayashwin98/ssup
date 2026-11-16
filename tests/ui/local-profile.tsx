@@ -1,5 +1,5 @@
 import { createRoot } from "react-dom/client";
-import { LocalProfileSettings } from "@/components/auth/LocalProfileSettings";
+import { LocalProfileSettings } from "@/components/profile/LocalProfileSettings";
 import "@/index.css";
 
 // Local fixture: settings live in memory; nothing is published.

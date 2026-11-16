@@ -1,5 +1,5 @@
 import { Export, LinkSimple } from "@phosphor-icons/react";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -14,10 +14,7 @@ import { toast } from "@/components/ui/toast";
 import { useI18n } from "@/contexts/I18nContext";
 import { copyText } from "@/lib/copyText";
 import { loadLocalProfile } from "@/lib/localProfile";
-import {
-	CLOUD_SHARE_PERSONAL_TOKEN,
-	CLOUD_SHARE_ENDPOINT as DEFAULT_CLOUD_ENDPOINT,
-} from "./endpoint";
+import { CLOUD_SHARE_ENDPOINT as DEFAULT_CLOUD_ENDPOINT } from "./endpoint";
 import { saveProjectShareLink } from "./projectShareLinks";
 import { SharedRecordings } from "./SharedRecordings";
 import {
@@ -25,6 +22,8 @@ import {
 	RECORDING_LIMIT_MESSAGE,
 	subscribeShareCapacityChanges,
 } from "./shareCapacity";
+
+const SHARING_UNAVAILABLE = "Cloud sharing is not available in this build yet.";
 
 type Props = {
 	projectPath?: string | null;
@@ -36,11 +35,10 @@ type Props = {
 	open?: boolean;
 	onOpenChange?: (open: boolean) => void;
 	hideTrigger?: boolean;
-	authToken?: string;
-	accountId?: string;
+	/** The personal share password; without it (or an endpoint) sharing is unavailable. */
+	shareToken?: string;
 	inline?: boolean;
 	onBusyChange?: (busy: boolean) => void;
-	onRequestSignIn?: () => void;
 	/** The editor's captions for the CC subtitles; the video is transcribed without them. */
 	captionCues?: Array<{ startMs: number; endMs: number; text: string }>;
 };
@@ -55,14 +53,13 @@ export function CloudShareButton({
 	open: controlledOpen,
 	onOpenChange,
 	hideTrigger = false,
-	authToken,
-	accountId,
+	shareToken,
 	inline = false,
 	onBusyChange,
-	onRequestSignIn,
 	captionCues,
 }: Props) {
 	const { t } = useI18n();
+	const sharingAvailable = Boolean(shareToken && DEFAULT_CLOUD_ENDPOINT);
 	const [internalOpen, setInternalOpen] = useState(false);
 	const open = controlledOpen ?? internalOpen;
 	const setOpen = useCallback(
@@ -80,13 +77,13 @@ export function CloudShareButton({
 	useEffect(() => {
 		setCapacityAvailable(null);
 		setCheckingCapacity(false);
-		if (!authToken || !DEFAULT_CLOUD_ENDPOINT) return;
+		if (!shareToken || !DEFAULT_CLOUD_ENDPOINT) return;
 		let active = true;
 		let generation = 0;
 		const refresh = () => {
 			const request = ++generation;
 			setCheckingCapacity(true);
-			void checkShareCapacity(DEFAULT_CLOUD_ENDPOINT, authToken)
+			void checkShareCapacity(DEFAULT_CLOUD_ENDPOINT, shareToken)
 				.then((available) => {
 					if (active && request === generation) setCapacityAvailable(available);
 				})
@@ -103,7 +100,7 @@ export function CloudShareButton({
 			active = false;
 			unsubscribe();
 		};
-	}, [authToken]);
+	}, [shareToken]);
 	useEffect(() => {
 		onBusyChange?.(uploading);
 	}, [uploading, onBusyChange]);
@@ -111,16 +108,6 @@ export function CloudShareButton({
 	const [error, setError] = useState<string>();
 	const [shareUrl, setShareUrl] = useState<string>();
 	const [copied, setCopied] = useState(false);
-	const previousAccountId = useRef(accountId);
-	const accountVersion = useRef(0);
-	useLayoutEffect(() => {
-		if (previousAccountId.current === accountId) return;
-		previousAccountId.current = accountId;
-		accountVersion.current++;
-		setError(undefined);
-		setShareUrl(undefined);
-		setCopied(false);
-	}, [accountId]);
 	const [notes, setNotes] = useState("");
 	const preparedFileRef = useRef<string | undefined>(undefined);
 	const cancelRequestedRef = useRef(false);
@@ -169,9 +156,6 @@ export function CloudShareButton({
 	);
 
 	const handleUpload = useCallback(async () => {
-		// A generation also catches switching away and back to the same account.
-		const uploadAccountVersion = accountVersion.current;
-		const isCurrentAccount = () => uploadAccountVersion === accountVersion.current;
 		setUploading(true);
 		setProgress(0);
 		setPhase("idle");
@@ -179,11 +163,9 @@ export function CloudShareButton({
 		setError(undefined);
 		setShareUrl(undefined);
 		try {
-			if (!DEFAULT_CLOUD_ENDPOINT)
-				throw new Error("Cloud sharing is not available in this build yet.");
-			if (!authToken) throw new Error(t("editor.cloud.signInRequired"));
-			const available = await checkShareCapacity(DEFAULT_CLOUD_ENDPOINT, authToken);
-			if (!isCurrentAccount()) return;
+			if (!DEFAULT_CLOUD_ENDPOINT) throw new Error(SHARING_UNAVAILABLE);
+			if (!shareToken) throw new Error(SHARING_UNAVAILABLE);
+			const available = await checkShareCapacity(DEFAULT_CLOUD_ENDPOINT, shareToken);
 			setCapacityAvailable(available);
 			if (!available) throw new Error(RECORDING_LIMIT_MESSAGE);
 			if (cancelRequestedRef.current) return;
@@ -191,7 +173,7 @@ export function CloudShareButton({
 			let resolvedFilePath = filePath ?? preparedFileRef.current;
 			if (!resolvedFilePath) {
 				resolvedFilePath = await prepareFile?.();
-				if (cancelRequestedRef.current || !isCurrentAccount()) {
+				if (cancelRequestedRef.current) {
 					if (resolvedFilePath)
 						void window.electronAPI.discardExportedTemp(resolvedFilePath);
 					return;
@@ -207,7 +189,7 @@ export function CloudShareButton({
 			const result = await window.electronAPI.cloudShareUpload({
 				filePath: resolvedFilePath,
 				endpoint: DEFAULT_CLOUD_ENDPOINT,
-				token: authToken,
+				token: shareToken,
 				title: projectTitle,
 				notes: notes.trim() || undefined,
 				uploadId: nextUploadId,
@@ -215,7 +197,6 @@ export function CloudShareButton({
 				captionCues,
 				...loadLocalProfile(),
 			});
-			if (!isCurrentAccount()) return;
 			if (!result.success || !result.shareUrl) {
 				if (!result.canceled) setError(result.error || t("editor.cloud.uploadFailed"));
 				return;
@@ -231,7 +212,6 @@ export function CloudShareButton({
 			}
 			toast.success(t("editor.cloud.linkCreated"));
 		} catch (cause) {
-			if (!isCurrentAccount()) return;
 			setError(cause instanceof Error ? cause.message : String(cause));
 		} finally {
 			setUploading(false);
@@ -239,7 +219,7 @@ export function CloudShareButton({
 			setUploadId(undefined);
 			activeUploadId.current = undefined;
 		}
-	}, [projectPath, authToken, filePath, notes, prepareFile, projectTitle, captionCues, t]);
+	}, [projectPath, shareToken, filePath, notes, prepareFile, projectTitle, captionCues, t]);
 
 	const handleCancel = useCallback(async () => {
 		cancelRequestedRef.current = true;
@@ -303,7 +283,11 @@ export function CloudShareButton({
 						</p>
 					) : null}
 					<div className="flex justify-end gap-2">
-						{uploading ? (
+						{!sharingAvailable ? (
+							<p className="text-sm text-muted-foreground">
+								{SHARING_UNAVAILABLE} You can still save videos to your computer.
+							</p>
+						) : uploading ? (
 							<Button
 								type="button"
 								variant="outline"
@@ -316,17 +300,11 @@ export function CloudShareButton({
 								type="button"
 								variant="accent"
 								className="w-full"
-								disabled={
-									Boolean(authToken) &&
-									(checkingCapacity || capacityAvailable === false)
-								}
-								onClick={() => {
-									if (!authToken && onRequestSignIn) onRequestSignIn();
-									else void handleUpload();
-								}}
+								disabled={checkingCapacity || capacityAvailable === false}
+								onClick={() => void handleUpload()}
 							>
 								<Export className="h-4 w-4" />
-								{authToken ? "Share" : "Sign in to share"}
+								Share
 							</Button>
 						)}
 					</div>
@@ -358,16 +336,12 @@ export function CloudShareButton({
 					<DialogHeader>
 						<DialogTitle>{t("editor.cloud.heading")}</DialogTitle>
 						<DialogDescription>{t("editor.cloud.description")}</DialogDescription>
-						<p className="text-xs text-muted-foreground">
-							{CLOUD_SHARE_PERSONAL_TOKEN
-								? "Links expire after 30 days."
-								: "Free-plan links expire after 14 days."}
-						</p>
+						<p className="text-xs text-muted-foreground">Links expire after 30 days.</p>
 					</DialogHeader>
 
-					{!uploading && authToken && DEFAULT_CLOUD_ENDPOINT && (
+					{!uploading && sharingAvailable && shareToken && (
 						<SharedRecordings
-							token={authToken}
+							token={shareToken}
 							endpoint={DEFAULT_CLOUD_ENDPOINT}
 							refreshKey={shareUrl}
 						/>

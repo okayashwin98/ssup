@@ -1,6 +1,5 @@
 {
 	"cloud": {
-		"signInRequired": "Connectez-vous à SuperShare avant de créer un lien de partage.",
 		"prepareFailed": "Impossible de préparer le montage actuel pour le partage.",
 		"uploadFailed": "Échec de l’envoi dans le cloud.",
 		"linkCreated": "Lien de partage créé",
@@ -19,24 +18,7 @@
 		"notesPlaceholder": "Ajoutez du contexte, des instructions ou un bref résumé pour les spectateurs…",
 		"description": "Publiez le montage actuel sur une page SuperShare de visionnage et de commentaires. Aucun téléchargement n’est nécessaire. Les vidéos sont préparées jusqu’en 1080p.",
 		"uploading": "Envoi… {progress}%",
-		"googleUnavailable": "La connexion Google n’est pas encore activée. Utilisez votre e-mail ou demandez à votre administrateur SuperShare de connecter Google.",
-		"xUnavailable": "La connexion X n’est pas encore activée. Utilisez votre e-mail ou demandez à votre administrateur SuperShare de connecter X.",
-		"providerUnavailable": "Ce mode de connexion n’est pas encore activé. Utilisez votre e-mail.",
-		"enterEmail": "Saisissez d’abord votre adresse e-mail.",
-		"resetSent": "E-mail de réinitialisation du mot de passe envoyé.",
-		"accountHeading": "Votre compte SuperShare",
-		"signInHeading": "Se connecter à SuperShare",
-		"signInShareDescription": "Connectez-vous pour publier cette vidéo et gérer son lien de partage.",
-		"signInDescription": "Accédez à vos enregistrements et liens partagés.",
-		"signingOut": "Déconnexion…",
-		"signOut": "Se déconnecter",
-		"signingIn": "Connexion…",
-		"signIn": "Se connecter",
 		"or": "ou",
-		"email": "E-mail",
-		"password": "Mot de passe",
-		"forgotPassword": "Mot de passe oublié ?",
-		"unavailable": "La connexion au cloud n’est pas encore disponible dans cette version. Vous pouvez toujours enregistrer des vidéos sur votre ordinateur.",
 		"createShareLink": "Créer un lien de partage",
 		"done": "Terminé",
 		"addingVideo": "Ajout de la vidéo…",
@@ -168,10 +150,6 @@
 		"autoZooms": "Astuce : Désactivez les zooms automatiques dans les paramètres",
 		"experimentalBuilds": "Astuce : Activez l’accès aux versions expérimentales dans les paramètres",
 		"cursorAppearance": "Astuce : Vous pouvez personnaliser l’apparence du curseur"
-	},
-	"account": {
-		"title": "Compte",
-		"comingSoon": "Compte bientôt disponible"
 	},
 	"nativeCaptureUnavailable": {
 		"title": "Rien n'est cassé, mais nous ne pourrons pas afficher une superposition animée du curseur.",

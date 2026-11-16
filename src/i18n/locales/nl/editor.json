@@ -1,6 +1,5 @@
 {
 	"cloud": {
-		"signInRequired": "Meld je aan bij SuperShare voordat je een deellink maakt.",
 		"prepareFailed": "De huidige montage kon niet worden voorbereid om te delen.",
 		"uploadFailed": "Uploaden naar de cloud mislukt.",
 		"linkCreated": "Deellink gemaakt",
@@ -19,24 +18,7 @@
 		"notesPlaceholder": "Voeg context, instructies of een korte samenvatting voor kijkers toe…",
 		"description": "Publiceer de huidige montage op een Recordly-pagina om te bekijken en feedback te geven. Downloaden is niet nodig. Video’s worden voorbereid tot 1080p.",
 		"uploading": "Uploaden… {progress}%",
-		"googleUnavailable": "Aanmelden met Google is nog niet ingeschakeld. Gebruik e-mail of vraag je Recordly-beheerder om Google te koppelen.",
-		"xUnavailable": "Aanmelden met X is nog niet ingeschakeld. Gebruik e-mail of vraag je Recordly-beheerder om X te koppelen.",
-		"providerUnavailable": "Deze aanmeldmethode is nog niet ingeschakeld. Gebruik voorlopig e-mail.",
-		"enterEmail": "Voer eerst je e-mailadres in.",
-		"resetSent": "E-mail om je wachtwoord te herstellen verzonden.",
-		"accountHeading": "Je Recordly-account",
-		"signInHeading": "Aanmelden bij SuperShare",
-		"signInShareDescription": "Meld je aan om deze video te publiceren en de deellink te beheren.",
-		"signInDescription": "Bekijk je opnamen en gedeelde links.",
-		"signingOut": "Afmelden…",
-		"signOut": "Afmelden",
-		"signingIn": "Aanmelden…",
-		"signIn": "Aanmelden",
 		"or": "of",
-		"email": "E-mail",
-		"password": "Wachtwoord",
-		"forgotPassword": "Wachtwoord vergeten?",
-		"unavailable": "Aanmelden bij de cloud is nog niet beschikbaar in deze versie. Je kunt video’s wel op je computer opslaan.",
 		"createShareLink": "Deellink maken",
 		"done": "Gereed",
 		"addingVideo": "Video toevoegen…",
@@ -168,10 +150,6 @@
 		"autoZooms": "Tip: Schakel automatisch toegepaste zooms uit in de instellingen",
 		"experimentalBuilds": "Tip: Schakel toegang tot experimentele builds in via de instellingen",
 		"cursorAppearance": "Tip: Je kunt het uiterlijk van je cursor aanpassen"
-	},
-	"account": {
-		"title": "Account",
-		"comingSoon": "Account binnenkort beschikbaar"
 	},
 	"nativeCaptureUnavailable": {
 		"title": "Er is niets kapot, maar we kunnen geen geanimeerde cursor-overlay renderen.",

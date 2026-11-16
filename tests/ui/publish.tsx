@@ -44,8 +44,7 @@ window.electronAPI = {
 } as unknown as typeof window.electronAPI;
 function Preview() {
 	const [open, setOpen] = useState(false);
-	const [authToken, setAuthToken] = useState<string | undefined>("fixture");
-	const [accountId, setAccountId] = useState<string | undefined>("fixture-account");
+	const [shareToken, setShareToken] = useState<string | undefined>("fixture");
 	const [percentage, setPercentage] = useState(0);
 	const { t } = useI18n();
 	const [preferences] = useState(loadEditorPreferences);
@@ -53,17 +52,13 @@ function Preview() {
 	const props = {
 		t,
 		projectTitle: "Preview",
-		authToken,
-		accountId,
+		shareToken,
 		shareRequestNonce: 0,
 		exportSettings,
 		exportSession: {
 			showExportDropdown: open,
 			setShowExportDropdown: setOpen,
 			exportProgress: { percentage },
-			exportError: new URLSearchParams(location.search).has("export-error")
-				? "[VIDEO_DECODE_ENCODING_ERROR] sourceTimeSec=0.500"
-				: undefined,
 		},
 		exportDimensions: {
 			gifOutputDimensions: { width: 800, height: 450 },
@@ -87,7 +82,6 @@ function Preview() {
 			setPercentage(100);
 			return "synthetic-preview.mp4";
 		},
-		onRequestShareSignIn: noop,
 	} as unknown as ComponentProps<typeof EditorExportMenu>;
 	return (
 		<div className="flex justify-end p-12">
@@ -96,26 +90,11 @@ function Preview() {
 					<button type="button" onClick={() => finishUpload?.()}>
 						Fixture finish upload
 					</button>
-					<button type="button" onClick={() => setAuthToken("refreshed-fixture")}>
+					<button type="button" onClick={() => setShareToken("refreshed-fixture")}>
 						Fixture refresh token
 					</button>
-					<button
-						type="button"
-						onClick={() => {
-							setAuthToken(undefined);
-							setAccountId(undefined);
-						}}
-					>
-						Fixture sign out
-					</button>
-					<button
-						type="button"
-						onClick={() => {
-							setAuthToken("other");
-							setAccountId("other-account");
-						}}
-					>
-						Fixture switch account
+					<button type="button" onClick={() => setShareToken(undefined)}>
+						Fixture remove password
 					</button>
 				</div>
 			)}

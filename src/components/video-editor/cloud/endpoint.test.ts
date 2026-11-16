@@ -9,21 +9,15 @@ async function loadEndpoint(env: Record<string, string>) {
 describe("personal cloud share token", () => {
 	afterEach(() => vi.unstubAllEnvs());
 
-	it("uses the personal password when Supabase sign-in is not configured", async () => {
+	it("uses the personal password, trimmed", async () => {
 		const { CLOUD_SHARE_PERSONAL_TOKEN } = await loadEndpoint({
-			VITE_SUPABASE_URL: "",
-			VITE_SUPABASE_PUBLISHABLE_KEY: "",
 			VITE_CLOUD_SHARE_SECRET: " personal-secret ",
 		});
 		expect(CLOUD_SHARE_PERSONAL_TOKEN).toBe("personal-secret");
 	});
 
-	it("ignores the personal password when Supabase sign-in is configured", async () => {
-		const { CLOUD_SHARE_PERSONAL_TOKEN } = await loadEndpoint({
-			VITE_SUPABASE_URL: "https://auth.recordly.test",
-			VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_test",
-			VITE_CLOUD_SHARE_SECRET: "personal-secret",
-		});
+	it("has no token when the password is empty", async () => {
+		const { CLOUD_SHARE_PERSONAL_TOKEN } = await loadEndpoint({ VITE_CLOUD_SHARE_SECRET: " " });
 		expect(CLOUD_SHARE_PERSONAL_TOKEN).toBeUndefined();
 	});
 });

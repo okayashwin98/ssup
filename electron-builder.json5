@@ -12,12 +12,6 @@
     "electron/native/bin/**"
   ],
   "productName": "SuperShare",
-  "protocols": [
-    {
-      "name": "Recordly authentication",
-      "schemes": ["recordly"]
-    }
-  ],
   "npmRebuild": true,
   "buildDependenciesFromSource": true,
   "compression": "normal",

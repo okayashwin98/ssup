@@ -9,7 +9,7 @@ import {
 } from "@/components/video-editor/cloud/endpoint";
 import { createAvatarDataUrl, saveLocalProfile, useLocalProfile } from "@/lib/localProfile";
 
-/** Name and photo for a build without sign-in; also published to the personal share service. */
+/** Your name and photo; also published to the personal share service. */
 export function LocalProfileSettings() {
 	const profile = useLocalProfile();
 	const [name, setName] = useState(profile.name);
@@ -61,7 +61,6 @@ export function LocalProfileSettings() {
 		<form onSubmit={submit} className="space-y-5" aria-label="Profile settings">
 			<div className="flex min-w-0 items-center gap-4">
 				<AccountAvatar
-					user={null}
 					label={name.trim() || undefined}
 					picture={avatarDataUrl}
 					className="!size-16"

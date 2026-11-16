@@ -53,18 +53,17 @@ test("annotations can be dragged into the canvas background and survive undo", a
 		.toBeGreaterThan(overlay.x + 8);
 });
 
-test("cloud sharing is reachable from Export", async ({ page }) => {
+test("cloud sharing is reachable from Publish without any sign-in", async ({ page }) => {
 	const errors: string[] = [];
 	page.on("pageerror", (error) => errors.push(error.message));
-	await page.getByRole("button", { name: "Export", exact: true }).click();
-	await page.getByRole("button", { name: "Create share link", exact: true }).click();
-	await expect(page.getByRole("heading", { name: "Sign into SuperShare" })).toBeVisible();
+	await page.getByRole("button", { name: "Publish", exact: true }).click();
+	await page.getByRole("row", { name: "Link", exact: true }).click();
 	await expect(
-		page.getByText("Sign in to publish this video and manage its shared link."),
+		page
+			.getByRole("button", { name: "Share", exact: true })
+			.or(page.getByText(/Cloud sharing is not available in this build yet/)),
 	).toBeVisible();
-	await page.screenshot({ path: "test-results/cloud-sign-in.png", animations: "disabled" });
-	const dialog = page.getByRole("dialog");
-	await expect(dialog.locator(".modal__body")).toBeVisible();
-	expect(await dialog.evaluate((node) => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
+	await expect(page.getByText(/sign in/i)).toHaveCount(0);
+	await page.screenshot({ path: "test-results/cloud-share-panel.png", animations: "disabled" });
 	expect(errors).toEqual([]);
 });

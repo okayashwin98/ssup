@@ -1,23 +1,11 @@
 import { Avatar } from "@heroui/react";
-import { createContext, useContext } from "react";
-import type { User } from "@supabase/supabase-js";
 import { type LocalProfile, useLocalProfile } from "@/lib/localProfile";
 
-export const AccountProfileContext = createContext<User | null>(null);
-export function getAccountProfile(
-	user: User | null,
-	fallback?: string,
-	localProfile?: LocalProfile,
-) {
-	const metadata = user?.user_metadata;
-	const local = user ? undefined : localProfile;
+export function getAccountProfile(fallback?: string, localProfile?: LocalProfile) {
 	const name = [
-		metadata?.full_name,
-		metadata?.name,
-		user?.email,
 		fallback,
-		// Without an account, the local profile (or a personal build setting) names the user.
-		local?.name,
+		// The local profile (or a personal build setting) names the user.
+		localProfile?.name,
 		import.meta.env.VITE_PROFILE_NAME,
 		"Local profile",
 	].find((value) => typeof value === "string" && value.trim()) as string;
@@ -29,29 +17,21 @@ export function getAccountProfile(
 		.map((part) => part[0])
 		.join("")
 		.toUpperCase();
-	const picture =
-		[metadata?.avatar_url, metadata?.picture].find(
-			(value) => typeof value === "string" && /^https?:\/\//.test(value),
-		) ??
-		local?.avatarDataUrl ??
-		undefined;
+	const picture = localProfile?.avatarDataUrl ?? undefined;
 	return { name, initials, picture };
 }
 export function AccountAvatar({
 	label,
 	className = "",
-	user,
 	picture,
 }: {
 	label?: string;
 	className?: string;
-	user?: User | null;
 	/** Overrides the profile photo, e.g. an unsaved pick; null shows initials. */
 	picture?: string | null;
 }) {
-	const context = useContext(AccountProfileContext);
 	const localProfile = useLocalProfile();
-	const resolved = getAccountProfile(user === undefined ? context : user, label, localProfile);
+	const resolved = getAccountProfile(label, localProfile);
 	const profile =
 		picture === undefined ? resolved : { ...resolved, picture: picture ?? undefined };
 	return (

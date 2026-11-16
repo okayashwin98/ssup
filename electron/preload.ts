@@ -1156,13 +1156,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	getLinuxWindowSystem: () => {
 		return ipcRenderer.invoke("get-linux-window-system");
 	},
-	ackAuthCallbackUrl: (url: string) => ipcRenderer.invoke("auth:ack-callback", url),
-	getPendingAuthCallbackUrl: () => ipcRenderer.invoke("auth:get-pending-callback"),
-	onAuthCallbackUrl: (callback: (url: string) => void) => {
-		const listener = (_event: Electron.IpcRendererEvent, url: string) => callback(url);
-		ipcRenderer.on("auth:callback", listener);
-		return () => ipcRenderer.removeListener("auth:callback", listener);
-	},
 	revealInFolder: (filePath: string) => {
 		return ipcRenderer.invoke("reveal-in-folder", filePath);
 	},

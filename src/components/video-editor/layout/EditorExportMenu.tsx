@@ -38,10 +38,9 @@ type Props = {
 	exportMessage: string | null;
 	projectTitle: string;
 	prepareExportForShare: (resolution?: ShareResolution) => Promise<string | undefined>;
-	onRequestShareSignIn: () => void;
 	shareRequestNonce: number;
-	authToken?: string;
-	accountId?: string;
+	/** The personal share password. */
+	shareToken?: string;
 };
 
 export function EditorExportMenu(props: Props) {
@@ -260,14 +259,9 @@ export function EditorExportMenu(props: Props) {
 											}
 											onCancelPrepare={handleCancelExport}
 											preparationProgress={exportProgress?.percentage ?? 0}
-											authToken={props.authToken}
-											accountId={props.accountId}
+											shareToken={props.shareToken}
 											onBusyChange={setShareBusy}
 											captionCues={shareCaptionCues}
-											onRequestSignIn={() => {
-												setShowExportDropdown(false);
-												props.onRequestShareSignIn();
-											}}
 										/>
 									</div>
 								) : isExporting ? (

@@ -2,7 +2,7 @@
 
 # Recordly cloud sharing
 
-Recordly's **Export** menu offers downloading the current edit or **Create share link**. The Account button at the bottom of the left toolbar opens sign-in. Sharing renders an MP4 to a temporary file, uploads it to Recordly Share, finalizes its metadata, and removes the temporary file when the dialog closes.
+Recordly's **Export** menu offers downloading the current edit or **Create share link**. The app has no sign-in: it uploads with the share password built into it. Sharing renders an MP4 to a temporary file, uploads it to Recordly Share, finalizes its metadata, and removes the temporary file when the dialog closes.
 
 The desktop app defaults to the local development endpoint:
 

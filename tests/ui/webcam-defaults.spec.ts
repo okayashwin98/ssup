@@ -11,7 +11,9 @@ for (const savedRoundness of [undefined, 69]) {
 			(roundness) => {
 				if (roundness !== undefined) {
 					window.electronAPI.getAppSetting = (key) =>
-						key === "recordly.editor.preferences" ? { webcam: { roundness } } : null;
+						key === "recordly.editor.preferences"
+							? { webcam: { roundness } }
+							: key === "recordly.onboarding.v1.seen" || null;
 				}
 				window.electronAPI.getCurrentRecordingSession = async () => ({
 					success: true,

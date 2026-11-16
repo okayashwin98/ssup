@@ -1,11 +1,5 @@
 import type { Page } from "@playwright/test";
-import { installSupabaseAuth } from "./auth";
-export async function installDesktopBridge(
-	page: Page,
-	videoFixture = "preview.mp4",
-	auth = { signedIn: true },
-) {
-	await installSupabaseAuth(page, auth);
+export async function installDesktopBridge(page: Page, videoFixture = "preview.mp4") {
 	await page.addInitScript((videoFixture) => {
 		const success = async () => ({ success: true });
 		const subscribe = () => () => undefined;
@@ -111,16 +105,7 @@ export async function installDesktopBridge(
 				finishRecordingImport: success,
 				setCurrentRecordingSession: success,
 				setHasUnsavedChanges: success,
-				onAuthCallbackUrl: (callback: (url: string) => void) => {
-					const listener = (event: Event) =>
-						callback((event as CustomEvent<string>).detail);
-					window.addEventListener("recordly-test-auth-callback", listener);
-					return () =>
-						window.removeEventListener("recordly-test-auth-callback", listener);
-				},
 				onProjectThumbnailReady: subscribe,
-				getPendingAuthCallbackUrl: async () => null,
-				ackAuthCallbackUrl: success,
 				onMenuSaveProject: subscribe,
 				onMenuSaveProjectAs: subscribe,
 				onMenuLoadProject: subscribe,
@@ -136,6 +121,8 @@ export async function installDesktopBridge(
 				onSelectedSourceChanged: subscribe,
 				getRecordingsDirectory: async () => ({ success: true, path: "/recordings" }),
 				getLocalStorageUsage: async () => ({ success: true, bytes: 2_000_000_000 }),
+				// A build with the share password shows the cloud meter, which lists shares.
+				cloudShareManage: async () => ({ success: true, videos: [] }),
 				getHudOverlayMousePassthroughSupported: async () => ({
 					success: true,
 					supported: true,
