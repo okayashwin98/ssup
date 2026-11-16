@@ -27,6 +27,12 @@ import {
 	getWebcamEdgeFeatherPixels,
 	WebcamEdgeFeather,
 } from "./webcamEdgeFeather";
+import {
+	getWebcamShapeHeightPercent,
+	getWebcamShapeRadiusPx,
+	getWebcamShapeSvgPath,
+	getWebcamShapeTracer,
+} from "./webcamShape";
 import { getSquircleSvgPath } from "@/lib/geometry/squircle";
 import {
 	clampMediaTimeToDuration,
@@ -148,7 +154,6 @@ import {
 } from "./videoPlayback/zoomTransform";
 import {
 	getCropMatchedWebcamHeightPercent,
-	getWebcamCornerRadiusPx,
 	getWebcamCropSourceRect,
 	getWebcamOverlayDimensionsPx,
 	getWebcamOverlayPosition,
@@ -825,12 +830,17 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		const webcamTimeOffsetMs = webcam?.timeOffsetMs;
 		const webcamCropRegion = webcam?.cropRegion;
 		const webcamMirror = webcam?.mirror ?? false;
-		const webcamHeight = getCropMatchedWebcamHeightPercent(
+		const webcamShape = webcam?.shape;
+		const webcamHeight = getWebcamShapeHeightPercent(
+			webcamShape,
 			webcamWidth,
-			rawWebcamHeight,
-			webcamVideoDimensions?.width,
-			webcamVideoDimensions?.height,
-			webcamCropRegion,
+			getCropMatchedWebcamHeightPercent(
+				webcamWidth,
+				rawWebcamHeight,
+				webcamVideoDimensions?.width,
+				webcamVideoDimensions?.height,
+				webcamCropRegion,
+			),
 		);
 		const webcamCropPreviewContentStyle = useMemo<React.CSSProperties>(() => {
 			if (!webcamVideoDimensions) {
@@ -888,8 +898,9 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 					zoomScale,
 					reactToZoom: webcamReactToZoom,
 				});
-				const scaledRadius = getWebcamCornerRadiusPx(
-					webcamRoundness,
+				const scaledRadius = getWebcamShapeRadiusPx(
+					{ shape: webcamShape, roundness: webcamRoundness },
+					DEFAULT_WEBCAM_ROUNDNESS,
 					scaledDimensions.width,
 					scaledDimensions.height,
 				);
@@ -911,7 +922,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				bubble.style.width = `${scaledDimensions.width}px`;
 				bubble.style.height = `${scaledDimensions.height}px`;
 				bubble.style.aspectRatio = `${scaledDimensions.width} / ${scaledDimensions.height}`;
-				const squirclePath = getSquircleSvgPath({
+				const squirclePath = getWebcamShapeSvgPath(webcamShape, {
 					x: 0,
 					y: 0,
 					width: scaledDimensions.width,
@@ -969,6 +980,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 						sw,
 						sh,
 						scale,
+						webcamShape,
 					].join("|");
 					const rendered = webcamSoftRenderedRef.current;
 					if (rendered?.path !== webcamVideoPath || rendered.key !== key) {
@@ -991,6 +1003,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 									mirror: webcamMirror,
 									featherPx,
 									scale,
+									trace: getWebcamShapeTracer(webcamShape),
 								},
 							);
 							webcamSoftRenderedRef.current = { path: webcamVideoPath, key };
@@ -1018,6 +1031,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				webcamCropRegion,
 				webcamMirror,
 				webcamMediaSynchronized,
+				webcamShape,
 			],
 		);
 

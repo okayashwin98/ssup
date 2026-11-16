@@ -65,6 +65,7 @@ import {
 	type ZoomTransitionEasing,
 } from "./types";
 import { normalizeWebcamEdgeStyle } from "./webcamEdgeFeather";
+import { normalizeWebcamShape } from "./webcamShape";
 import { convertLegacyWebcamRadiusToRoundness, normalizeWebcamCropRegion } from "./webcamOverlay";
 
 export const PROJECT_VERSION = 2;
@@ -1052,6 +1053,10 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 			// Absent in projects saved before soft edges existed; those keep the standard edge.
 			...(normalizeWebcamEdgeStyle(webcam.previewFrame)
 				? { previewFrame: normalizeWebcamEdgeStyle(webcam.previewFrame) }
+				: {}),
+			// Absent in projects saved before the shape choice existed; those keep the squircle.
+			...(normalizeWebcamShape(webcam.shape)
+				? { shape: normalizeWebcamShape(webcam.shape) }
 				: {}),
 		},
 		sourceAudioTrackSettingsByClip:

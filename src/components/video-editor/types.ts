@@ -136,7 +136,11 @@ export type WebcamPositionPreset =
 	| "bottom-center"
 	| "custom";
 
+export type WebcamShape = "circle" | "squircle" | "rectangle";
+
 export interface WebcamOverlaySettings {
+	/** Absent in projects saved before the shape choice existed; those keep the squircle. */
+	shape?: WebcamShape;
 	/** Edge look, the same in preview and export. Absent in projects saved before it existed: standard. */
 	previewFrame?: "standard" | "soft-blur";
 	/** Source-time intervals containing webcam footage in an imported sequence. */

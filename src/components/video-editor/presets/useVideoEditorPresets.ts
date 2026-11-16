@@ -121,6 +121,7 @@ export function useVideoEditorPresets({
 			appearance.setWebcam((current) => ({
 				...snapshot.webcam,
 				previewFrame: snapshot.webcam.previewFrame ?? current.previewFrame,
+				shape: snapshot.webcam.shape ?? current.shape,
 				sourcePath: current.sourcePath,
 				visibleRanges: current.visibleRanges,
 			}));

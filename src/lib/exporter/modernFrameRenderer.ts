@@ -22,6 +22,7 @@ import type {
 	Padding,
 	SpeedRegion,
 	WebcamOverlaySettings,
+	WebcamShape,
 	ZoomMotionBlurTuning,
 	ZoomRegion,
 	ZoomTransitionEasing,
@@ -65,7 +66,6 @@ import {
 } from "@/components/video-editor/videoPlayback/zoomTransform";
 import {
 	getCropMatchedWebcamHeightPercent,
-	getWebcamCornerRadiusPx,
 	getWebcamCropSourceRect,
 	getWebcamOverlayDimensionsPx,
 	getWebcamOverlayPosition,
@@ -93,7 +93,14 @@ import {
 	drawWebcamBubble,
 	getWebcamEdgeFeatherPixels,
 	WebcamEdgeFeather,
+	type TraceWebcamContour,
 } from "@/components/video-editor/webcamEdgeFeather";
+import {
+	drawWebcamShapeOnGraphics,
+	getWebcamShapeHeightPercent,
+	getWebcamShapeRadiusPx,
+	getWebcamShapeTracer,
+} from "@/components/video-editor/webcamShape";
 import { ForwardFrameSource } from "./forwardFrameSource";
 import { resolveMediaElementSource } from "./localMediaSource";
 import {
@@ -224,6 +231,7 @@ interface WebcamLayoutCache {
 	radius: number;
 	shadowStrength: number;
 	mirror: boolean;
+	shape?: WebcamShape;
 }
 
 interface AnnotationSpriteEntry {
@@ -777,6 +785,7 @@ export class FrameRenderer {
 			offsetY: number;
 			alpha: number;
 			blur: number;
+			trace?: TraceWebcamContour;
 		},
 	): void {
 		if (options.alpha <= 0 || options.width <= 0 || options.height <= 0) {
@@ -800,7 +809,7 @@ export class FrameRenderer {
 		layer.context.save();
 		layer.context.filter = options.blur > 0 ? `blur(${options.blur}px)` : "none";
 		layer.context.fillStyle = `rgba(0, 0, 0, ${options.alpha})`;
-		drawSquircleOnCanvas(layer.context, {
+		(options.trace ?? drawSquircleOnCanvas)(layer.context, {
 			x: padding,
 			y: padding + options.offsetY,
 			width: options.width,
@@ -2504,7 +2513,8 @@ export class FrameRenderer {
 			areNearlyEqual(previousLayout.positionX, nextLayout.positionX) &&
 			areNearlyEqual(previousLayout.positionY, nextLayout.positionY) &&
 			areNearlyEqual(previousLayout.radius, nextLayout.radius) &&
-			areNearlyEqual(previousLayout.shadowStrength, nextLayout.shadowStrength)
+			areNearlyEqual(previousLayout.shadowStrength, nextLayout.shadowStrength) &&
+			previousLayout.shape === nextLayout.shape
 		);
 	}
 
@@ -2527,7 +2537,7 @@ export class FrameRenderer {
 		);
 
 		this.webcamMaskGraphics.clear();
-		drawSquircleOnGraphics(this.webcamMaskGraphics, {
+		drawWebcamShapeOnGraphics(this.webcamMaskGraphics, nextLayout.shape, {
 			x: 0,
 			y: 0,
 			width: nextLayout.width,
@@ -2553,6 +2563,7 @@ export class FrameRenderer {
 				offsetY,
 				alpha: layer.alphaScale * nextLayout.shadowStrength,
 				blur: Math.max(0, shadowSize * layer.blurScale * nextLayout.shadowStrength),
+				trace: getWebcamShapeTracer(nextLayout.shape),
 			});
 		}
 
@@ -2753,6 +2764,7 @@ export class FrameRenderer {
 			featherPx: number;
 			mirror: boolean;
 			shadow: number;
+			shape?: WebcamShape;
 		},
 	): void {
 		if (!this.webcamRootContainer) return;
@@ -2782,6 +2794,7 @@ export class FrameRenderer {
 			radius: layout.radius,
 			mirror: layout.mirror,
 			featherPx: layout.featherPx,
+			trace: getWebcamShapeTracer(layout.shape),
 		});
 		const shadowSize = Math.min(layout.width, layout.height);
 		const strength = getWebcamShadowStrength(layout.shadow);
@@ -2911,12 +2924,16 @@ export class FrameRenderer {
 			liveSourceDimensions.height > 0
 				? liveSourceDimensions.height
 				: renderableWebcamSource.height;
-		const heightPercent = getCropMatchedWebcamHeightPercent(
+		const heightPercent = getWebcamShapeHeightPercent(
+			webcam.shape,
 			widthPercent,
-			webcam.height ?? webcam.size ?? 50,
-			aspectSourceWidth,
-			aspectSourceHeight,
-			webcam.cropRegion,
+			getCropMatchedWebcamHeightPercent(
+				widthPercent,
+				webcam.height ?? webcam.size ?? 50,
+				aspectSourceWidth,
+				aspectSourceHeight,
+				webcam.cropRegion,
+			),
 		);
 		const dimensions = getWebcamOverlayDimensionsPx({
 			containerWidth: this.config.width,
@@ -2938,8 +2955,9 @@ export class FrameRenderer {
 			positionY: webcam.positionY ?? 1,
 			legacyCorner: webcam.corner,
 		});
-		const radius = getWebcamCornerRadiusPx(
-			webcam.roundness ?? DEFAULT_WEBCAM_ROUNDNESS,
+		const radius = getWebcamShapeRadiusPx(
+			webcam,
+			DEFAULT_WEBCAM_ROUNDNESS,
 			dimensions.width,
 			dimensions.height,
 		);
@@ -2955,6 +2973,7 @@ export class FrameRenderer {
 				featherPx,
 				mirror: webcam.mirror,
 				shadow: webcam.shadow ?? 0,
+				shape: webcam.shape,
 			});
 			return;
 		}
@@ -2973,6 +2992,7 @@ export class FrameRenderer {
 			radius,
 			shadowStrength,
 			mirror: webcam.mirror,
+			shape: webcam.shape,
 		};
 
 		if (!this.hasMatchingWebcamLayout(nextLayout)) {

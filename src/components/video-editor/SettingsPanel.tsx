@@ -3264,7 +3264,7 @@ export function SettingsPanel({
 								onChange={(v) => updateWebcam({ width: v, size: v })}
 								formatValue={(v) => `${Math.round(v)}%`}
 							/>
-							{advanced && (
+							{advanced && webcam?.shape !== "circle" && (
 								<SliderControl
 									label={tSettings("effects.webcamHeight", "Webcam Height")}
 									value={webcamHeight}
@@ -3410,15 +3410,61 @@ export function SettingsPanel({
 									formatValue={(v) => `${Math.round(v)}px`}
 								/>
 							)}
-							<SliderControl
-								label={tSettings("effects.webcamRoundness")}
-								value={webcam?.roundness ?? DEFAULT_WEBCAM_ROUNDNESS}
-								min={0}
-								max={100}
-								step={1}
-								onChange={(v) => updateWebcam({ roundness: v })}
-								formatValue={(v) => `${Math.round(v)}%`}
-							/>
+							<div className="py-2">
+								<div className="mb-2 text-xs text-muted-foreground">
+									{tSettings("effects.webcamShape", "Shape")}
+								</div>
+								<ChoiceGroup
+									aria-label={tSettings("effects.webcamShape", "Shape")}
+									value={webcam?.shape ?? "squircle"}
+									onValueChange={(value) => {
+										// Square and Rectangle start from the current width.
+										if (value === "circle") updateWebcam({ shape: "circle" });
+										if (value === "squircle")
+											updateWebcam({
+												shape: "squircle",
+												height: webcamWidth,
+											});
+										if (value === "rectangle")
+											updateWebcam({
+												shape: "rectangle",
+												height: Math.max(
+													10,
+													Math.round((webcamWidth * 9) / 16),
+												),
+											});
+									}}
+									// Same row look as the position grid above: only the outer corners stay round.
+									className="grid grid-cols-3 gap-2"
+								>
+									<ChoiceItem
+										value="circle"
+										className="rounded-tr-[4px] rounded-br-[4px]"
+									>
+										{tSettings("effects.webcamShapeCircle", "Circle")}
+									</ChoiceItem>
+									<ChoiceItem value="squircle" className="rounded-[4px]">
+										{tSettings("effects.webcamShapeSquare", "Square")}
+									</ChoiceItem>
+									<ChoiceItem
+										value="rectangle"
+										className="rounded-tl-[4px] rounded-bl-[4px]"
+									>
+										{tSettings("effects.webcamShapeRectangle", "Rectangle")}
+									</ChoiceItem>
+								</ChoiceGroup>
+							</div>
+							{webcam?.shape !== "circle" && (
+								<SliderControl
+									label={tSettings("effects.webcamRoundness")}
+									value={webcam?.roundness ?? DEFAULT_WEBCAM_ROUNDNESS}
+									min={0}
+									max={100}
+									step={1}
+									onChange={(v) => updateWebcam({ roundness: v })}
+									formatValue={(v) => `${Math.round(v)}%`}
+								/>
+							)}
 							<div className="flex items-center justify-between py-2">
 								<span className="text-xs font-medium text-foreground">
 									{tSettings("effects.webcamSoftEdges", "Soft edges")}

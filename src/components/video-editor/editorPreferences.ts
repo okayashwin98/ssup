@@ -9,6 +9,7 @@ import {
 } from "./projectPersistence";
 import { DEFAULT_CURSOR_IDLE_HIDE } from "./videoPlayback/cursorIdleVisibility";
 import { DEFAULT_NEW_PROJECT_WEBCAM_EDGE, normalizeWebcamEdgeStyle } from "./webcamEdgeFeather";
+import { normalizeWebcamShape } from "./webcamShape";
 
 type PersistedEditorControls = Pick<
 	ProjectEditorState,
@@ -202,13 +203,16 @@ function normalizeEditorPresetSnapshot(candidate: unknown): EditorPresetSnapshot
 		sourcePath: _sourcePath,
 		visibleRanges: _visibleRanges,
 		previewFrame,
+		shape,
 		...webcamWithoutEdge
 	} = normalizedControls.webcam;
-	// A preset saved before soft edges existed leaves the edge alone when applied.
+	// A preset saved before soft edges or shapes existed leaves those alone when applied.
 	const rawWebcam = raw.webcam as Partial<PresetWebcamSettings> | undefined;
-	const webcam: PresetWebcamSettings = normalizeWebcamEdgeStyle(rawWebcam?.previewFrame)
-		? { ...webcamWithoutEdge, previewFrame }
-		: webcamWithoutEdge;
+	const webcam: PresetWebcamSettings = {
+		...webcamWithoutEdge,
+		...(normalizeWebcamEdgeStyle(rawWebcam?.previewFrame) ? { previewFrame } : {}),
+		...(normalizeWebcamShape(rawWebcam?.shape) ? { shape } : {}),
+	};
 
 	// A preset saved before a setting existed leaves that setting alone when applied.
 	const { cursorIdleHide: _cursorIdleHide, ...presetControls } = normalizedControls;

@@ -56,7 +56,6 @@ import {
 } from "@/components/video-editor/videoPlayback/zoomTransform";
 import {
 	getCropMatchedWebcamHeightPercent,
-	getWebcamCornerRadiusPx,
 	getWebcamCropSourceRect,
 	getWebcamOverlayDimensionsPx,
 	getWebcamOverlayPosition,
@@ -68,6 +67,11 @@ import {
 	getWebcamEdgeFeatherPixels,
 	WebcamEdgeFeather,
 } from "@/components/video-editor/webcamEdgeFeather";
+import {
+	getWebcamShapeHeightPercent,
+	getWebcamShapeRadiusPx,
+	getWebcamShapeTracer,
+} from "@/components/video-editor/webcamShape";
 import { getWebcamShadowFilter } from "@/lib/exporter/shadowProfile";
 import { drawSquircleOnGraphics } from "@/lib/geometry/squircle";
 import {
@@ -1856,12 +1860,16 @@ export class FrameRenderer {
 					: webcamFrameSource.height) || sourceWidth;
 		const margin = scaleWebcamOverlayPixels(webcam.margin ?? 24, width);
 		const widthPercent = webcam.width ?? webcam.size ?? 50;
-		const heightPercent = getCropMatchedWebcamHeightPercent(
+		const heightPercent = getWebcamShapeHeightPercent(
+			webcam.shape,
 			widthPercent,
-			webcam.height ?? webcam.size ?? 50,
-			sourceWidth,
-			sourceHeight,
-			webcam.cropRegion,
+			getCropMatchedWebcamHeightPercent(
+				widthPercent,
+				webcam.height ?? webcam.size ?? 50,
+				sourceWidth,
+				sourceHeight,
+				webcam.cropRegion,
+			),
 		);
 		const dimensions = getWebcamOverlayDimensionsPx({
 			containerWidth: width,
@@ -1883,8 +1891,9 @@ export class FrameRenderer {
 			positionY: webcam.positionY ?? 1,
 			legacyCorner: webcam.corner,
 		});
-		const radius = getWebcamCornerRadiusPx(
-			webcam.roundness ?? DEFAULT_WEBCAM_ROUNDNESS,
+		const radius = getWebcamShapeRadiusPx(
+			webcam,
+			DEFAULT_WEBCAM_ROUNDNESS,
 			dimensions.width,
 			dimensions.height,
 		);
@@ -1904,6 +1913,7 @@ export class FrameRenderer {
 			radius,
 			mirror: webcam.mirror,
 			featherPx: getWebcamEdgeFeatherPixels(webcam.previewFrame, width),
+			trace: getWebcamShapeTracer(webcam.shape),
 		});
 
 		if ((webcam.shadow ?? 0) > 0) {
