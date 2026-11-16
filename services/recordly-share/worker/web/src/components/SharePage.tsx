@@ -31,12 +31,12 @@ import ThemeToggle from "./ThemeToggle";
 const LINE_ICONS = { weight: "thin" } as const;
 
 const reactions = [
-	{ emoji: "👍", label: "Like" },
-	{ emoji: "❤️", label: "Love" },
-	{ emoji: "😂", label: "Laugh" },
-	{ emoji: "😮", label: "Surprised" },
-	{ emoji: "🔥", label: "Fire" },
-	{ emoji: "👏", label: "Applause" },
+	{ emoji: "👍", label: "Approve" },
+	{ emoji: "❤️", label: "Good" },
+	{ emoji: "🤔", label: "Not sure" },
+	{ emoji: "❓", label: "Question" },
+	{ emoji: "⚠️", label: "Concern" },
+	{ emoji: "👎", label: "Reject" },
 ];
 
 function Recording({ data }: { data: ShareData }) {
@@ -125,6 +125,8 @@ function Recording({ data }: { data: ShareData }) {
 									size="sm"
 									variant="ghost"
 									aria-label={label}
+									// The button drops `title`, so it is set on the element itself for the hover tooltip.
+									render={(props) => <button {...props} title={label} />}
 									isDisabled={reacting !== null}
 									onPress={() => void react(emoji)}
 								>

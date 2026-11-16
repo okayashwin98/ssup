@@ -270,6 +270,34 @@ describe("video streaming + ranges", () => {
 	});
 });
 
+describe("reactions", () => {
+	async function react(shareCode, emoji) {
+		return SELF.fetch(`${BASE}/s/${shareCode}/react`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ timestamp: 1, emoji }),
+		});
+	}
+
+	it("accepts the current set and rejects retired emoji for new reactions", async () => {
+		const { shareCode } = await createShare();
+		await completeUpload(shareCode);
+
+		for (const emoji of ["👍", "❤️", "🤔", "❓", "⚠️", "👎"]) {
+			expect((await react(shareCode, emoji)).status).toBe(200);
+		}
+		// Retired, and the warning sign without its emoji variation selector.
+		for (const emoji of ["😂", "🔥", "⚠"]) {
+			expect((await react(shareCode, emoji)).status).toBe(400);
+		}
+
+		const listed = await (await SELF.fetch(`${BASE}/s/${shareCode}/reactions`)).json();
+		expect(listed.reactions.map((r) => r.emoji).sort()).toEqual(
+			["👍", "❤️", "🤔", "❓", "⚠️", "👎"].sort(),
+		);
+	});
+});
+
 describe("password protection", () => {
 	const password = "hunter2";
 	let clientHash;

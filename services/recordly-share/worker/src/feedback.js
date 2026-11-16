@@ -23,7 +23,8 @@ export async function handleReact(request, env, shareCode) {
 
 	const body = await request.json();
 	const { timestamp, emoji } = body;
-	const allowedEmojis = ["👍", "❤️", "😂", "😮", "🔥", "👏"];
+	// New reactions only; older emoji already stored still display.
+	const allowedEmojis = ["👍", "❤️", "🤔", "❓", "⚠️", "👎"];
 	if (!allowedEmojis.includes(emoji)) return errorResponse("Invalid emoji");
 	if (typeof timestamp !== "number" || timestamp < 0) return errorResponse("Invalid timestamp");
 
