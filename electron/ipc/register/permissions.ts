@@ -1,5 +1,10 @@
 import { clipboard, desktopCapturer, ipcMain, shell, systemPreferences } from "electron";
 import { getMacPrivacySettingsUrl } from "../utils";
+import {
+	dismissPermissionAccessory,
+	showPermissionAccessory,
+	startPermissionAccessoryDrag,
+} from "./permissionAccessory";
 
 export function registerPermissionHandlers() {
 	ipcMain.handle("open-external-url", async (_, url: string) => {
@@ -120,6 +125,34 @@ export function registerPermissionHandlers() {
 			return { success: false, error: String(error) };
 		}
 	});
+
+	// Opens the permission's page of System Settings with SuperShare's icon below it,
+	// ready to drag into the list when SuperShare is missing from it.
+	ipcMain.handle("show-permission-drag-helper", async (event, permission: unknown) => {
+		if (permission !== "screen" && permission !== "accessibility") {
+			return { success: false, error: "Invalid permission" };
+		}
+		if (process.platform !== "darwin") return { success: true };
+		try {
+			await shell.openExternal(getMacPrivacySettingsUrl(permission));
+		} catch (error) {
+			console.error("Failed to open System Settings:", error);
+			return { success: false, error: String(error) };
+		}
+		try {
+			await showPermissionAccessory(permission, event?.sender);
+		} catch (error) {
+			// System Settings is open; its own controls still work without the helper.
+			console.warn("Could not show the permission drag helper:", error);
+		}
+		return { success: true };
+	});
+	ipcMain.handle("start-permission-accessory-drag", (event) =>
+		startPermissionAccessoryDrag(event.sender),
+	);
+	ipcMain.handle("close-permission-accessory", (event) =>
+		dismissPermissionAccessory(event.sender),
+	);
 
 	ipcMain.handle("open-screen-recording-preferences", async () => {
 		if (process.platform !== "darwin") {

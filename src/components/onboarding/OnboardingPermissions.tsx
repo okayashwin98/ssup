@@ -182,6 +182,20 @@ export function OnboardingPermissions({ onFinish }: { onFinish: () => void }) {
 								>
 									Check again
 								</Button>
+								{" · "}
+								{/* SuperShare's icon beside System Settings, to drag into the list. */}
+								<Button
+									variant="link"
+									className="inline text-xs font-medium text-foreground"
+									isDisabled={Boolean(busy)}
+									onPress={() =>
+										void window.electronAPI.showPermissionDragHelper(
+											screenGranted ? "accessibility" : "screen",
+										)
+									}
+								>
+									Not in the list?
+								</Button>
 							</>
 						))}
 				</p>

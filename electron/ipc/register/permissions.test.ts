@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
 	ask: vi.fn(),
 	sources: vi.fn(),
 	open: vi.fn(),
+	accessory: vi.fn(),
 }));
 vi.mock("electron", () => ({
 	ipcMain: {
@@ -16,6 +17,11 @@ vi.mock("electron", () => ({
 	shell: { openExternal: mocks.open },
 }));
 vi.mock("../utils", () => ({ getMacPrivacySettingsUrl: (pane: string) => `settings:${pane}` }));
+vi.mock("./permissionAccessory", () => ({
+	showPermissionAccessory: mocks.accessory,
+	startPermissionAccessoryDrag: vi.fn(),
+	dismissPermissionAccessory: vi.fn(),
+}));
 import { registerPermissionHandlers } from "./permissions";
 const platform = process.platform;
 afterEach(() => Object.defineProperty(process, "platform", { value: platform }));
@@ -101,4 +107,25 @@ it("opens the Camera and Microphone pages of System Settings, and nothing else",
 		},
 	).toMatchObject({ success: false });
 	expect(mocks.open.mock.calls).toEqual([["settings:camera"], ["settings:microphone"]]);
+});
+it("the drag helper opens the permission's page, then shows SuperShare's icon beside it", async () => {
+	const sender = {};
+	expect(
+		await mocks.handlers.get("show-permission-drag-helper")!({ sender }, "accessibility"),
+	).toEqual({ success: true });
+	expect(mocks.open).toHaveBeenCalledWith("settings:accessibility");
+	expect(mocks.accessory).toHaveBeenCalledWith("accessibility", sender);
+	expect(mocks.open.mock.invocationCallOrder[0]).toBeLessThan(
+		mocks.accessory.mock.invocationCallOrder[0],
+	);
+});
+it("System Settings stays open when the drag helper cannot start", async () => {
+	mocks.accessory.mockRejectedValue(new Error("no helper"));
+	expect(
+		await mocks.handlers.get("show-permission-drag-helper")!({ sender: {} }, "screen"),
+	).toEqual({ success: true });
+	expect(mocks.open).toHaveBeenCalledWith("settings:screen");
+	expect(await mocks.handlers.get("show-permission-drag-helper")!({}, "camera")).toMatchObject({
+		success: false,
+	});
 });

@@ -54,6 +54,10 @@ const helpers = [
 		source: "FillerDetector.swift",
 		output: "recordly-filler-detector",
 	},
+	{
+		source: "PermissionDragHelper.swift",
+		output: "supershare-permission-drag-helper",
+	},
 ];
 
 const swiftcCheck = spawnSync("swiftc", ["--version"], { encoding: "utf8" });

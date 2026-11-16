@@ -55,6 +55,18 @@ export async function installDesktopBridge(page: Page, videoFixture = "preview.m
 				}),
 				requestMediaPermission: async () => ({ success: true, granted: true }),
 				openMediaPermissionPreferences: success,
+				showPermissionDragHelper: async (permission: string) => {
+					document.documentElement.dataset.permissionDragHelper = permission;
+					return { success: true };
+				},
+				startPermissionAccessoryDrag: async () => {
+					document.documentElement.dataset.permissionDragStarted = "true";
+					return { success: true };
+				},
+				closePermissionAccessory: async () => {
+					document.documentElement.dataset.permissionAccessoryClosed = "true";
+					return { success: true };
+				},
 				getPlatform: async () => "darwin",
 				getWindowChrome: async () => ({ trafficLightsVisible: true }),
 				onWindowChromeChanged: (

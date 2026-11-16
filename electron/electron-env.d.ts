@@ -773,6 +773,13 @@ interface Window {
 		}>;
 		openScreenRecordingPreferences: () => Promise<{ success: boolean; error?: string }>;
 		openAccessibilityPreferences: () => Promise<{ success: boolean; error?: string }>;
+		/** Opens System Settings at this permission with SuperShare's icon beside it to drag in. */
+		showPermissionDragHelper: (
+			permission: "screen" | "accessibility",
+		) => Promise<{ success: boolean; error?: string }>;
+		/** From the drag helper window only: drags the running app's bundle. */
+		startPermissionAccessoryDrag: () => Promise<{ success: boolean }>;
+		closePermissionAccessory: () => Promise<{ success: boolean }>;
 		/** macOS camera and microphone access, read without prompting ("granted" elsewhere). */
 		getMediaPermissionStatus: () => Promise<{
 			success: boolean;

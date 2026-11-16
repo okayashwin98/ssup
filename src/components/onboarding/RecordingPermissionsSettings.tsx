@@ -78,6 +78,25 @@ export function RecordingPermissionsSettings({ onReview }: { onReview?: () => vo
 					>
 						Check again
 					</Button>
+					{(!status.screen || !status.accessibility) && (
+						<SettingsRow
+							title="SuperShare missing from the list?"
+							description="Open System Settings with SuperShare's icon beside it, ready to drag into the list."
+							stacked
+						>
+							<Button
+								variant="secondary"
+								size="sm"
+								onClick={() =>
+									void window.electronAPI.showPermissionDragHelper(
+										status.screen ? "accessibility" : "screen",
+									)
+								}
+							>
+								Drag SuperShare in
+							</Button>
+						</SettingsRow>
+					)}
 				</>
 			)}
 			{status && !status.mac && (

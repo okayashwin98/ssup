@@ -288,6 +288,16 @@ export async function ensureWindowResizeBinary(): Promise<string> {
 	);
 }
 
+/** Follows System Settings' window for the "drag SuperShare into the list" helper. */
+export async function ensurePermissionDragHelperBinary(): Promise<string> {
+	return ensureSwiftHelperBinary(
+		resolveUnpackedAppPath("electron", "native", "PermissionDragHelper.swift"),
+		path.join(app.getPath("userData"), "native-tools", "supershare-permission-drag-helper"),
+		"permission drag helper",
+		"supershare-permission-drag-helper",
+	);
+}
+
 export async function ensureAppIconsBinary(): Promise<string> {
 	await ensureNativeHelperMigration();
 	return ensureSwiftHelperBinary(

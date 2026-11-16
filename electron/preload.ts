@@ -827,6 +827,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	openAccessibilityPreferences: () => {
 		return ipcRenderer.invoke("open-accessibility-preferences");
 	},
+	showPermissionDragHelper: (permission: "screen" | "accessibility") =>
+		ipcRenderer.invoke("show-permission-drag-helper", permission),
+	startPermissionAccessoryDrag: () => ipcRenderer.invoke("start-permission-accessory-drag"),
+	closePermissionAccessory: () => ipcRenderer.invoke("close-permission-accessory"),
 	getMediaPermissionStatus: () => ipcRenderer.invoke("get-media-permission-status"),
 	requestMediaPermission: (device: "microphone" | "camera") =>
 		ipcRenderer.invoke("request-media-permission", device),
