@@ -33,6 +33,8 @@
 		"show": "Afficher",
 		"showCursor": "Afficher le curseur",
 		"loopCursor": "Boucler le curseur",
+		"cursorIdleHide": "Masquer en cas d’inactivité",
+		"cursorIdleHideDescription": "Après un court délai, le curseur s’estompe pendant les longues pauses. Un mouvement ou un clic le fait réapparaître.",
 		"cursorStyle": "Style du curseur",
 		"cursorStyleOptions": {
 			"macos": "macOS",

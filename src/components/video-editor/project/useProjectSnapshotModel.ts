@@ -106,6 +106,9 @@ export function useProjectSnapshotModel({
 				cursorClickBounce: appearance.cursorClickBounce,
 				cursorClickBounceDuration: appearance.cursorClickBounceDuration,
 				cursorSway: appearance.cursorSway,
+				...(appearance.cursorIdleHide === undefined
+					? {}
+					: { cursorIdleHide: appearance.cursorIdleHide }),
 				borderRadius: appearance.borderRadius,
 				padding: appearance.padding,
 				cropRegion: appearance.cropRegion,
@@ -161,6 +164,7 @@ export function useProjectSnapshotModel({
 			appearance.cursorClickBounce,
 			appearance.cursorClickBounceDuration,
 			appearance.cursorSway,
+			appearance.cursorIdleHide,
 			appearance.borderRadius,
 			appearance.padding,
 			appearance.cropRegion,

@@ -33,6 +33,8 @@
 		"show": "Tonen",
 		"showCursor": "Cursor tonen",
 		"loopCursor": "Cursor herhalen",
+		"cursorIdleHide": "Verbergen bij inactiviteit",
+		"cursorIdleHideDescription": "Na een korte vertraging vervaagt de cursor tijdens lange pauzes. Bewegen of klikken maakt de cursor weer zichtbaar.",
 		"cursorStyle": "Cursorstijl",
 		"cursorStyleOptions": {
 			"macos": "macOS",

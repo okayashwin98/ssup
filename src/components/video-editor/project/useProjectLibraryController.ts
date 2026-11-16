@@ -55,6 +55,7 @@ export function useProjectLibraryController({
 		zoomSmoothness,
 		cursorStyle,
 		cursorSway,
+		cursorIdleHide,
 		padding,
 		resolvedWebcamVideoUrl,
 		shadowIntensity,
@@ -248,6 +249,7 @@ export function useProjectLibraryController({
 					cursorClickBounce,
 					cursorClickBounceDuration,
 					cursorSway,
+					cursorIdleHide: cursorIdleHide === true,
 				});
 				await frameRenderer.initialize();
 				await frameRenderer.renderFrame(
@@ -302,6 +304,7 @@ export function useProjectLibraryController({
 		zoomSmoothness,
 		cursorStyle,
 		cursorSway,
+		cursorIdleHide,
 		cursorTelemetry,
 		clipRegions,
 		padding,

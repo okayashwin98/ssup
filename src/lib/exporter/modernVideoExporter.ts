@@ -20,6 +20,7 @@ import type {
 } from "@/components/video-editor/types";
 import { DEFAULT_WEBCAM_ROUNDNESS } from "@/components/video-editor/types";
 import { createCursorFollowCameraState } from "@/components/video-editor/videoPlayback/cursorFollowCamera";
+import { getCursorIdleIntervals } from "@/components/video-editor/videoPlayback/cursorIdleVisibility";
 import { buildNativeCursorAtlas } from "@/components/video-editor/videoPlayback/cursorRenderer";
 import { getCursorViewportScale } from "@/components/video-editor/videoPlayback/cursorScale";
 import {
@@ -145,6 +146,7 @@ interface VideoExporterConfig extends ExportConfig {
 	cursorClickBounce?: number;
 	cursorClickBounceDuration?: number;
 	cursorSway?: number;
+	cursorIdleHide?: boolean;
 	zoomSmoothness?: number;
 	zoomClassicMode?: boolean;
 	audioRegions?: AudioRegion[];
@@ -659,6 +661,7 @@ export class ModernVideoExporter {
 					cursorClickBounce: this.config.cursorClickBounce,
 					cursorClickBounceDuration: this.config.cursorClickBounceDuration,
 					cursorSway: this.config.cursorSway,
+					cursorIdleHide: this.config.cursorIdleHide,
 					zoomSmoothness: this.config.zoomSmoothness,
 					zoomClassicMode: this.config.zoomClassicMode,
 				});
@@ -1733,6 +1736,14 @@ export class ModernVideoExporter {
 		}
 		if (hasCursorClickEffect) {
 			reasons.push("unsupported-cursor-click-effect");
+		}
+		// Native compositors draw the cursor at full opacity; pauses that fade need the shared renderer.
+		if (
+			this.config.cursorIdleHide === true &&
+			this.config.showCursor === true &&
+			getCursorIdleIntervals(this.config.cursorTelemetry ?? []).length > 0
+		) {
+			reasons.push("unsupported-cursor-idle-hide");
 		}
 
 		const hasZoomRegions = (this.config.zoomRegions ?? []).length > 0;

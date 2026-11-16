@@ -33,6 +33,8 @@
 		"show": "Mostrar",
 		"showCursor": "Mostrar cursor",
 		"loopCursor": "Loop do cursor",
+		"cursorIdleHide": "Ocultar quando inativo",
+		"cursorIdleHideDescription": "Após uma breve espera, o cursor desaparece gradualmente durante pausas longas. Mover ou clicar faz o cursor reaparecer.",
 		"cursorStyle": "Estilo do cursor",
 		"cursorStyleOptions": {
 			"macos": "macOS",

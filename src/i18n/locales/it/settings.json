@@ -33,6 +33,8 @@
 		"show": "Mostra",
 		"showCursor": "Mostra cursore",
 		"loopCursor": "Cursore in loop",
+		"cursorIdleHide": "Nascondi quando inattivo",
+		"cursorIdleHideDescription": "Dopo un breve ritardo, il cursore sfuma durante le pause lunghe. Un movimento o un clic lo rende di nuovo visibile.",
 		"cursorStyle": "Stile cursore",
 		"cursorStyleOptions": {
 			"macos": "macOS",

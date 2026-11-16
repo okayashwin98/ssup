@@ -33,6 +33,8 @@
 		"show": "顯示",
 		"showCursor": "顯示游標",
 		"loopCursor": "游標循環",
+		"cursorIdleHide": "閒置時隱藏",
+		"cursorIdleHideDescription": "短暫延遲後，游標會在較長的停頓中淡出。移動或點擊後，游標會重新顯示。",
 		"cursorStyle": "游標樣式",
 		"cursorStyleOptions": {
 			"macos": "macOS",

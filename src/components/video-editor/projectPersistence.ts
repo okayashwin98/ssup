@@ -122,6 +122,8 @@ export interface ProjectEditorState {
 	cursorClickBounce: number;
 	cursorClickBounceDuration: number;
 	cursorSway: number;
+	/** Absent in projects saved before the setting existed; those keep the cursor always visible. */
+	cursorIdleHide?: boolean;
 	borderRadius: number;
 	padding: Padding;
 	cropRegion: CropRegion;
@@ -897,6 +899,9 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 		cursorSway: isFiniteNumber((editor as Partial<ProjectEditorState>).cursorSway)
 			? clamp((editor as Partial<ProjectEditorState>).cursorSway as number, 0, 2)
 			: DEFAULT_CURSOR_SWAY,
+		...(typeof editor.cursorIdleHide === "boolean"
+			? { cursorIdleHide: editor.cursorIdleHide }
+			: {}),
 		borderRadius: isFiniteNumber(editor.borderRadius)
 			? clamp(editor.borderRadius, 0, 50)
 			: getDefaultBorderRadiusPercent(),

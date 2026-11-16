@@ -39,6 +39,8 @@
 		"show": "Show",
 		"showCursor": "Show Cursor",
 		"loopCursor": "Loop cursor",
+		"cursorIdleHide": "Hide when idle",
+		"cursorIdleHideDescription": "After a short delay, the cursor fades during long pauses. Movement or clicks show it again.",
 		"cursorStyle": "Cursor Style",
 		"cursorStyleOptions": {
 			"macos": "macOS",

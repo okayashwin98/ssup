@@ -53,6 +53,8 @@ export function useEditorPreferencesPersistence({
 			cursorClickBounce: appearance.cursorClickBounce,
 			cursorClickBounceDuration: appearance.cursorClickBounceDuration,
 			cursorSway: appearance.cursorSway,
+			// Undefined (a project saved before the setting) keeps the stored preference.
+			cursorIdleHide: appearance.cursorIdleHide,
 			borderRadius: appearance.borderRadius,
 			padding: appearance.padding,
 			webcam: appearance.webcam,
@@ -96,6 +98,7 @@ export function useEditorPreferencesPersistence({
 		appearance.cursorClickBounce,
 		appearance.cursorClickBounceDuration,
 		appearance.cursorSway,
+		appearance.cursorIdleHide,
 		appearance.borderRadius,
 		appearance.padding,
 		appearance.webcam,

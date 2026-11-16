@@ -33,6 +33,8 @@
 		"show": "显示",
 		"showCursor": "显示光标",
 		"loopCursor": "循环光标",
+		"cursorIdleHide": "闲置时隐藏",
+		"cursorIdleHideDescription": "短暂延迟后，光标会在较长的停顿中淡出。移动或点击后，光标会重新显示。",
 		"cursorStyle": "光标样式",
 		"cursorStyleOptions": {
 			"macos": "macOS",

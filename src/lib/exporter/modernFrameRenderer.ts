@@ -155,6 +155,7 @@ interface FrameRenderConfig {
 	cursorClickBounce?: number;
 	cursorClickBounceDuration?: number;
 	cursorSway?: number;
+	cursorIdleHide?: boolean;
 	zoomSmoothness?: number;
 	zoomClassicMode?: boolean;
 	nativeReadbackMode?: "pixels" | "canvas";
@@ -585,6 +586,7 @@ export class FrameRenderer {
 					this.config.cursorClickBounceDuration ??
 					DEFAULT_CURSOR_CONFIG.clickBounceDuration,
 				sway: this.config.cursorSway ?? DEFAULT_CURSOR_CONFIG.sway,
+				idleHide: this.config.cursorIdleHide === true,
 			});
 			this.cursorContainer.addChild(this.cursorOverlay.container);
 		}

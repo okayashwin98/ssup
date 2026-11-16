@@ -10,6 +10,7 @@ import {
 } from "react";
 import { toast } from "@/components/ui/toast";
 import type { AspectRatio } from "@/utils/aspectRatioUtils";
+import { loadEditorPreferences } from "../editorPreferences";
 import type { UnsavedChangesDecision } from "../layout/EditorDialogs";
 import {
 	createProjectData,
@@ -166,6 +167,7 @@ export function useProjectLifecycle(input: Input) {
 		appearance.setCursorClickBounce(editor.cursorClickBounce);
 		appearance.setCursorClickBounceDuration(editor.cursorClickBounceDuration);
 		appearance.setCursorSway(editor.cursorSway);
+		appearance.setCursorIdleHide(editor.cursorIdleHide);
 		appearance.setBorderRadius(editor.borderRadius);
 		appearance.setPadding(editor.padding);
 		appearance.setCropRegion(editor.cropRegion);
@@ -326,6 +328,10 @@ export function useProjectLifecycle(input: Input) {
 		timeline.setZoomRegions([]);
 		// Zooms on/off belongs to a project; a new recording starts with zooms on.
 		current.appearance.setZoomsEnabled(true);
+		// A new recording after an older project picks up the new-project default again.
+		current.appearance.setCursorIdleHide(
+			(previous) => previous ?? loadEditorPreferences().cursorIdleHide,
+		);
 		current.appearance.setHiddenTimelineLayers([]);
 		timeline.setTrimRegions([]);
 		timeline.setClipRegions([]);

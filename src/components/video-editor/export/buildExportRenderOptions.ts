@@ -94,6 +94,7 @@ export function buildExportRenderOptions({
 		cursorClickBounce: appearance.cursorClickBounce,
 		cursorClickBounceDuration: appearance.cursorClickBounceDuration,
 		cursorSway: appearance.cursorSway,
+		cursorIdleHide: appearance.cursorIdleHide === true,
 		previewWidth,
 		previewHeight,
 		onProgress,

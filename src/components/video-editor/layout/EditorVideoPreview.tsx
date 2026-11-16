@@ -145,6 +145,7 @@ export function EditorVideoPreview({
 			cursorClickBounce={appearance.cursorClickBounce}
 			cursorClickBounceDuration={appearance.cursorClickBounceDuration}
 			cursorSway={appearance.cursorSway}
+			cursorIdleHide={appearance.cursorIdleHide === true}
 			volume={
 				audio.shouldMutePreviewVideo || audio.isCurrentClipMuted || audio.replacesVideoAudio
 					? 0

@@ -27,6 +27,7 @@ import {
 } from "./motionSmoothing";
 import { cursorSetAssets, getCursorStyleSizeMultiplier } from "./uploadedCursorAssets";
 import { computeDirectionalMotionBlur } from "./zoomTransform";
+import { getCursorIdleOpacity } from "./cursorIdleVisibility";
 import { interpolateCursorPosition } from "./cursorPosition";
 import { computeCursorFrameBlur } from "./frameMotionSample";
 export { interpolateCursorPosition } from "./cursorPosition";
@@ -115,6 +116,8 @@ export interface CursorRenderConfig {
 	sway: number;
 	/** Cursor visual style. */
 	style: CursorStyle;
+	/** Fade the cursor out during long pauses; movement or a click brings it back. */
+	idleHide: boolean;
 }
 
 const MIN_CURSOR_VIEWPORT_SCALE = 0;
@@ -157,6 +160,7 @@ export const DEFAULT_CURSOR_CONFIG: CursorRenderConfig = {
 	clickEffectDurationMs: DEFAULT_CURSOR_CLICK_EFFECT_DURATION_MS,
 	sway: 0,
 	style: DEFAULT_CURSOR_STYLE,
+	idleHide: false,
 };
 let cursorAssetsPromise: Promise<void> | null = null;
 let cursorPackAssetsPromise: Promise<void> | null = null;
@@ -1242,6 +1246,10 @@ export class PixiCursorOverlay {
 		this.config.sway = clamp(sway, 0, 2);
 	}
 
+	setIdleHide(idleHide: boolean) {
+		this.config.idleHide = idleHide;
+	}
+
 	setStyle(style: CursorStyle) {
 		this.config.style = style;
 		if (isStatefulCursorStyle(style)) {
@@ -1372,6 +1380,8 @@ export class PixiCursorOverlay {
 		}
 
 		this.container.visible = true;
+		// Stateless in media time, so preview, seeking and export agree.
+		this.container.alpha = this.config.idleHide ? getCursorIdleOpacity(samples, timeMs) : 1;
 		this.cursorVisible = shouldShowCursorSprite;
 
 		let px = viewport.x + projectedTarget.cx * viewport.width;
@@ -1667,6 +1677,7 @@ export function drawCursorOnCanvas(
 	);
 	const effectHeight = h * getCursorStyleSizeMultiplier(config.style);
 	const drawHeight = effectHeight * bounceScale;
+	const idleOpacity = config.idleHide ? getCursorIdleOpacity(samples, timeMs) : 1;
 	drawClickEffectOnCanvas(
 		ctx,
 		config.clickEffect,
@@ -1675,7 +1686,7 @@ export function drawCursorOnCanvas(
 		effectHeight,
 		clickProgress,
 		config.clickEffectScale,
-		config.clickEffectOpacity,
+		config.clickEffectOpacity * idleOpacity,
 		config.clickEffectColor,
 	);
 
@@ -1687,7 +1698,7 @@ export function drawCursorOnCanvas(
 	const drawWidth = drawHeight * asset.aspectRatio;
 	const hotspotX = asset.anchorX * drawWidth;
 	const hotspotY = asset.anchorY * drawHeight;
-	ctx.globalAlpha = config.dotAlpha;
+	ctx.globalAlpha = config.dotAlpha * idleOpacity;
 	ctx.drawImage(asset.image, px - hotspotX, py - hotspotY, drawWidth, drawHeight);
 
 	ctx.restore();

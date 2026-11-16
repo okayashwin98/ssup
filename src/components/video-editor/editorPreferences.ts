@@ -7,6 +7,7 @@ import {
 	type ProjectEditorState,
 	stripPersistedDevMotionBlurSettings,
 } from "./projectPersistence";
+import { DEFAULT_CURSOR_IDLE_HIDE } from "./videoPlayback/cursorIdleVisibility";
 
 type PersistedEditorControls = Pick<
 	ProjectEditorState,
@@ -44,6 +45,7 @@ type PersistedEditorControls = Pick<
 	| "cursorClickBounce"
 	| "cursorClickBounceDuration"
 	| "cursorSway"
+	| "cursorIdleHide"
 	| "borderRadius"
 	| "padding"
 	| "webcam"
@@ -121,6 +123,7 @@ export const DEFAULT_EDITOR_PREFERENCES: EditorPreferences = {
 	cursorClickBounce: DEFAULT_EDITOR_CONTROLS.cursorClickBounce,
 	cursorClickBounceDuration: DEFAULT_EDITOR_CONTROLS.cursorClickBounceDuration,
 	cursorSway: DEFAULT_EDITOR_CONTROLS.cursorSway,
+	cursorIdleHide: DEFAULT_CURSOR_IDLE_HIDE,
 	borderRadius: DEFAULT_EDITOR_CONTROLS.borderRadius,
 	borderRadiusUnit: "percent",
 	padding: DEFAULT_EDITOR_CONTROLS.padding,
@@ -199,8 +202,12 @@ function normalizeEditorPresetSnapshot(candidate: unknown): EditorPresetSnapshot
 		...webcam
 	} = normalizedControls.webcam;
 
+	// A preset saved before a setting existed leaves that setting alone when applied.
+	const { cursorIdleHide: _cursorIdleHide, ...presetControls } = normalizedControls;
+
 	return {
-		...normalizedControls,
+		...presetControls,
+		...(typeof raw.cursorIdleHide === "boolean" ? { cursorIdleHide: raw.cursorIdleHide } : {}),
 		borderRadiusUnit: "percent",
 		webcam,
 		cropRegion: normalizedCropRegion,
@@ -318,6 +325,7 @@ function normalizeEditorControls(
 		cursorClickBounceDuration:
 			sanitizedRaw.cursorClickBounceDuration ?? fallback.cursorClickBounceDuration,
 		cursorSway: sanitizedRaw.cursorSway ?? fallback.cursorSway,
+		cursorIdleHide: sanitizedRaw.cursorIdleHide ?? fallback.cursorIdleHide,
 		borderRadius: sanitizedRaw.borderRadius ?? fallback.borderRadius,
 		padding: sanitizedRaw.padding ?? fallback.padding,
 		webcam: sanitizedRaw.webcam ?? fallback.webcam,
@@ -361,6 +369,7 @@ function normalizeEditorControls(
 		cursorClickBounce: normalized.cursorClickBounce,
 		cursorClickBounceDuration: normalized.cursorClickBounceDuration,
 		cursorSway: normalized.cursorSway,
+		cursorIdleHide: normalized.cursorIdleHide,
 		borderRadius: normalized.borderRadius,
 		padding: normalized.padding,
 		webcam: normalized.webcam,

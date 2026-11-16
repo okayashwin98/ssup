@@ -280,6 +280,38 @@ describe("ModernVideoExporter native static-layout eligibility", () => {
 		expect(exporter.getNativeStaticLayoutCursorSize(480)).toBeCloseTo(21, 6);
 	});
 
+	it("falls back to the shared renderer when the cursor fades during a long pause", () => {
+		const cursorTelemetry = [
+			{ timeMs: 0, cx: 0.25, cy: 0.35 },
+			{ timeMs: 1_000, cx: 0.5, cy: 0.55 },
+			{ timeMs: 6_000, cx: 0.5, cy: 0.55 },
+			{ timeMs: 6_100, cx: 0.7, cy: 0.55 },
+		];
+		const audioPlan = { audioMode: "copy-source", audioSourcePath: "recording.mp4" };
+		expect(
+			createExporter({
+				showCursor: true,
+				cursorIdleHide: true,
+				cursorTelemetry,
+			}).getNativeStaticLayoutSkipReasons(audioPlan, videoInfo, 60),
+		).toContain("unsupported-cursor-idle-hide");
+		// Projects without the setting, and recordings without a long pause, keep the fast path.
+		expect(
+			createExporter({ showCursor: true, cursorTelemetry }).getNativeStaticLayoutSkipReasons(
+				audioPlan,
+				videoInfo,
+				60,
+			),
+		).not.toContain("unsupported-cursor-idle-hide");
+		expect(
+			createExporter({
+				showCursor: true,
+				cursorIdleHide: true,
+				cursorTelemetry: cursorTelemetry.slice(0, 2),
+			}).getNativeStaticLayoutSkipReasons(audioPlan, videoInfo, 60),
+		).not.toContain("unsupported-cursor-idle-hide");
+	});
+
 	it("skips native static-layout when cursor click effects are enabled", () => {
 		const exporter = createExporter({
 			showCursor: true,

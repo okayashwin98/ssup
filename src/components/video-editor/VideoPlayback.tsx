@@ -294,6 +294,7 @@ interface VideoPlaybackProps {
 	cursorClickBounce?: number;
 	cursorClickBounceDuration?: number;
 	cursorSway?: number;
+	cursorIdleHide?: boolean;
 	volume?: number;
 	suspendRendering?: boolean;
 }
@@ -384,6 +385,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			cursorClickBounce = DEFAULT_CURSOR_CLICK_BOUNCE,
 			cursorClickBounceDuration = DEFAULT_CURSOR_CLICK_BOUNCE_DURATION,
 			cursorSway = DEFAULT_CURSOR_SWAY,
+			cursorIdleHide = false,
 			volume = 1,
 			suspendRendering = false,
 		},
@@ -525,6 +527,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		const cursorClickBounceRef = useRef(cursorClickBounce);
 		const cursorClickBounceDurationRef = useRef(cursorClickBounceDuration);
 		const cursorSwayRef = useRef(cursorSway);
+		const cursorIdleHideRef = useRef(cursorIdleHide);
 		const zoomMotionBlurRef = useRef(zoomMotionBlur);
 		const zoomMotionBlurTuningRef = useRef(zoomMotionBlurTuning);
 
@@ -1567,6 +1570,12 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		}, [cursorSway, requestPausedFrameRefresh]);
 
 		useEffect(() => {
+			cursorIdleHideRef.current = cursorIdleHide;
+			cursorOverlayRef.current?.setIdleHide(cursorIdleHide);
+			requestPausedFrameRefresh();
+		}, [cursorIdleHide, requestPausedFrameRefresh]);
+
+		useEffect(() => {
 			const timeMs = currentTime * 1000;
 			currentTimeRef.current = timeMs;
 		}, [currentTime]);
@@ -1831,6 +1840,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 						clickBounce: cursorClickBounceRef.current,
 						clickBounceDuration: cursorClickBounceDurationRef.current,
 						sway: cursorSwayRef.current,
+						idleHide: cursorIdleHideRef.current,
 					});
 					cursorOverlayRef.current = cursorOverlay;
 					cursorOverlay.setFilterResolution(

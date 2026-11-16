@@ -33,6 +33,8 @@
 		"show": "표시",
 		"showCursor": "커서 표시",
 		"loopCursor": "커서 반복",
+		"cursorIdleHide": "대기 시 숨기기",
+		"cursorIdleHideDescription": "잠시 기다린 후 긴 멈춤 구간에서 커서가 서서히 사라집니다. 움직이거나 클릭하면 다시 나타납니다.",
 		"cursorStyle": "커서 스타일",
 		"cursorStyleOptions": {
 			"macos": "macOS",

@@ -534,6 +534,8 @@ interface SettingsPanelProps {
 	cursorClickBounceDuration?: number;
 	onCursorClickBounceDurationChange?: (duration: number) => void;
 	cursorSway?: number;
+	cursorIdleHide?: boolean;
+	onCursorIdleHideChange?: (enabled: boolean | undefined) => void;
 	onCursorSwayChange?: (amount: number) => void;
 	borderRadius?: number;
 	onBorderRadiusChange?: (radius: number) => void;
@@ -1011,6 +1013,8 @@ export function SettingsPanel({
 	cursorClickBounceDuration = DEFAULT_CURSOR_CLICK_BOUNCE_DURATION,
 	onCursorClickBounceDurationChange,
 	cursorSway = DEFAULT_CURSOR_SWAY,
+	cursorIdleHide = false,
+	onCursorIdleHideChange,
 	onCursorSwayChange,
 	borderRadius = getDefaultBorderRadiusPercent(),
 	onBorderRadiusChange,
@@ -1519,6 +1523,7 @@ export function SettingsPanel({
 		onCursorClickBounceChange?.(initialEditorPreferences.cursorClickBounce);
 		onCursorClickBounceDurationChange?.(initialEditorPreferences.cursorClickBounceDuration);
 		onCursorSwayChange?.(initialEditorPreferences.cursorSway);
+		onCursorIdleHideChange?.(initialEditorPreferences.cursorIdleHide);
 	};
 
 	const activeMotionPresetId = useMemo(() => {
@@ -2954,26 +2959,47 @@ export function SettingsPanel({
 									{t("common.actions.reset", "Reset")}
 								</Button>
 							</div>
-							{advanced && (
-								<div className="flex flex-col gap-3">
-									<label className="flex items-center justify-between gap-3 text-xs font-medium text-foreground">
-										<span>{tSettings("effects.showCursor")}</span>
-										<Switch
-											aria-label={tSettings("effects.showCursor")}
-											checked={showCursor}
-											onCheckedChange={onShowCursorChange}
-										/>
-									</label>
-									<label className="flex items-center justify-between gap-3 text-xs font-medium text-foreground">
-										<span>{tSettings("effects.loopCursor")}</span>
-										<Switch
-											aria-label={tSettings("effects.loopCursor")}
-											checked={loopCursor}
-											onCheckedChange={onLoopCursorChange}
-										/>
-									</label>
-								</div>
-							)}
+							<div className="flex flex-col gap-3">
+								{advanced && (
+									<>
+										<label className="flex items-center justify-between gap-3 text-xs font-medium text-foreground">
+											<span>{tSettings("effects.showCursor")}</span>
+											<Switch
+												aria-label={tSettings("effects.showCursor")}
+												checked={showCursor}
+												onCheckedChange={onShowCursorChange}
+											/>
+										</label>
+										<label className="flex items-center justify-between gap-3 text-xs font-medium text-foreground">
+											<span>{tSettings("effects.loopCursor")}</span>
+											<Switch
+												aria-label={tSettings("effects.loopCursor")}
+												checked={loopCursor}
+												onCheckedChange={onLoopCursorChange}
+											/>
+										</label>
+									</>
+								)}
+								<label
+									className="flex items-center justify-between gap-3 text-xs font-medium text-foreground"
+									title={tSettings(
+										"effects.cursorIdleHideDescription",
+										"After a short delay, the cursor fades during long pauses. Movement or clicks show it again.",
+									)}
+								>
+									<span>
+										{tSettings("effects.cursorIdleHide", "Hide when idle")}
+									</span>
+									<Switch
+										aria-label={tSettings(
+											"effects.cursorIdleHide",
+											"Hide when idle",
+										)}
+										checked={cursorIdleHide}
+										onCheckedChange={onCursorIdleHideChange}
+									/>
+								</label>
+							</div>
 						</div>
 						<div className="flex flex-col gap-3">
 							<div className="space-y-1.5">

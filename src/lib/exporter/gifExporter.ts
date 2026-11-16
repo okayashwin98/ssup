@@ -86,6 +86,7 @@ interface GifExporterConfig {
 	cursorClickBounce?: number;
 	cursorClickBounceDuration?: number;
 	cursorSway?: number;
+	cursorIdleHide?: boolean;
 	previewWidth?: number;
 	previewHeight?: number;
 	maxDecodeQueue?: number;
@@ -190,6 +191,7 @@ export function buildGifFrameRendererConfig(
 		cursorClickBounce: config.cursorClickBounce,
 		cursorClickBounceDuration: config.cursorClickBounceDuration,
 		cursorSway: config.cursorSway,
+		cursorIdleHide: config.cursorIdleHide,
 	};
 }
 

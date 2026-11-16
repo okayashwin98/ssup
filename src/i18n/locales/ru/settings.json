@@ -33,6 +33,8 @@
 		"show": "Показать",
 		"showCursor": "Показать курсор",
 		"loopCursor": "Зациклить курсор",
+		"cursorIdleHide": "Hide when idle",
+		"cursorIdleHideDescription": "After a short delay, the cursor fades during long pauses. Movement or clicks show it again.",
 		"cursorStyle": "Стиль курсора",
 		"cursorStyleOptions": {
 			"macos": "macOS",
