@@ -43,13 +43,12 @@ test("zoom hover, adaptive lanes, clip edges, volume and playhead", async ({ pag
 		).toBeLessThanOrEqual(1);
 	}
 	await expect(annotation.locator(".timeline-block")).toHaveCSS("background-image", "none");
-	// Clip grips are decoration outside the true clip boundaries.
+	// Clip grips are decoration drawn inside the card, inset from its edges.
 	const block = clip.locator(".timeline-block");
 	const blockBox = (await block.boundingBox())!;
-	expect((await clip.getByTitle("Resize left").boundingBox())!.x + 4).toBeLessThan(blockBox.x);
-	expect((await clip.getByTitle("Resize right").boundingBox())!.x).toBeGreaterThan(
-		blockBox.x + blockBox.width,
-	);
+	expect((await clip.getByTitle("Resize left").boundingBox())!.x).toBeGreaterThan(blockBox.x);
+	const rightGrip = (await clip.getByTitle("Resize right").boundingBox())!;
+	expect(rightGrip.x + rightGrip.width).toBeLessThan(blockBox.x + blockBox.width);
 	const before = (await clip.boundingBox())!;
 	const beforeLabel = await clip.getAttribute("aria-label");
 	await page.mouse.move(before.x + before.width - 2, before.y + before.height / 2);
@@ -76,6 +75,26 @@ test("zoom hover, adaptive lanes, clip edges, volume and playhead", async ({ pag
 	await cap.hover();
 	await expect(cap).toHaveCSS("width", "68px");
 	await expect(cap.locator("span")).toHaveCSS("opacity", "1");
+	// A plain click on the wide tab, off its centre, moves the playhead to that spot.
+	const labelBeforeClick = await cap.getAttribute("aria-label");
+	const capBox = (await cap.boundingBox())!;
+	const lineBefore = (await page
+		.getByTestId("timeline-playhead")
+		.locator(":scope > div")
+		.boundingBox())!;
+	await page.mouse.click(capBox.x + 4, capBox.y + capBox.height / 2);
+	await expect(cap).not.toHaveAttribute("aria-label", labelBeforeClick!);
+	await expect
+		.poll(async () => {
+			const line = (await page
+				.getByTestId("timeline-playhead")
+				.locator(":scope > div")
+				.boundingBox())!;
+			return line.x + line.width / 2;
+		})
+		.toBeCloseTo(capBox.x + 4, -1);
+	expect(lineBefore.x).toBeGreaterThan(capBox.x + 20);
+	await cap.hover();
 	await expect(page.getByTestId("timeline-playhead").locator(":scope > div")).toHaveCSS(
 		"box-shadow",
 		"none",

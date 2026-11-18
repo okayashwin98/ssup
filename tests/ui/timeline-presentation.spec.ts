@@ -54,7 +54,7 @@ test("filmstrips have persistent handles, conditional speed badges and centered 
 		await expect(clip.getByTitle(`Resize ${side}`)).toHaveCSS("opacity", "1");
 		await expect(clip.getByTitle(`Resize ${side}`)).toHaveCSS(
 			"background-color",
-			"rgba(0, 0, 0, 0.5)",
+			"rgba(255, 255, 255, 0.95)",
 		);
 	}
 	await page.getByRole("button", { name: "Add Zoom (Z)", exact: true }).click();

@@ -25,8 +25,6 @@ import glassStyles from "./ItemGlass.module.css";
 
 interface ItemProps {
 	clipPresentation?: ClipPresentation[];
-	sharedLeftGrip?: boolean;
-	sharedRightGrip?: boolean;
 	displaySpan?: Span;
 	embedded?: boolean;
 	videoPath?: string | null;
@@ -69,8 +67,6 @@ const ZOOM_LABELS: Record<number, string> = {
 export default function Item({
 	clipPresentation: suppliedPresentation,
 	id,
-	sharedLeftGrip = false,
-	sharedRightGrip = false,
 	embedded = false,
 	videoPath,
 	sourceSpan,
@@ -334,7 +330,6 @@ export default function Item({
 						style={{
 							cursor: "col-resize",
 							pointerEvents: isClip ? "none" : "auto",
-							display: isClip && sharedLeftGrip ? "none" : undefined,
 						}}
 						title="Resize left"
 					/>
@@ -347,7 +342,6 @@ export default function Item({
 						style={{
 							cursor: "col-resize",
 							pointerEvents: isClip ? "none" : "auto",
-							display: isClip && sharedRightGrip ? "none" : undefined,
 						}}
 						title="Resize right"
 					/>

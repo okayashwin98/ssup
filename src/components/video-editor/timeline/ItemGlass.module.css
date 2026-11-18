@@ -332,12 +332,16 @@
 	opacity: 1;
 }
 
-/* Clip grips sit outside the filmstrip; the clip boundary is the trim target. */
+/* Clip grips sit inside the card, inset from each edge; the clip boundary is still the trim target. */
+.zoomEndCap.clipHandle {
+	height: 50%;
+	box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.25);
+}
 .zoomEndCap.clipHandle.left {
-	left: -9px;
+	left: 6px;
 }
 .zoomEndCap.clipHandle.right {
-	right: -9px;
+	right: 6px;
 }
 
 /* Caption previews share the filmstrip, with enough contrast over any footage. */
@@ -371,4 +375,10 @@
 :global(:root:not(.dark)) .glassCaption.selected {
 	border-color: #fde047;
 	box-shadow: inset 0 0 0 1.5px #fde047;
+}
+
+/* Clip grips stay white over the filmstrip in both themes, like a handle on a card. */
+.zoomEndCap.clipHandle,
+:global(:root:not(.dark)) .zoomEndCap.clipHandle {
+	background: rgba(255, 255, 255, 0.95);
 }

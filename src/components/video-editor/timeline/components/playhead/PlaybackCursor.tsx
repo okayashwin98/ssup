@@ -1,7 +1,10 @@
 import { useTimelineContext } from "dnd-timeline";
-import { useEffect, useState, type RefObject } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { cn } from "@/lib/utils";
 import { formatPlayheadTime } from "../../core/time";
+
+// Sky-blue playhead: a rounded tab with a short point, on a 2px line.
+const PLAYHEAD_BLUE = "#1A8FD1";
 
 import {
 	getPlayheadDisplayTime,
@@ -32,11 +35,13 @@ export default function PlaybackCursor({
 	const sideProperty = direction === "rtl" ? "right" : "left";
 	const [isDragging, setIsDragging] = useState(false);
 	const [isHovered, setIsHovered] = useState(false);
+	// Where the press on the tab began, and whether it has turned into a drag.
+	const pressRef = useRef({ x: 0, moved: false });
 
 	useEffect(() => {
 		if (!isDragging) return;
 
-		const handleMouseMove = (e: MouseEvent) => {
+		const seekTo = (e: MouseEvent) => {
 			if (!timelineRef.current || !onSeek) return;
 			const rect = timelineRef.current.getBoundingClientRect();
 			const clickX =
@@ -61,7 +66,16 @@ export default function PlaybackCursor({
 			onSeek(absoluteMs / 1000);
 		};
 
-		const handleMouseUp = () => {
+		// The wide tab covers nearby time; a press that barely moves is a click,
+		// so it seeks to the pointer instead of being swallowed by the tab.
+		const handleMouseMove = (e: MouseEvent) => {
+			if (!pressRef.current.moved && Math.abs(e.clientX - pressRef.current.x) < 3) return;
+			pressRef.current.moved = true;
+			seekTo(e);
+		};
+
+		const handleMouseUp = (e: MouseEvent) => {
+			if (!pressRef.current.moved) seekTo(e);
 			setIsDragging(false);
 			document.body.style.cursor = "";
 		};
@@ -102,9 +116,17 @@ export default function PlaybackCursor({
 	return (
 		<div data-testid="timeline-playhead" className="absolute inset-0 z-50 pointer-events-none">
 			<div
-				className="absolute top-0 bottom-0 w-px bg-red-500"
-				style={{ [sideProperty]: sidebarWidth + offset }}
+				className="absolute top-0 bottom-0 w-[2px] -translate-x-1/2"
+				style={{ [sideProperty]: sidebarWidth + offset, background: PLAYHEAD_BLUE }}
 			>
+				<div
+					aria-hidden="true"
+					className="absolute left-1/2 top-[11px] size-[9px] rounded-[2px] pointer-events-none"
+					style={{
+						background: PLAYHEAD_BLUE,
+						transform: "translateX(-50%) rotate(45deg)",
+					}}
+				/>
 				<button
 					type="button"
 					aria-label={`Playhead ${formatPlayheadTime(clampedTime)}`}
@@ -119,11 +141,13 @@ export default function PlaybackCursor({
 						if (event.button !== 0) return;
 						event.preventDefault();
 						event.stopPropagation();
+						pressRef.current = { x: event.clientX, moved: false };
 						setIsDragging(true);
 					}}
-					className="absolute top-0 h-4 rounded-full bg-red-500 text-white cursor-ew-resize pointer-events-auto overflow-hidden transition-[width,transform] duration-150"
+					className="absolute top-0 h-4 rounded-[5px] text-white cursor-ew-resize pointer-events-auto overflow-hidden transition-[width,transform] duration-150"
 					style={{
 						width: expanded ? 68 : 16,
+						background: PLAYHEAD_BLUE,
 						left: "50%",
 						transform: `translateX(calc(-50% + ${expanded ? (direction === "rtl" ? -capShift : capShift) : 0}px))`,
 					}}

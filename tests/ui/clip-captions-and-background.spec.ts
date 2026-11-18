@@ -1,7 +1,9 @@
 import { expect, test } from "@playwright/test";
 import { installDesktopBridge } from "./bridge";
 
-test("split clips share one grip and captions live inside the filmstrip", async ({ page }) => {
+test("split clips keep their own grips and captions live inside the filmstrip", async ({
+	page,
+}) => {
 	test.setTimeout(120000);
 	page.setDefaultTimeout(10000);
 	await installDesktopBridge(page, "filmstrip.mp4");
@@ -23,12 +25,12 @@ test("split clips share one grip and captions live inside the filmstrip", async 
 	const left = (await first.locator(".timeline-block").boundingBox())!;
 	const right = (await second.locator(".timeline-block").boundingBox())!;
 	expect(right.x - left.x - left.width).toBeCloseTo(24, 0);
-	const seamGrip = page.getByTestId("clip-seam-grip");
-	await expect(seamGrip).toHaveCount(1);
-	await expect(first.getByTitle("Resize right")).toBeHidden();
-	await expect(second.getByTitle("Resize left")).toBeHidden();
-	const grip = (await seamGrip.boundingBox())!;
-	expect(grip.x + grip.width / 2).toBeCloseTo((left.x + left.width + right.x) / 2, 0);
+	// Each clip keeps its own grips, drawn inside the card rather than in the gap.
+	await expect(page.getByTestId("clip-seam-grip")).toHaveCount(0);
+	const firstGrip = (await first.getByTitle("Resize right").boundingBox())!;
+	const secondGrip = (await second.getByTitle("Resize left").boundingBox())!;
+	expect(firstGrip.x + firstGrip.width).toBeLessThan(left.x + left.width);
+	expect(secondGrip.x).toBeGreaterThan(right.x);
 	await scroll.focus();
 	await expect(scroll).toHaveCSS("outline-style", "none");
 	await expect(scroll).toHaveCSS("box-shadow", "none");
@@ -37,11 +39,13 @@ test("split clips share one grip and captions live inside the filmstrip", async 
 	await page.mouse.click(left.x + left.width + 3, rowBox.y - 8);
 	await expect(page.getByTestId("playhead-cap")).toHaveAttribute("aria-label", "Playhead 3.0s");
 	await expect
-		.poll(
-			async () =>
-				(await page.getByTestId("timeline-playhead").locator(":scope > div").boundingBox())!
-					.x,
-		)
+		.poll(async () => {
+			const line = (await page
+				.getByTestId("timeline-playhead")
+				.locator(":scope > div")
+				.boundingBox())!;
+			return line.x + line.width / 2;
+		})
 		.toBeCloseTo(right.x, 0);
 	await second.click({ position: { x: 2, y: 20 } });
 	const savedStart = Number(await second.getAttribute("data-start-ms"));
