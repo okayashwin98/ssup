@@ -26,6 +26,7 @@ import { useMediaPermission } from "./hooks/useMediaPermission";
 import { useMicLevel } from "./hooks/useMicLevel";
 import { useRecordingTimer } from "./hooks/useRecordingTimer";
 import { useWindowGlass } from "./hooks/useWindowGlass";
+import { showHudMenu } from "./hudMenu";
 import { isMediaAllowed, type MediaPermissionStatus, needsSystemSettings } from "./mediaPermission";
 import { RecordingBarControls } from "./RecordingBar";
 import { resetSlidingHighlight, SlidingHighlight } from "./SlidingHighlight";
@@ -51,19 +52,17 @@ function blockedAccessItems(message: string, openLabel: string): MenuItem[] {
 	];
 }
 
-/** Opens a native menu below the bar, or above it near the bottom of the screen, never over it. */
+/** Opens a menu below the bar, or above it near the bottom of the screen, never over it. */
 function showMenuAt(event: MouseEvent<HTMLElement> | HTMLElement, items: MenuItem[]) {
 	const target = event instanceof HTMLElement ? event : event.currentTarget;
 	const item = target.getBoundingClientRect();
 	const bar = (target.parentElement ?? target).getBoundingClientRect();
-	return window.electronAPI
-		.hudShowMenu({
-			items,
-			x: item.left,
-			y: bar.bottom + MENU_GAP,
-			above: bar.top - MENU_GAP,
-		})
-		.finally(resetSlidingHighlight);
+	return showHudMenu({
+		items,
+		x: item.left,
+		y: bar.bottom + MENU_GAP,
+		above: bar.top - MENU_GAP,
+	}).finally(resetSlidingHighlight);
 }
 
 /** Whether the bar's window is on screen (hiding it leaves the page "visible"). */

@@ -92,7 +92,7 @@ export function EditorPresetMenu({ t, presets }: Props) {
 							<Input
 								value={presetNameDraft}
 								onChange={(event) => setPresetNameDraft(event.target.value)}
-								className="h-9 min-w-0 flex-1 text-[13px]"
+								className="min-w-0 flex-1 text-[13px]"
 								placeholder={t("editor.presets.namePlaceholder", "Preset name")}
 								aria-label={t("editor.presets.namePlaceholder", "Preset name")}
 							/>
@@ -143,7 +143,7 @@ export function EditorPresetMenu({ t, presets }: Props) {
 															"editor.presets.namePlaceholder",
 															"Preset name",
 														)}
-														className="inline-project-name h-8 w-[calc(100%+12px)] min-w-0 text-[13px] text-foreground"
+														className="inline-project-name w-[calc(100%+12px)] min-w-0 text-[13px] text-foreground"
 														value={nameDraft}
 														onChange={(event) =>
 															setNameDraft(event.target.value)

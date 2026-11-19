@@ -263,6 +263,22 @@ interface Window {
 			/** Where the menu's bottom goes instead when it would not fit below. */
 			above?: number;
 		}) => Promise<string | null>;
+		/** Closes the menu this window opened, if one is open. */
+		hudCloseMenu: () => void;
+		/** The menu window's page: it is mounted and listening. */
+		hudMenuPageReady: () => void;
+		/** A menu to show, or null when it closed. Returns an unsubscribe function. */
+		onHudMenuOpen: (callback: (request: HudMenuOpenRequest | null) => void) => () => void;
+		/** The menu window is on screen. Returns an unsubscribe function. */
+		onHudMenuShown: (callback: (token: number) => void) => () => void;
+		/** Where the menu window goes, in screen coordinates. */
+		hudMenuLaidOut: (
+			token: number,
+			bounds: { x: number; y: number; width: number; height: number },
+		) => void;
+		hudMenuPainted: (token: number) => void;
+		/** The picked item's id, or null when the menu was dismissed. */
+		hudMenuChoose: (token: number, id: string | null) => void;
 		hudNotify: (payload: { title?: string; message: string }) => void;
 		hudSetWebcamBubble: (request: { visible: boolean; deviceId?: string }) => void;
 		hudPublishRecordingStatus: (status: {
@@ -1281,6 +1297,8 @@ interface Window {
 		getEditorStartupView: () => "home" | "editor";
 		getAppSetting: (key: string) => unknown;
 		setAppSetting: (key: string, value: unknown) => boolean;
+		/** Another window saved an app setting. Returns an unsubscribe function. */
+		onAppSettingChanged: (callback: (key: string, value: unknown) => void) => () => void;
 		setHasUnsavedChanges: (hasChanges: boolean) => void;
 		onRequestSaveBeforeClose: (callback: () => Promise<boolean>) => () => void;
 		isNativeWindowsCaptureAvailable: () => Promise<{ available: boolean }>;
@@ -1348,7 +1366,15 @@ interface CapturePickerWindow extends CaptureArea {
 	appIcon?: string;
 }
 
-/** An item in a native menu shown by the recording bars or the picker. */
+/** A menu sent to the menu window: anchor and work area in screen coordinates. */
+interface HudMenuOpenRequest {
+	token: number;
+	items: HudMenuItem[];
+	anchor: { x: number; y: number; above?: number };
+	workArea: { x: number; y: number; width: number; height: number };
+}
+
+/** An item in a menu shown by the recording bars or the picker. */
 interface HudMenuItem {
 	id?: string;
 	label?: string;

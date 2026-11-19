@@ -41,6 +41,16 @@ export function saveAppSetting(key: string, value: unknown): boolean {
 	}
 }
 
+/** Runs when another app window saves this setting. Returns an unsubscribe function. */
+export function onAppSettingChanged(key: string, listener: (value: unknown) => void): () => void {
+	const api = (globalThis as typeof globalThis & { electronAPI?: Partial<Window["electronAPI"]> })
+		.electronAPI;
+	if (typeof api?.onAppSettingChanged !== "function") return () => undefined;
+	return api.onAppSettingChanged((changedKey, value) => {
+		if (changedKey === key) listener(value);
+	});
+}
+
 /**
  * For data that must survive a restart. The packaged screens are served from a new local
  * address each launch, and browser storage belongs to that address, so it starts empty

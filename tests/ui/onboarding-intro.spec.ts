@@ -32,7 +32,19 @@ const welcome = (page: Page) => page.getByRole("dialog", { name: "Welcome to Sup
 
 test("first launch plays the intro once, then hands over to the welcome", async ({ page }) => {
 	await freshInstall(page);
+	// The page's clock is moved on by hand, in step with real time and at most 50 ms at a
+	// time, until the intro shows; it then stands still while the intro is checked, so a busy
+	// machine can neither miss it nor stretch how long it lasts.
+	await page.clock.install({ time: new Date("2026-01-01T09:00:00") });
+	await page.clock.pauseAt(new Date("2026-01-01T09:00:01"));
 	await page.goto("/?windowType=editor");
+	const step = 50;
+	for (let last = Date.now(), deadline = last + 20000; (await intro(page).count()) === 0; ) {
+		if (Date.now() > deadline) throw new Error("The intro never appeared");
+		const now = Date.now();
+		await page.clock.runFor(Math.max(1, Math.min(step, now - last)));
+		last = now;
+	}
 	await expect(intro(page)).toBeVisible();
 	await expect(intro(page).getByText("SuperShare", { exact: true })).toBeVisible();
 	await expect(intro(page).locator("img")).toHaveJSProperty("complete", true);
@@ -41,10 +53,10 @@ test("first launch plays the intro once, then hands over to the welcome", async 
 			.locator("img")
 			.evaluate((img: HTMLImageElement) => img.naturalWidth),
 	).toBe(512);
-	const started = Date.now();
-	await expect(intro(page)).toHaveCount(0, { timeout: 4000 });
-	// Under 2.5 s from when it was first seen.
-	expect(Date.now() - started).toBeLessThan(2500);
+	// Gone under 2.5 s from when it was first seen (it appeared at most one step ago).
+	await page.clock.runFor(2500 - step);
+	await expect(intro(page)).toHaveCount(0);
+	await page.clock.resume();
 	await expect(
 		welcome(page).getByRole("heading", { name: "Allow SuperShare to record" }),
 	).toBeVisible();

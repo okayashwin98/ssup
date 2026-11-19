@@ -116,7 +116,7 @@ export function EditorDialogs({
 										setProjectSaveDialogDraft(event.target.value)
 									}
 									disabled={isSavingProjectDialog}
-									className="h-10 flex-1"
+									className="flex-1"
 									aria-label={t("editor.project.saveNameLabel", "Project name")}
 								/>
 								<span className="shrink-0 px-3 text-xs font-medium text-muted-foreground/70">

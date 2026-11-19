@@ -170,7 +170,7 @@ export function AspectRatioPicker({ t, value, onChange, getSourceSize }: Props) 
 										aria-label={name}
 										aria-invalid={text !== "" && !isValidCustomSide(text)}
 										inputMode="numeric"
-										className="h-8 w-full min-w-0 text-[13px] tabular-nums"
+										className="w-full min-w-0 text-[13px] tabular-nums"
 										value={text}
 										onChange={(event) => {
 											const next = event.target.value.replace(/[^\d]/g, "");

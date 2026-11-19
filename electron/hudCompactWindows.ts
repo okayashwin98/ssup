@@ -248,9 +248,11 @@ export function getWebcamBubbleWindow(): BrowserWindow | null {
 
 /** Windows that must follow the HUD's capture protection. */
 export function getHudCompanionWindows(): BrowserWindow[] {
-	return [getRecordingControlsWindow(), getWebcamBubbleWindow()].filter(
-		(win): win is BrowserWindow => win !== null,
-	);
+	return [
+		getRecordingControlsWindow(),
+		getWebcamBubbleWindow(),
+		alive(menuWindow) ? menuWindow : null,
+	].filter((win): win is BrowserWindow => win !== null);
 }
 
 /** Opens the recording bar where the start bar was, and hides the start bar. */
@@ -417,6 +419,204 @@ function buildMenuTemplate(
 	});
 }
 
+type HudMenuRequest = { items: HudMenuItem[]; x: number; y: number; above?: number };
+
+/** macOS's own menu, used off the Mac and if the menu page fails to answer. */
+function showNativeMenu(
+	win: BrowserWindow,
+	request: HudMenuRequest,
+	resolve: (id: string | null) => void,
+) {
+	if (win.isDestroyed()) {
+		resolve(null);
+		return;
+	}
+	// Opens down from `y`; when it would not fit below, it ends at `above` instead.
+	let y = request.y;
+	if (typeof request.above === "number") {
+		const content = win.getContentBounds();
+		const workArea = getScreen().getDisplayMatching(content).workArea;
+		const height = estimateMenuHeight(request.items);
+		if (content.y + y + height > workArea.y + workArea.height) {
+			y = request.above - height;
+		}
+	}
+	// macOS draws the menu's frame 5 pt above the point it is given.
+	y += MENU_FRAME_OFFSET;
+	const menu = Menu.buildFromTemplate(buildMenuTemplate(request.items, resolve));
+	menu.popup({
+		window: win,
+		x: Math.round(request.x),
+		y: Math.round(y),
+		// A click resolves first; closing without one resolves null.
+		callback: () => setTimeout(() => resolve(null), 50),
+	});
+}
+
+// The bar's and picker's menus are drawn in a floating panel of SuperShare's own, the
+// same kind of window as the bar. Over a full-screen app the bar showed but macOS's
+// native menus did not; this panel goes wherever the bar can.
+let menuWindow: BrowserWindow | null = null;
+let menuPageReady: Promise<void> | null = null;
+let menuToken = 0;
+let openMenu: {
+	token: number;
+	owner: BrowserWindow;
+	ownerWasFocused: boolean;
+	resolve: (id: string | null) => void;
+	cleanup: () => void;
+} | null = null;
+// The page answers in a frame or two; past this it is treated as broken.
+const MENU_PAGE_TIMEOUT_MS = 1500;
+// Shown see-through until the page has painted the new menu, so the last one never flashes.
+const MENU_REVEAL_FALLBACK_MS = 150;
+
+function getMenuWindow(): { win: BrowserWindow; ready: Promise<void> } {
+	if (alive(menuWindow) && menuPageReady) return { win: menuWindow, ready: menuPageReady };
+	const win = createFloatingPanel({ x: 0, y: 0, width: 10, height: 10 }, { glass: false });
+	// The level macOS's own menus use: above the bar and the picker.
+	win.setAlwaysOnTop(true, "pop-up-menu");
+	applyCaptureProtection(win);
+	menuWindow = win;
+	// Ready once its page listens; again after a reload. A crashed page is replaced.
+	let markReady: () => void = () => undefined;
+	let pageReady = false;
+	const waitForPage = () => {
+		pageReady = false;
+		const ready = new Promise<void>((resolve) => {
+			markReady = () => {
+				pageReady = true;
+				resolve();
+			};
+		});
+		menuPageReady = ready;
+		return ready;
+	};
+	const ready = waitForPage();
+	win.webContents.on("did-start-loading", () => {
+		if (menuWindow === win && pageReady) waitForPage();
+	});
+	win.webContents.ipc.on("hud-menu-page-ready", () => markReady());
+	win.webContents.on("render-process-gone", () => {
+		if (!win.isDestroyed()) win.destroy();
+	});
+	// Clicking anywhere else (another app, the desktop, the picker) closes the menu.
+	win.on("blur", () => {
+		if (openMenu) finishPanelMenu(null);
+	});
+	win.on("closed", () => {
+		if (menuWindow === win) {
+			menuWindow = null;
+			menuPageReady = null;
+		}
+		if (openMenu) finishPanelMenu(null);
+	});
+	loadRendererWindow(win, "hud-menu");
+	return { win, ready };
+}
+
+/** Loads the menu window ahead of the first click, so menus open at once. */
+export function prepareHudMenuWindow() {
+	if (process.platform === "darwin") getMenuWindow();
+}
+
+export function closeHudMenuWindow() {
+	if (openMenu) finishPanelMenu(null);
+	const win = menuWindow;
+	menuWindow = null;
+	menuPageReady = null;
+	if (alive(win)) win.destroy();
+}
+
+function showPanelMenu(owner: BrowserWindow, request: HudMenuRequest): Promise<string | null> {
+	if (openMenu) finishPanelMenu(null);
+	const { win, ready } = getMenuWindow();
+	const token = ++menuToken;
+	return new Promise<string | null>((resolve) => {
+		const closeWithOwner = () => {
+			if (openMenu?.token === token) finishPanelMenu(null);
+		};
+		owner.once("hide", closeWithOwner);
+		owner.once("closed", closeWithOwner);
+		// Broken page: macOS's own menu instead, which still works off full-screen apps.
+		const timeout = setTimeout(() => {
+			if (openMenu?.token !== token || win.isVisible()) return;
+			console.warn("[hud-menu] The menu page did not answer; using the native menu.");
+			const fallback = openMenu;
+			openMenu = null;
+			fallback.cleanup();
+			showNativeMenu(owner, request, resolve);
+		}, MENU_PAGE_TIMEOUT_MS);
+		openMenu = {
+			token,
+			owner,
+			ownerWasFocused: owner.isFocused(),
+			resolve,
+			cleanup: () => {
+				clearTimeout(timeout);
+				if (!owner.isDestroyed()) {
+					owner.removeListener("hide", closeWithOwner);
+					owner.removeListener("closed", closeWithOwner);
+				}
+			},
+		};
+		const content = owner.getContentBounds();
+		const anchor = {
+			x: content.x + request.x,
+			y: content.y + request.y,
+			above: typeof request.above === "number" ? content.y + request.above : undefined,
+		};
+		// Laid out within the bar's own display, the built-in screen included.
+		const { workArea } = getScreen().getDisplayNearestPoint({
+			x: Math.round(anchor.x),
+			y: Math.round(anchor.y),
+		});
+		void ready.then(() => {
+			if (openMenu?.token !== token || win.isDestroyed()) return;
+			win.webContents.send("hud-menu-open", {
+				token,
+				items: request.items,
+				anchor,
+				workArea,
+			});
+		});
+	});
+}
+
+function revealPanelMenu(bounds: Rectangle) {
+	const win = menuWindow;
+	if (!alive(win) || !openMenu) return;
+	const values = [bounds?.x, bounds?.y, bounds?.width, bounds?.height].map(Number);
+	if (!values.every(Number.isFinite) || !(values[2] > 0 && values[3] > 0)) return;
+	const [x, y, width, height] = values.map(Math.round);
+	win.setBounds({ x, y, width, height }, false);
+	if (win.isVisible()) return;
+	const token = openMenu.token;
+	win.setOpacity(0);
+	// A panel takes the keyboard without bringing SuperShare forward or switching Spaces.
+	win.show();
+	win.moveTop();
+	win.webContents.send("hud-menu-shown", token);
+	setTimeout(() => {
+		if (openMenu?.token === token && alive(win)) win.setOpacity(1);
+	}, MENU_REVEAL_FALLBACK_MS);
+}
+
+function finishPanelMenu(choice: string | null) {
+	const current = openMenu;
+	if (!current) return;
+	openMenu = null;
+	current.cleanup();
+	const win = menuWindow;
+	if (alive(win)) {
+		win.webContents.send("hud-menu-open", null);
+		win.hide();
+	}
+	// The picker had the keyboard (Escape, Enter); it gets it back.
+	if (current.ownerWasFocused && alive(current.owner)) current.owner.focus();
+	current.resolve(choice);
+}
+
 export function registerHudCompactWindowIpc(options: {
 	getHudWindow: () => BrowserWindow | null;
 	applyCaptureProtection: (win: BrowserWindow) => void;
@@ -437,38 +637,33 @@ export function registerHudCompactWindowIpc(options: {
 		win.setBounds(resizeKeepingBottomCentre(current, { width, height }, workArea), false);
 	});
 
-	// Native menus, as Screen Studio uses for its device and size pickers.
-	ipcMain.handle(
-		"hud-show-menu",
-		(event, request: { items: HudMenuItem[]; x: number; y: number; above?: number }) =>
-			new Promise<string | null>((resolve) => {
-				const win = BrowserWindow.fromWebContents(event.sender);
-				if (!win || !Array.isArray(request?.items)) {
-					resolve(null);
-					return;
-				}
-				// Opens down from `y`; when it would not fit below, it ends at `above` instead.
-				let y = request.y;
-				if (typeof request.above === "number") {
-					const content = win.getContentBounds();
-					const workArea = getScreen().getDisplayMatching(content).workArea;
-					const height = estimateMenuHeight(request.items);
-					if (content.y + y + height > workArea.y + workArea.height) {
-						y = request.above - height;
-					}
-				}
-				// macOS draws the menu's frame 5 pt above the point it is given.
-				y += MENU_FRAME_OFFSET;
-				const menu = Menu.buildFromTemplate(buildMenuTemplate(request.items, resolve));
-				menu.popup({
-					window: win,
-					x: Math.round(request.x),
-					y: Math.round(y),
-					// A click resolves first; closing without one resolves null.
-					callback: () => setTimeout(() => resolve(null), 50),
-				});
-			}),
-	);
+	ipcMain.handle("hud-show-menu", (event, request: HudMenuRequest) => {
+		const win = BrowserWindow.fromWebContents(event.sender);
+		if (!win || !Array.isArray(request?.items)) return Promise.resolve(null);
+		return process.platform === "darwin"
+			? showPanelMenu(win, request)
+			: new Promise<string | null>((resolve) => showNativeMenu(win, request, resolve));
+	});
+
+	// The menu page: the choice it shows, its size and place, what was picked.
+	ipcMain.on("hud-menu-laid-out", (event, token: unknown, bounds: unknown) => {
+		if (!openMenu || openMenu.token !== token || event.sender !== menuWindow?.webContents)
+			return;
+		revealPanelMenu(bounds as Rectangle);
+	});
+	ipcMain.on("hud-menu-painted", (event, token: unknown) => {
+		if (openMenu?.token === token && event.sender === menuWindow?.webContents) {
+			menuWindow?.setOpacity(1);
+		}
+	});
+	ipcMain.on("hud-menu-choose", (event, token: unknown, id: unknown) => {
+		if (openMenu?.token !== token || event.sender !== menuWindow?.webContents) return;
+		finishPanelMenu(typeof id === "string" ? id : null);
+	});
+	// A press in the window that opened the menu closes it, as with macOS's own menus.
+	ipcMain.on("hud-close-menu", (event) => {
+		if (openMenu && openMenu.owner.webContents === event.sender) finishPanelMenu(null);
+	});
 
 	ipcMain.on("hud-notify", (_event, payload: { title?: string; message?: string }) => {
 		if (!payload?.message || !Notification.isSupported()) return;

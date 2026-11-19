@@ -348,7 +348,7 @@ export function InlineCropEditor({
 										aria-label={t("settings.crop.ratioWidth", "Ratio width")}
 										aria-invalid={typedRatio === null}
 										inputMode="decimal"
-										className="h-8 w-full min-w-0 flex-1 text-[13px] tabular-nums"
+										className="w-full min-w-0 flex-1 text-[13px] tabular-nums"
 										value={ratioWidth}
 										onChange={(event) =>
 											lockRatio(
@@ -362,7 +362,7 @@ export function InlineCropEditor({
 										aria-label={t("settings.crop.ratioHeight", "Ratio height")}
 										aria-invalid={typedRatio === null}
 										inputMode="decimal"
-										className="h-8 w-full min-w-0 flex-1 text-[13px] tabular-nums"
+										className="w-full min-w-0 flex-1 text-[13px] tabular-nums"
 										value={ratioHeight}
 										onChange={(event) =>
 											lockRatio(

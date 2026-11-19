@@ -562,23 +562,32 @@ test("project hover plays a muted five-second preview and stops on exit", async 
 		};
 	});
 	await page.goto("/?windowType=editor");
-	await expect(page.getByRole("button", { name: "Open presets" })).toHaveCount(0);
+	// The editor shows Presets next to Publish again.
+	await expect(page.getByRole("button", { name: "Open presets" })).toBeVisible();
+	// Wait for the editor to be fully shown before going Home; a busy machine can take well
+	// over 5 s.
+	await expect(page.getByRole("navigation", { name: "Editor tools" })).toBeVisible({
+		timeout: 20000,
+	});
 	await page.getByRole("button", { name: "Home", exact: true }).click();
 	const card = page.getByRole("button", { name: "Hover preview", exact: true });
-	await expect(card).toBeVisible();
+	await expect(card).toBeVisible({ timeout: 15000 });
 	await expect(page.locator("html")).not.toHaveAttribute("data-preview-requests");
 	await card.hover();
 	const preview = page.locator("[data-project-hover-preview]");
 	await expect(preview).toBeVisible();
+	// The preview video has to load before it can play.
 	await expect
-		.poll(() =>
-			preview
-				.locator("video")
-				.first()
-				.evaluate(
-					(video: HTMLVideoElement) =>
-						!video.paused && video.currentTime > 0 && video.muted,
-				),
+		.poll(
+			() =>
+				preview
+					.locator("video")
+					.first()
+					.evaluate(
+						(video: HTMLVideoElement) =>
+							!video.paused && video.currentTime > 0 && video.muted,
+					),
+			{ timeout: 15000 },
 		)
 		.toBe(true);
 	const fill = await preview.evaluate((element) => {

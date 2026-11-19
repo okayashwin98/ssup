@@ -218,7 +218,7 @@ export function BulkImportDialog({
 												value={newName}
 												maxLength={80}
 												onChange={(event) => setNewName(event.target.value)}
-												className="h-9 w-full text-[13px]"
+												className="w-full text-[13px]"
 											/>
 										</div>
 									)}

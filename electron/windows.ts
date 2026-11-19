@@ -24,10 +24,12 @@ import {
 } from "./hudOverlayBounds";
 import {
 	bottomCentreBounds,
+	closeHudMenuWindow,
 	closeRecordingControls,
 	createFloatingPanel,
 	getHudCompanionWindows,
 	liquidGlassAvailable,
+	prepareHudMenuWindow,
 	registerHudCompactWindowIpc,
 	setWebcamBubble,
 	setWindowGlassRects,
@@ -716,6 +718,7 @@ export function createHudOverlayWindow(): BrowserWindow {
 		if (!win.isDestroyed()) {
 			console.log(`[PERF:MAIN] HUD Window: renderer-ready in ${Date.now() - perfStart}ms`);
 			showHudWindow();
+			prepareHudMenuWindow();
 		}
 	};
 	ipcMain.on("hud-overlay-renderer-ready", handleHudRendererReady);
@@ -764,6 +767,7 @@ export function createHudOverlayWindow(): BrowserWindow {
 		// The webcam bubble and recording bar belong to the start bar; they go with it.
 		setWebcamBubble(false);
 		closeRecordingControls();
+		closeHudMenuWindow();
 		ipcMain.removeListener("hud-overlay-renderer-ready", handleHudRendererReady);
 		screen.removeListener("display-removed", handleDisplayRemoved);
 		screen.removeListener("display-metrics-changed", handleDisplayMetricsChanged);

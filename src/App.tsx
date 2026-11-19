@@ -28,6 +28,7 @@ const EditorWindow = lazy(() => import("./components/video-editor/EditorWindow")
 const CapturePicker = lazy(() => import("./components/capture-picker/CapturePicker"));
 const RecordingBarWindow = lazy(() => import("./components/launch/RecordingBar"));
 const WebcamBubbleWindow = lazy(() => import("./components/launch/WebcamBubbleWindow"));
+const HudMenuWindow = lazy(() => import("./components/launch/HudMenuWindow"));
 const PermissionAccessoryWindow = lazy(
 	() => import("./components/onboarding/PermissionAccessoryWindow"),
 );
@@ -50,7 +51,8 @@ export default function App() {
 			windowType === "capture-picker" ||
 			windowType === "recording-controls" ||
 			windowType === "webcam-bubble" ||
-			windowType === "permission-accessory"
+			windowType === "permission-accessory" ||
+			windowType === "hud-menu"
 		) {
 			document.body.style.background = "transparent";
 			document.documentElement.style.background = "transparent";
@@ -115,6 +117,9 @@ export default function App() {
 			break;
 		case "permission-accessory":
 			content = <PermissionAccessoryWindow />;
+			break;
+		case "hud-menu":
+			content = <HudMenuWindow />;
 			break;
 		default:
 			content = (

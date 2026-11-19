@@ -1,7 +1,7 @@
-import { createCountdownController } from "../../countdownController";
 import fs from "node:fs/promises";
 import { app, BrowserWindow, ipcMain } from "electron";
 import { hasAppSetting, readAppSettingsStore, writeAppSettingsStore } from "../../appSettingsStore";
+import { createCountdownController } from "../../countdownController";
 import { hideCursor } from "../../cursorHider";
 import { createCountdownWindow } from "../../windows";
 import { COUNTDOWN_SETTINGS_FILE, RECORDINGS_SETTINGS_FILE, SHORTCUTS_FILE } from "../constants";
@@ -92,6 +92,12 @@ export function registerSettingsHandlers() {
 			store[key] = value;
 			writeAppSettingsStore(store);
 			event.returnValue = { success: true };
+			// Windows load from different origins, so browser storage events can't tell them.
+			for (const win of BrowserWindow.getAllWindows()) {
+				if (!win.isDestroyed() && win.webContents !== event.sender) {
+					win.webContents.send("app-settings:changed", key, value);
+				}
+			}
 		} catch (error) {
 			console.error("Failed to save app setting:", error);
 			event.returnValue = { success: false };

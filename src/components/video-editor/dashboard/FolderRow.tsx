@@ -56,7 +56,7 @@ export function FolderRow({
 						autoFocus
 						onFocus={(event) => event.currentTarget.select()}
 						aria-label="Folder name"
-						className="inline-project-name h-8 w-[calc(100%+12px)] min-w-0 -translate-y-px text-[13px] font-medium"
+						className="inline-project-name w-[calc(100%+12px)] min-w-0 -translate-y-px text-[13px] font-medium"
 						value={draft}
 						maxLength={80}
 						onChange={(event) => setDraft(event.target.value)}

@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { expect, type Page, test } from "@playwright/test";
-import { installDesktopBridge } from "./bridge";
+import { installDesktopBridge, installDesktopBridgeOverrides } from "./bridge";
 import { changedFraction } from "./pixels";
 
 declare global {
@@ -95,10 +95,6 @@ async function makeUploads(page: Page): Promise<Upload[]> {
 }
 
 async function openEditor(page: Page) {
-	await page.goto("/?windowType=editor");
-	await expect(page.getByRole("button", { name: "Add wallpaper", exact: true })).toBeVisible({
-		timeout: 20000,
-	});
 	// The mock bridge has no macOS converter; hand back what sips makes of the photo (a PNG).
 	const out = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "wallpaper-heic-")), "photo.png");
 	execFileSync("/usr/bin/sips", [
@@ -114,12 +110,24 @@ async function openEditor(page: Page) {
 	]);
 	const pngBase64 = fs.readFileSync(out).toString("base64");
 	fs.rmSync(path.dirname(out), { recursive: true, force: true });
-	await page.evaluate((base64) => {
-		window.electronAPI.convertHeicWallpaper = async (bytes: Uint8Array) => {
-			document.documentElement.dataset.heicBytes = String(bytes.byteLength);
-			return { success: true, data: Uint8Array.from(atob(base64), (c) => c.charCodeAt(0)) };
-		};
-	}, pngBase64);
+	// Installed with the page rather than after it loads, so it is still there if the page reloads.
+	await installDesktopBridgeOverrides(
+		page,
+		(base64) => {
+			window.electronAPI.convertHeicWallpaper = async (bytes: Uint8Array) => {
+				document.documentElement.dataset.heicBytes = String(bytes.byteLength);
+				return {
+					success: true,
+					data: Uint8Array.from(atob(base64), (c) => c.charCodeAt(0)),
+				};
+			};
+		},
+		pngBase64,
+	);
+	await page.goto("/?windowType=editor");
+	await expect(page.getByRole("button", { name: "Add wallpaper", exact: true })).toBeVisible({
+		timeout: 20000,
+	});
 }
 
 test.skip(process.platform !== "darwin", "Fixtures are made with macOS sips");

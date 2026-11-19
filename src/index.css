@@ -474,6 +474,7 @@ textarea {
    outside the text with shadows, and the field reaches 6px past the name on each side,
    so the name stays exactly where it was when renaming starts. */
 .inline-project-name {
+	height: var(--field-height);
 	background: var(--field-background);
 	border: 0;
 	border-radius: var(--field-corner);

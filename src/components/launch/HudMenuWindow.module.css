@@ -1,0 +1,88 @@
+/* The menu window is see-through; only the card (and its side menu) is drawn. */
+.root {
+	position: fixed;
+	inset: 0;
+	overflow: hidden;
+}
+
+/* The app's dropdown look: overlay colour, 14px squircle corners, the overlay shadow. */
+.card {
+	position: absolute;
+	box-sizing: border-box;
+	/* Sized by its rows, not by the window it opens in. */
+	width: max-content;
+	min-width: 220px;
+	max-width: 360px;
+	overflow-x: hidden;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	background: var(--overlay);
+	color: var(--overlay-foreground, var(--foreground));
+	border-radius: 14px;
+	corner-shape: superellipse(1.3);
+	box-shadow: var(--overlay-shadow);
+	font-size: 14px;
+	line-height: 20px;
+}
+
+/* Side menus are measured before they open, so they wait unseen. */
+.closed {
+	visibility: hidden;
+	pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.card:not(.closed) {
+		animation: menuIn 120ms var(--ease-out);
+	}
+}
+
+@keyframes menuIn {
+	from {
+		opacity: 0;
+		transform: scale(0.98);
+	}
+}
+
+.label {
+	flex: 1 1 auto;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* One highlight at a time, shared by the pointer and the arrow keys. */
+.card :global(.menu-item):hover:not([data-hovered="true"]) {
+	background-color: transparent;
+}
+
+/* Ticks in the theme colour. */
+.card :global(.menu-item__indicator).tick {
+	color: var(--accent);
+}
+
+.submenuArrow {
+	display: flex;
+	flex: none;
+	margin-inline-start: auto;
+	color: var(--muted);
+}
+
+.submenuArrow svg {
+	width: 12px;
+	height: 12px;
+}
+
+/* Headings line up with the item text, past the tick column when there is one. */
+.header {
+	padding-inline: 10px;
+}
+
+.header.indented {
+	padding-inline-start: 28px;
+}
+
+.separator {
+	margin-block: 4px;
+}

@@ -167,7 +167,7 @@ export function EditorHeader(props: Props) {
 										}
 									}}
 									disabled={isSavingProjectName}
-									className="inline-project-name col-start-1 row-start-1 h-8 w-[calc(100%+12px)] min-w-0 -translate-y-px text-sm font-semibold tracking-tight text-foreground/90 disabled:cursor-wait"
+									className="inline-project-name col-start-1 row-start-1 w-[calc(100%+12px)] min-w-0 -translate-y-px text-sm font-semibold tracking-tight text-foreground/90 disabled:cursor-wait"
 									size={1}
 									aria-label={t("editor.project.renameInput", "Project name")}
 								/>

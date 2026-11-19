@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { loadAppSetting, saveAppSetting } from "./appSettings";
+import { loadAppSetting, onAppSettingChanged, saveAppSetting } from "./appSettings";
 
 /** The app's theme colour; every accent shade is mixed from it. */
 export const DEFAULT_ACCENT_COLOR = "#9754F4";
@@ -46,20 +46,14 @@ export function saveAccentColor(hex: string) {
 	cached = color;
 	applyAccentColor(color);
 	globalThis.dispatchEvent?.(new Event(CHANGE_EVENT));
-	// Other app windows share this origin and repaint on the storage event.
-	try {
-		globalThis.localStorage?.setItem(STORAGE_KEY, color);
-	} catch {
-		// Storage is optional; this window is already updated.
-	}
 }
 
 /** Applies the saved colour now and whenever another window changes it. */
 export function installAccentColor() {
 	applyAccentColor(loadAccentColor());
-	globalThis.addEventListener?.("storage", (event) => {
-		if (event.key !== STORAGE_KEY) return;
-		cached = normalizeAccentColor(event.newValue);
+	// Other windows are told by the main process; they don't share browser storage.
+	onAppSettingChanged(STORAGE_KEY, (value) => {
+		cached = normalizeAccentColor(value);
 		applyAccentColor(cached);
 		globalThis.dispatchEvent?.(new Event(CHANGE_EVENT));
 	});

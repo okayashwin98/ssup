@@ -5,6 +5,7 @@ import type {
 	PointerEvent as ReactPointerEvent,
 } from "react";
 import { useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";
+import { showHudMenu } from "@/components/launch/hudMenu";
 import { Button } from "@/components/ui/button";
 import {
 	AREA_HANDLES,
@@ -462,7 +463,7 @@ export function CapturePicker() {
 			enabled: fits(size),
 		});
 		const rect = event.currentTarget.getBoundingClientRect();
-		const choice = await window.electronAPI.hudShowMenu({
+		const choice = await showHudMenu({
 			x: rect.left,
 			y: rect.bottom + 4,
 			above: rect.top - 4,
@@ -757,19 +758,17 @@ export function CapturePicker() {
 											onClick={async (event) => {
 												const rect =
 													event.currentTarget.getBoundingClientRect();
-												const choice = await window.electronAPI.hudShowMenu(
-													{
-														x: rect.left,
-														y: rect.bottom + 4,
-														above: rect.top - 4,
-														items: AREA_RATIOS.map((entry) => ({
-															id: entry.label,
-															label: entry.label,
-															type: "radio" as const,
-															checked: entry.ratio === areaRatio,
-														})),
-													},
-												);
+												const choice = await showHudMenu({
+													x: rect.left,
+													y: rect.bottom + 4,
+													above: rect.top - 4,
+													items: AREA_RATIOS.map((entry) => ({
+														id: entry.label,
+														label: entry.label,
+														type: "radio" as const,
+														checked: entry.ratio === areaRatio,
+													})),
+												});
 												const picked = AREA_RATIOS.find(
 													(entry) => entry.label === choice,
 												);

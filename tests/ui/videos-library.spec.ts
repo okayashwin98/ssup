@@ -48,13 +48,29 @@ async function setup(page: Page) {
 		};
 	});
 	await page.goto("/?windowType=editor");
+	// A busy machine can take well over 5 s to load the editor: wait for it to be truly ready
+	// (tools shown, clip and its frames laid out, the video able to play) before using it.
+	await expect(page.getByRole("navigation", { name: "Editor tools" })).toBeVisible({
+		timeout: 20000,
+	});
 	await expect(page.locator('[data-variant="clip"]')).toHaveAttribute("data-end-ms", "6000", {
 		timeout: 20000,
 	});
-	await expect(page.locator('[data-variant="clip"] img').first()).toBeVisible();
-	await expect(page.getByLabel("Loading preview")).toHaveCount(0);
+	await expect(page.locator('[data-variant="clip"] img').first()).toBeVisible({ timeout: 15000 });
+	await expect(page.getByLabel("Loading preview")).toHaveCount(0, { timeout: 15000 });
+	await expect
+		.poll(
+			() =>
+				page
+					.locator("video")
+					.evaluateAll((videos) =>
+						videos.some((video) => (video as HTMLVideoElement).readyState >= 2),
+					),
+			{ timeout: 15000 },
+		)
+		.toBe(true);
 	await page.getByRole("button", { name: "Clips", exact: true }).click();
-	await expect(page.getByLabel("Select first.mp4")).toBeVisible();
+	await expect(page.getByLabel("Select first.mp4")).toBeVisible({ timeout: 15000 });
 }
 
 test("Clips supports selection, remove all, undo and real timeline drag insertion", async ({
@@ -104,8 +120,9 @@ test("Clips supports selection, remove all, undo and real timeline drag insertio
 	await expect(clip).toHaveCount(2);
 	await expect(clip.first()).toHaveAttribute("data-end-ms", "1000");
 	await expect(clip.last()).toHaveAttribute("data-start-ms", "1000");
-	await expect(page.locator("[data-webcam-overlay]")).toBeVisible();
-	await expect(page.getByLabel("Loading preview")).toHaveCount(0);
+	// The inserted clip brings its own video and camera, which load slowly on a busy machine.
+	await expect(page.locator("[data-webcam-overlay]")).toBeVisible({ timeout: 15000 });
+	await expect(page.getByLabel("Loading preview")).toHaveCount(0, { timeout: 15000 });
 	await page.keyboard.press("Meta+z");
 	await expect(clip).toHaveCount(1);
 	await expect(clip).toHaveAttribute("data-end-ms", "6000");

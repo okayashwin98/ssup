@@ -193,6 +193,12 @@ type HudMenuItem = {
 	enabled?: boolean;
 	submenu?: HudMenuItem[];
 };
+type HudMenuOpenRequest = {
+	token: number;
+	items: HudMenuItem[];
+	anchor: { x: number; y: number; above?: number };
+	workArea: { x: number; y: number; width: number; height: number };
+};
 
 contextBridge.exposeInMainWorld("electronAPI", {
 	hudOverlaySetIgnoreMouse: (ignore: boolean) => {
@@ -239,6 +245,27 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	},
 	hudShowMenu: (request: { items: HudMenuItem[]; x: number; y: number; above?: number }) =>
 		ipcRenderer.invoke("hud-show-menu", request) as Promise<string | null>,
+	hudCloseMenu: () => ipcRenderer.send("hud-close-menu"),
+	// The menu window's own page (windowType "hud-menu").
+	hudMenuPageReady: () => ipcRenderer.send("hud-menu-page-ready"),
+	onHudMenuOpen: (callback: (request: HudMenuOpenRequest | null) => void) => {
+		const listener = (_event: Electron.IpcRendererEvent, request: HudMenuOpenRequest | null) =>
+			callback(request);
+		ipcRenderer.on("hud-menu-open", listener);
+		return () => ipcRenderer.removeListener("hud-menu-open", listener);
+	},
+	onHudMenuShown: (callback: (token: number) => void) => {
+		const listener = (_event: Electron.IpcRendererEvent, token: number) => callback(token);
+		ipcRenderer.on("hud-menu-shown", listener);
+		return () => ipcRenderer.removeListener("hud-menu-shown", listener);
+	},
+	hudMenuLaidOut: (
+		token: number,
+		bounds: { x: number; y: number; width: number; height: number },
+	) => ipcRenderer.send("hud-menu-laid-out", token, bounds),
+	hudMenuPainted: (token: number) => ipcRenderer.send("hud-menu-painted", token),
+	hudMenuChoose: (token: number, id: string | null) =>
+		ipcRenderer.send("hud-menu-choose", token, id),
 	hudNotify: (payload: { title?: string; message: string }) => {
 		ipcRenderer.send("hud-notify", payload);
 	},
@@ -1279,6 +1306,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
 			success?: boolean;
 		};
 		return result?.success === true;
+	},
+	onAppSettingChanged: (callback: (key: string, value: unknown) => void) => {
+		const listener = (_event: Electron.IpcRendererEvent, key: string, value: unknown) =>
+			callback(key, value);
+		ipcRenderer.on("app-settings:changed", listener);
+		return () => ipcRenderer.removeListener("app-settings:changed", listener);
 	},
 	setHasUnsavedChanges: (hasChanges: boolean) => {
 		ipcRenderer.send("set-has-unsaved-changes", hasChanges);
