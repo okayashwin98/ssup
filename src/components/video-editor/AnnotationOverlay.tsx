@@ -240,7 +240,8 @@ export function AnnotationOverlay({
 			}}
 			bounds="parent"
 			className={cn(
-				"cursor-move transition-all",
+				// Only the selection colours fade: animating position or size made the box trail the pointer.
+				"cursor-move transition-[background-color,border-color,box-shadow]",
 				isSelected && "ring-2 ring-accent ring-offset-2 ring-offset-transparent",
 			)}
 			style={{
