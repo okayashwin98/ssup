@@ -41,7 +41,7 @@ export function DashboardToolbar({
 					<Button
 						variant="secondary"
 						disabled={busy}
-						onClick={() => void run(onImportFile)}
+						onClick={() => void run(async () => void (await onImportFile()))}
 						className="shrink-0 gap-2 text-[13px]"
 					>
 						{action === "refresh" ? (

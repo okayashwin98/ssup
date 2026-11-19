@@ -17,6 +17,8 @@ type Input = {
 	effectiveShowCursor: boolean;
 };
 
+export const PROJECT_LIBRARY_CHANGED_EVENT = "supershare-project-library-changed";
+
 export function useProjectLibraryController({
 	project,
 	appearance,
@@ -106,6 +108,13 @@ export function useProjectLibraryController({
 			setProjectLibraryLoading(false);
 		}
 	}, []);
+
+	// Home asks for a fresh list after it adds projects itself (bulk import).
+	useEffect(() => {
+		const refresh = () => void refreshProjectLibrary();
+		window.addEventListener(PROJECT_LIBRARY_CHANGED_EVENT, refresh);
+		return () => window.removeEventListener(PROJECT_LIBRARY_CHANGED_EVENT, refresh);
+	}, [refreshProjectLibrary]);
 
 	useEffect(
 		() =>

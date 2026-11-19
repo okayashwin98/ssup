@@ -6,9 +6,17 @@ import { DashboardSidebar } from "./DashboardSidebar";
 import { DashboardToolbar } from "./DashboardToolbar";
 import type { DashboardProps } from "./types";
 import { useDashboardModel } from "./useDashboardModel";
+import { BulkImportDialog } from "./BulkImportDialog";
+import { useState } from "react";
+import type { MediaBatchPick } from "../project/useProjectOpenActions";
 export function Dashboard(props: DashboardProps) {
 	const model = useDashboardModel(props);
 	const view = { ...props, ...model };
+	const [batch, setBatch] = useState<MediaBatchPick | null>(null);
+	const importFiles = async () => {
+		const picked = await props.onImportFile({ multiple: true });
+		if (picked) setBatch(picked);
+	};
 	return (
 		<>
 			<Modal isOpen={props.open} onOpenChange={props.onOpenChange}>
@@ -23,7 +31,7 @@ export function Dashboard(props: DashboardProps) {
 								{model.section !== "settings" && model.section !== "shared" && (
 									<>
 										<DashboardAnnouncements />
-										<DashboardToolbar {...view} />
+										<DashboardToolbar {...view} onImportFile={importFiles} />
 										<DashboardFilters {...view} flush />
 									</>
 								)}
@@ -33,6 +41,18 @@ export function Dashboard(props: DashboardProps) {
 					</Modal.Container>
 				</Modal.Backdrop>
 			</Modal>
+			<BulkImportDialog
+				batch={batch}
+				folders={model.folders}
+				save={model.save}
+				initialFolderId={
+					model.folders.some((folder) => folder.id === model.section)
+						? model.section
+						: null
+				}
+				onClose={() => setBatch(null)}
+				onShowFolder={model.setSection}
+			/>
 		</>
 	);
 }

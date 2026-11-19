@@ -16,7 +16,7 @@ export function getRecordingSourceLabel(source: SelectedSource | null): string {
 	return "Screen recording";
 }
 
-function toFileSafeName(value: string) {
+export function toFileSafeName(value: string) {
 	return (
 		value
 			.replace(/[\\/:*?"<>|]/g, " ")

@@ -1,3 +1,4 @@
+import type { MediaBatchPick } from "../project/useProjectOpenActions";
 import type { ProjectLibraryEntry } from "../ProjectBrowserDialog";
 export type DashboardProps = {
 	open: boolean;
@@ -5,7 +6,8 @@ export type DashboardProps = {
 	onOpenChange: (open: boolean) => void;
 	entries: ProjectLibraryEntry[];
 	onOpenProject: (path: string) => Promise<unknown>;
-	onImportFile: () => Promise<void>;
+	/** With `multiple`, several picked videos come back as a batch for Home to import. */
+	onImportFile: (options?: { multiple?: boolean }) => Promise<MediaBatchPick | void>;
 	error: string | null;
 	onDeleteProjects: (paths: string[]) => Promise<string[]>;
 	onRenameProject: (path: string, name: string) => Promise<string>;

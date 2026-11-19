@@ -6,7 +6,7 @@ import { supportsHudCaptureProtection } from "@/lib/hudCaptureProtection";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toast";
 export const DashboardSettingsContext = createContext<ReactNode>(null);
-export function DashboardSettings({ onImportFile }: { onImportFile: () => Promise<void> }) {
+export function DashboardSettings({ onImportFile }: { onImportFile: () => Promise<unknown> }) {
 	const settingsContent = useContext(DashboardSettingsContext);
 	const [recordings, setRecordings] = useState("");
 	const [hideHud, setHideHud] = useState(true);
@@ -56,7 +56,7 @@ export function DashboardSettings({ onImportFile }: { onImportFile: () => Promis
 							variant="secondary"
 							size="sm"
 							disabled={busy}
-							onClick={() => void run(onImportFile)}
+							onClick={() => void run(async () => void (await onImportFile()))}
 						>
 							Open file
 						</Button>

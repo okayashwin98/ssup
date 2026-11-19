@@ -847,10 +847,18 @@ interface Window {
 		convertHeicWallpaper?: (
 			bytes: Uint8Array,
 		) => Promise<{ success: boolean; data?: Uint8Array; error?: string }>;
-		openVideoFilePicker: (options?: { includeProjects?: boolean }) => Promise<{
+		openVideoFilePicker: (options?: {
+			includeProjects?: boolean;
+			multiple?: boolean;
+		}) => Promise<{
 			success: boolean;
-			kind?: "media" | "project";
+			kind?: "media" | "project" | "media-batch";
 			path?: string;
+			/** media-batch: the import id and the videos' file names. */
+			batchId?: string;
+			names?: string[];
+			/** media-batch: the picked folder's name, when one folder was picked. */
+			folderName?: string;
 			project?: unknown;
 			extension?: string;
 			message?: string;
@@ -858,6 +866,18 @@ interface Window {
 			error?: string;
 		}>;
 		openAudioFilePicker: () => Promise<{ success: boolean; path?: string; canceled?: boolean }>;
+		importMediaBatch: (batchId: string) => Promise<{
+			success: boolean;
+			message?: string;
+			imported?: string[];
+			skipped?: string[];
+			failed?: { name: string; message: string }[];
+			canceled?: boolean;
+		}>;
+		cancelMediaBatchImport: () => Promise<void>;
+		onMediaBatchImportProgress: (
+			callback: (progress: { done: number; total: number; name: string }) => void,
+		) => () => void;
 		openWhisperExecutablePicker: () => Promise<{
 			success: boolean;
 			path?: string;

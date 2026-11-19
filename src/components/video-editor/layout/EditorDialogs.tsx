@@ -1,3 +1,4 @@
+import type { MediaBatchPick } from "../project/useProjectOpenActions";
 import { Card } from "@heroui/react";
 import type { Dispatch, FormEvent, RefObject, SetStateAction } from "react";
 import { Button } from "@/components/ui/button";
@@ -45,7 +46,9 @@ interface EditorDialogsProps {
 	onShareProject: (path: string) => Promise<void>;
 	/** The personal share password. */
 	shareToken?: string;
-	handleImportMediaOrProject: () => Promise<void>;
+	handleImportMediaOrProject: (options?: {
+		multiple?: boolean;
+	}) => Promise<MediaBatchPick | undefined>;
 	handleOpenProjectFromLibrary: (projectPath: string) => Promise<unknown>;
 	nativeCaptureUnavailableModalOpen: boolean;
 	setNativeCaptureUnavailableModalOpen: Dispatch<SetStateAction<boolean>>;

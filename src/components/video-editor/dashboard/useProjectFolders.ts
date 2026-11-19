@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { toast } from "@/components/ui/toast";
 export const FOLDER_COLORS = ["#929292", "#de85ac", "#d6ad58", "#70ad8a", "#759bd2", "#a68ccc"];
 export type ProjectFolder = { id: string; name: string; color: string; paths: string[] };
-const KEY = "recordly.project-folders.v1";
+export const PROJECT_FOLDERS_KEY = "recordly.project-folders.v1";
+const KEY = PROJECT_FOLDERS_KEY;
 export function moveProjectFolderReferences(previous: string, next: string) {
 	const folders = JSON.parse(localStorage.getItem(KEY) || "[]") as ProjectFolder[];
 	if (!Array.isArray(folders) || !folders.some((folder) => folder.paths?.includes(previous)))

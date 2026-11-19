@@ -36,6 +36,8 @@ type UseProjectOpenActionsInput = {
 	handleSaveProjectAs: () => Promise<unknown>;
 };
 
+export type MediaBatchPick = { batchId: string; names: string[]; folderName?: string };
+
 export function useProjectOpenActions({
 	project,
 	appearance,
@@ -118,83 +120,98 @@ export function useProjectOpenActions({
 		[confirmReplaceSourceWithUnsavedChanges, openProjectAtPath],
 	);
 
-	const handleImportMediaOrProject = useCallback(async () => {
-		if (!(await confirmReplaceSourceWithUnsavedChanges("import a file"))) return;
-		try {
-			const result = await window.electronAPI.openVideoFilePicker({ includeProjects: true });
-			if (result.canceled) return;
-			if (!result.success) {
-				toast.error(result.message || "Failed to import file");
-				return;
-			}
-			if (result.kind === "project" || result.project) {
-				if (!(await applyLoadedProject(result.project, result.path ?? null))) {
-					project.setError("Could not load project: invalid project file format");
+	/** With `multiple`, several videos or a folder come back as a batch for the caller to import. */
+	const handleImportMediaOrProject = useCallback(
+		async (options?: { multiple?: boolean }) => {
+			if (!(await confirmReplaceSourceWithUnsavedChanges("import a file"))) return;
+			try {
+				const result = await window.electronAPI.openVideoFilePicker({
+					includeProjects: true,
+					multiple: options?.multiple,
+				});
+				if (result.canceled) return;
+				if (!result.success) {
+					toast.error(result.message || "Failed to import file");
 					return;
 				}
+				if (result.kind === "media-batch" && result.batchId) {
+					const batch: MediaBatchPick = {
+						batchId: result.batchId,
+						names: result.names ?? [],
+						folderName: result.folderName,
+					};
+					return batch;
+				}
+				if (result.kind === "project" || result.project) {
+					if (!(await applyLoadedProject(result.project, result.path ?? null))) {
+						project.setError("Could not load project: invalid project file format");
+						return;
+					}
+					project.setProjectBrowserOpen(false);
+					await refreshProjectLibrary();
+					toast.success(
+						result.path ? `Project loaded from ${result.path}` : "Project loaded",
+					);
+					return;
+				}
+				if (!result.path) {
+					toast.error("No media file selected");
+					return;
+				}
+
+				const sourcePath = fromFileUrl(result.path);
+				const setPathResult = await window.electronAPI.setCurrentVideoPath(sourcePath, {
+					preserveProjectPath: false,
+				});
+				if (!setPathResult.success) throw new Error("Could not load media");
+				const sourceVideoUrl = await resolveVideoUrl(sourcePath);
+				try {
+					videoPlaybackRef.current?.pause();
+				} catch {
+					// The preview may already be tearing down.
+				}
+				setIsPlaying(false);
+				setCurrentTime(0);
+				setDuration(0);
+				project.setVideoSourcePath(sourcePath);
+				project.setVideoPath(sourceVideoUrl);
+				project.setCurrentProjectPath(null);
+				project.setLastSavedSnapshot(null);
+				resetSourceScopedEditorState();
+				pendingFreshRecordingAutoZoomPathRef.current =
+					appearance.autoApplyFreshRecordingAutoZooms ? sourceVideoUrl : null;
+				appearance.setWebcam((previous) => ({
+					...previous,
+					visibleRanges: undefined,
+					enabled: false,
+					sourcePath: null,
+					timeOffsetMs: DEFAULT_WEBCAM_TIME_OFFSET_MS,
+				}));
+				applySessionPresentation(null);
 				project.setProjectBrowserOpen(false);
 				await refreshProjectLibrary();
-				toast.success(
-					result.path ? `Project loaded from ${result.path}` : "Project loaded",
+				toast.success("Media imported");
+			} catch (error) {
+				project.setError(
+					`Could not load file: ${error instanceof Error ? error.message : String(error)}`,
 				);
-				return;
 			}
-			if (!result.path) {
-				toast.error("No media file selected");
-				return;
-			}
-
-			const sourcePath = fromFileUrl(result.path);
-			const setPathResult = await window.electronAPI.setCurrentVideoPath(sourcePath, {
-				preserveProjectPath: false,
-			});
-			if (!setPathResult.success) throw new Error("Could not load media");
-			const sourceVideoUrl = await resolveVideoUrl(sourcePath);
-			try {
-				videoPlaybackRef.current?.pause();
-			} catch {
-				// The preview may already be tearing down.
-			}
-			setIsPlaying(false);
-			setCurrentTime(0);
-			setDuration(0);
-			project.setVideoSourcePath(sourcePath);
-			project.setVideoPath(sourceVideoUrl);
-			project.setCurrentProjectPath(null);
-			project.setLastSavedSnapshot(null);
-			resetSourceScopedEditorState();
-			pendingFreshRecordingAutoZoomPathRef.current =
-				appearance.autoApplyFreshRecordingAutoZooms ? sourceVideoUrl : null;
-			appearance.setWebcam((previous) => ({
-				...previous,
-				visibleRanges: undefined,
-				enabled: false,
-				sourcePath: null,
-				timeOffsetMs: DEFAULT_WEBCAM_TIME_OFFSET_MS,
-			}));
-			applySessionPresentation(null);
-			project.setProjectBrowserOpen(false);
-			await refreshProjectLibrary();
-			toast.success("Media imported");
-		} catch (error) {
-			project.setError(
-				`Could not load file: ${error instanceof Error ? error.message : String(error)}`,
-			);
-		}
-	}, [
-		confirmReplaceSourceWithUnsavedChanges,
-		applyLoadedProject,
-		project,
-		appearance,
-		videoPlaybackRef,
-		setIsPlaying,
-		setCurrentTime,
-		setDuration,
-		resetSourceScopedEditorState,
-		pendingFreshRecordingAutoZoomPathRef,
-		applySessionPresentation,
-		refreshProjectLibrary,
-	]);
+		},
+		[
+			confirmReplaceSourceWithUnsavedChanges,
+			applyLoadedProject,
+			project,
+			appearance,
+			videoPlaybackRef,
+			setIsPlaying,
+			setCurrentTime,
+			setDuration,
+			resetSourceScopedEditorState,
+			pendingFreshRecordingAutoZoomPathRef,
+			applySessionPresentation,
+			refreshProjectLibrary,
+		],
+	);
 
 	const handleOpenProjectBrowser = useCallback(async () => {
 		if (project.projectBrowserOpen) {

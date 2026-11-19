@@ -880,8 +880,20 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	convertHeicWallpaper: (bytes: Uint8Array) => {
 		return ipcRenderer.invoke("convert-heic-wallpaper", bytes);
 	},
-	openVideoFilePicker: (options?: { includeProjects?: boolean }) => {
+	openVideoFilePicker: (options?: { includeProjects?: boolean; multiple?: boolean }) => {
 		return ipcRenderer.invoke("open-video-file-picker", options);
+	},
+	importMediaBatch: (batchId: string) => ipcRenderer.invoke("import-media-batch", batchId),
+	cancelMediaBatchImport: () => ipcRenderer.invoke("cancel-media-batch-import"),
+	onMediaBatchImportProgress: (
+		callback: (progress: { done: number; total: number; name: string }) => void,
+	) => {
+		const listener = (
+			_event: Electron.IpcRendererEvent,
+			progress: { done: number; total: number; name: string },
+		) => callback(progress);
+		ipcRenderer.on("media-batch-import-progress", listener);
+		return () => ipcRenderer.removeListener("media-batch-import-progress", listener);
 	},
 	openAudioFilePicker: () => {
 		return ipcRenderer.invoke("open-audio-file-picker");

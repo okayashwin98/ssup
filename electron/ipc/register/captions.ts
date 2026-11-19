@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+import fs from "node:fs/promises";
 import path from "node:path";
 import { dialog, ipcMain } from "electron";
 import { generateAutoCaptionsFromVideo } from "../captions/generate";
@@ -11,15 +13,47 @@ import { LEGACY_PROJECT_FILE_EXTENSIONS, PROJECT_FILE_EXTENSION } from "../const
 import { hasProjectFileExtension, loadProjectFromPath } from "../project/manager";
 import { setCurrentProjectPath } from "../state";
 import { approveUserPath, getRecordingsDir } from "../utils";
+import { expandMediaPaths, importMediaBatch } from "../project/importMediaBatch";
 
 const VIDEO_FILE_EXTENSIONS = ["webm", "mp4", "mov", "avi", "mkv"];
 const PROJECT_FILE_EXTENSIONS = [PROJECT_FILE_EXTENSION, ...LEGACY_PROJECT_FILE_EXTENSIONS];
 
 type OpenVideoFilePickerOptions = {
 	includeProjects?: boolean;
+	/** Allow several videos or whole folders; more than one video comes back as a batch. */
+	multiple?: boolean;
 };
 
+// Only files the user picked can be imported; the renderer refers to them by id.
+let pendingBatch: { id: string; files: string[] } | null = null;
+let batchAbort: AbortController | null = null;
+
 export function registerCaptionHandlers() {
+	ipcMain.handle("import-media-batch", async (event, batchId: unknown) => {
+		if (!pendingBatch || pendingBatch.id !== batchId)
+			return { success: false, message: "Pick the videos again" };
+		if (batchAbort) return { success: false, message: "An import is already running" };
+		const { files } = pendingBatch;
+		pendingBatch = null;
+		batchAbort = new AbortController();
+		try {
+			const result = await importMediaBatch(await getRecordingsDir(), files, {
+				signal: batchAbort.signal,
+				onProgress: (progress) => {
+					if (!event.sender.isDestroyed())
+						event.sender.send("media-batch-import-progress", progress);
+				},
+			});
+			return { success: true, ...result };
+		} catch (error) {
+			return { success: false, message: String(error) };
+		} finally {
+			batchAbort = null;
+		}
+	});
+	ipcMain.handle("cancel-media-batch-import", () => {
+		batchAbort?.abort();
+	});
 	ipcMain.handle("open-video-file-picker", async (_, options?: OpenVideoFilePickerOptions) => {
 		try {
 			const includeProjects = Boolean(options?.includeProjects);
@@ -45,7 +79,9 @@ export function registerCaptionHandlers() {
 						: []),
 					{ name: "All Files", extensions: ["*"] },
 				],
-				properties: ["openFile"],
+				properties: options?.multiple
+					? ["openFile", "openDirectory", "multiSelections"]
+					: ["openFile"],
 			});
 
 			if (result.canceled || result.filePaths.length === 0) {
@@ -53,6 +89,33 @@ export function registerCaptionHandlers() {
 			}
 
 			const selectedPath = result.filePaths[0];
+			const pickedFolder = await fs
+				.stat(selectedPath)
+				.then((stat) => stat.isDirectory())
+				.catch(() => false);
+			if (options?.multiple && (result.filePaths.length > 1 || pickedFolder)) {
+				const files = await expandMediaPaths(result.filePaths);
+				if (!files.length)
+					return { success: false, message: "No videos found in what you picked" };
+				if (files.length > 1 || pickedFolder) {
+					pendingBatch = { id: randomUUID(), files };
+					return {
+						success: true,
+						kind: "media-batch",
+						batchId: pendingBatch.id,
+						names: files.map((file) => path.basename(file)),
+						folderName: pickedFolder ? path.basename(selectedPath) : undefined,
+					};
+				}
+				approveUserPath(files[0]);
+				setCurrentProjectPath(null);
+				return {
+					success: true,
+					kind: "media",
+					path: files[0],
+					extension: path.extname(files[0]).replace(/^\./, "").toLowerCase(),
+				};
+			}
 
 			if (includeProjects && hasProjectFileExtension(selectedPath)) {
 				const projectResult = await loadProjectFromPath(selectedPath);
