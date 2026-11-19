@@ -14,6 +14,7 @@ import {
 	type I18nNamespace,
 	SUPPORTED_LOCALES,
 } from "@/i18n/config";
+import { loadLastingValue, saveLastingValue } from "@/lib/appSettings";
 import enCommon from "@/i18n/locales/en/common.json";
 import enDialogs from "@/i18n/locales/en/dialogs.json";
 import enEditor from "@/i18n/locales/en/editor.json";
@@ -251,7 +252,15 @@ function getInitialLocale(): AppLocale {
 		return DEFAULT_LOCALE;
 	}
 
-	const storedLocale = window.localStorage.getItem(LOCALE_STORAGE_KEY);
+	// Kept in app settings so it survives a restart. Older builds stored the bare name in
+	// browser storage, which the lasting-value reader (expecting JSON) skips.
+	const lasting = loadLastingValue(LOCALE_STORAGE_KEY);
+	let storedLocale = typeof lasting === "string" ? lasting : null;
+	try {
+		storedLocale ??= window.localStorage.getItem(LOCALE_STORAGE_KEY);
+	} catch {
+		// Browser storage is optional.
+	}
 	if (storedLocale) {
 		return normalizeLocale(storedLocale);
 	}
@@ -312,9 +321,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
 	const setLocale = useCallback((nextLocale: AppLocale) => {
 		setLocaleState(nextLocale);
-		if (typeof window !== "undefined") {
-			window.localStorage.setItem(LOCALE_STORAGE_KEY, nextLocale);
-		}
+		saveLastingValue(LOCALE_STORAGE_KEY, nextLocale);
 	}, []);
 
 	useEffect(() => {

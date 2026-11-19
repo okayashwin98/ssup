@@ -1,5 +1,7 @@
 // Google Fonts loading and management utility
 
+import { loadLastingValue, saveLastingValue } from "./appSettings";
+
 export interface CustomFont {
 	id: string;
 	name: string; // Display name
@@ -18,25 +20,21 @@ export class DuplicateFontError extends Error {
 	}
 }
 
-// Load custom fonts from localStorage
+// Load custom fonts from app settings, so they survive a restart (legacy key still read)
 export function getCustomFonts(): CustomFont[] {
-	try {
-		const stored =
-			localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(LEGACY_STORAGE_KEY);
-		return stored ? JSON.parse(stored) : [];
-	} catch (error) {
-		console.error("Failed to load custom fonts from storage:", error);
-		return [];
-	}
+	const stored = loadLastingValue(STORAGE_KEY) ?? loadLastingValue(LEGACY_STORAGE_KEY);
+	return Array.isArray(stored) ? (stored as CustomFont[]) : [];
 }
 
-// Save custom fonts to localStorage
+// Save custom fonts to app settings
 export function saveCustomFonts(fonts: CustomFont[]): void {
+	if (!saveLastingValue(STORAGE_KEY, fonts)) {
+		console.error("Failed to save custom fonts to storage");
+	}
 	try {
-		localStorage.setItem(STORAGE_KEY, JSON.stringify(fonts));
-		localStorage.removeItem(LEGACY_STORAGE_KEY);
-	} catch (error) {
-		console.error("Failed to save custom fonts to storage:", error);
+		globalThis.localStorage?.removeItem(LEGACY_STORAGE_KEY);
+	} catch {
+		// Browser storage is optional.
 	}
 }
 

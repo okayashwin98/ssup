@@ -19,3 +19,24 @@ it("retains share links across renames and clears obsolete paths", () => {
 	removeProjectShareLinks(["new"]);
 	expect(getProjectShareLink("new")).toBeUndefined();
 });
+it("keeps share links across a restart that empties browser storage", async () => {
+	const settings = new Map<string, unknown>();
+	const stubBrowser = () =>
+		vi.stubGlobal("localStorage", { getItem: () => null, setItem: () => undefined });
+	vi.stubGlobal("electronAPI", {
+		getAppSetting: (key: string) => (settings.has(key) ? settings.get(key) : null),
+		setAppSetting: (key: string, value: unknown) => {
+			settings.set(key, structuredClone(value));
+			return true;
+		},
+	});
+	stubBrowser();
+	vi.resetModules();
+	const before = await import("./projectShareLinks");
+	before.saveProjectShareLink("/r/A/A.ssup", "https://example.com/a");
+	// A restart: fresh screens, fresh browser storage, same app settings.
+	stubBrowser();
+	vi.resetModules();
+	const after = await import("./projectShareLinks");
+	expect(after.getProjectShareLink("/r/A/A.ssup")).toBe("https://example.com/a");
+});

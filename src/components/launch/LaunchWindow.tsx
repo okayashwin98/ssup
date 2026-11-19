@@ -2,6 +2,7 @@ import { type MouseEvent, useCallback, useEffect, useRef, useState } from "react
 import { swayPhase } from "@/components/capture-picker/hoverSway";
 import { ArrowClockwiseIcon, MinusIcon, TimerIcon } from "@/components/ui/icons";
 import { toast } from "@/components/ui/toast";
+import { loadLastingValue, saveLastingValue } from "@/lib/appSettings";
 import { useScopedT } from "../../contexts/I18nContext";
 import { useMicrophoneDevices } from "../../hooks/useMicrophoneDevices";
 import { useScreenRecorder } from "../../hooks/useScreenRecorder";
@@ -92,12 +93,9 @@ function useHudVisible() {
 const dragBar = (phase: "start" | "move" | "end", screenX: number, screenY: number) =>
 	window.electronAPI.hudOverlayDrag(phase, screenX, screenY);
 
+// Kept in app settings so it survives a restart; older builds stored "true"/"false" text.
 function readBubblePreference() {
-	try {
-		return localStorage.getItem(WEBCAM_BUBBLE_STORAGE_KEY) !== "false";
-	} catch {
-		return true;
-	}
+	return loadLastingValue(WEBCAM_BUBBLE_STORAGE_KEY) !== false;
 }
 
 export function LaunchWindow() {
@@ -435,11 +433,8 @@ export function LaunchWindow() {
 		else if (choice === "bubble") {
 			const next = !showBubble;
 			setShowBubble(next);
-			try {
-				localStorage.setItem(WEBCAM_BUBBLE_STORAGE_KEY, String(next));
-			} catch {
-				// Remembering the choice is a convenience.
-			}
+			// Remembering the choice is a convenience.
+			saveLastingValue(WEBCAM_BUBBLE_STORAGE_KEY, next);
 		} else if (choice?.startsWith("device:")) {
 			const deviceId = choice.slice("device:".length);
 			setWebcamEnabled(true);
