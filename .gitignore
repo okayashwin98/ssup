@@ -53,3 +53,6 @@ electron/native/liquid-glass/build/
 *.personal.jsonc
 .dev.vars
 .claude/
+
+# Mac helper programs: built on install and before every app build, so not stored here.
+electron/native/bin/
