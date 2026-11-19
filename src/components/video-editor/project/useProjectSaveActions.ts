@@ -13,6 +13,8 @@ type SaveProjectOptions = {
 	remountPreviewAfterSave?: boolean;
 	refreshLibraryAfterSave?: boolean;
 	captureThumbnail?: boolean;
+	/** Not an edit: write the file but keep its last-edited time. */
+	keepModifiedTime?: boolean;
 };
 
 type UseProjectSaveActionsInput = {
@@ -124,6 +126,7 @@ export function useProjectSaveActions({
 								fileNameBase,
 								targetPath,
 								thumbnail,
+								{ keepModifiedTime: options?.keepModifiedTime },
 							);
 					if (result.canceled) {
 						if (!options?.silent) toast.info("Project save canceled");

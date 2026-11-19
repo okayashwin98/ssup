@@ -128,12 +128,25 @@ async function commitProjectFile(projectPath: string, contents: string): Promise
 export async function writeProjectFileAtomically(
 	projectPath: string,
 	contents: string,
+	options: { skipIfUnchanged?: boolean; keepModifiedTime?: boolean } = {},
 ): Promise<void> {
 	const queueKey = getQueueKey(projectPath);
 	const previousWrite = pendingWrites.get(queueKey) ?? Promise.resolve();
 	const currentWrite = previousWrite
 		.catch(() => undefined)
-		.then(() => commitProjectFile(projectPath, contents));
+		.then(async () => {
+			// Compared after earlier queued writes land, so a stale read can't skip a needed one.
+			if (
+				options.skipIfUnchanged &&
+				(await fs.readFile(projectPath, "utf8").catch(() => null)) === contents
+			)
+				return;
+			const previous = options.keepModifiedTime
+				? await fs.stat(projectPath).catch(() => null)
+				: null;
+			await commitProjectFile(projectPath, contents);
+			if (previous) await fs.utimes(projectPath, new Date(), previous.mtime);
+		});
 	pendingWrites.set(queueKey, currentWrite);
 
 	try {

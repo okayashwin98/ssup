@@ -1,5 +1,5 @@
 import type { Dispatch, MutableRefObject, RefObject, SetStateAction } from "react";
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { useI18n } from "@/contexts/I18nContext";
 import type { AspectRatio } from "@/utils/aspectRatioUtils";
 import { useAutoCaptionController } from "../captions/useAutoCaptionController";
@@ -7,6 +7,7 @@ import { loadEditorPreferences } from "../editorPreferences";
 import { useEditorHistory } from "../hooks/useEditorHistory";
 import { useEditorPreferencesPersistence } from "../presets/useEditorPreferencesPersistence";
 import { hasUnsavedProjectChanges } from "../projectDirtyState";
+import { cloneStructured } from "../videoEditorUtils";
 import { getDevOpenRecordingConfig, getSmokeExportConfig } from "../smokeExportConfig";
 import type { useAppearanceState } from "../state/useAppearanceState";
 import type { useProjectState } from "../state/useProjectState";
@@ -95,7 +96,26 @@ export function useEditorProjectController(input: Input) {
 		nextAudioIdRef: input.nextAudioIdRef,
 		nextAnnotationZIndexRef: input.nextAnnotationZIndexRef,
 	});
+	// From opening a saved project until the first click or key press, changes the editor makes
+	// by itself (the first clip, filled-in defaults) count as part of opening, not as an edit,
+	// so an untouched project is never rewritten and keeps its last-edited time.
+	const openingRef = useRef(false);
+	const onProjectOpened = useCallback(() => {
+		openingRef.current = true;
+	}, []);
+	useEffect(() => {
+		const endOpening = () => {
+			openingRef.current = false;
+		};
+		window.addEventListener("pointerdown", endOpening, true);
+		window.addEventListener("keydown", endOpening, true);
+		return () => {
+			window.removeEventListener("pointerdown", endOpening, true);
+			window.removeEventListener("keydown", endOpening, true);
+		};
+	}, []);
 	const lifecycle = useProjectLifecycle({
+		onProjectOpened,
 		t: input.t,
 		project: input.project,
 		appearance: input.appearance,
@@ -135,6 +155,18 @@ export function useEditorProjectController(input: Input) {
 			),
 		[lifecycle.currentProjectSnapshot, input.project.lastSavedSnapshot],
 	);
+	const { setLastSavedSnapshot } = input.project;
+	useEffect(() => {
+		// A new recording or imported file has no saved baseline: opening is over.
+		if (!input.project.lastSavedSnapshot) openingRef.current = false;
+		if (openingRef.current && hasUnsavedChanges && input.project.lastSavedSnapshot)
+			setLastSavedSnapshot(cloneStructured(lifecycle.currentProjectSnapshot));
+	}, [
+		hasUnsavedChanges,
+		input.project.lastSavedSnapshot,
+		lifecycle.currentProjectSnapshot,
+		setLastSavedSnapshot,
+	]);
 
 	useInitialEditorSource({
 		project: input.project,

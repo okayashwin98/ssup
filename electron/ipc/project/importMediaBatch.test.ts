@@ -81,4 +81,18 @@ describe("bulk media import", () => {
 			"b",
 		]);
 	});
+
+	it("dates each project, and keeps its video's date, from when the video was recorded", async () => {
+		const source = await tempDir();
+		const recordings = await tempDir();
+		const video = path.join(source, "Old call.mp4");
+		await fs.writeFile(video, "old");
+		const recorded = new Date("2023-03-14T09:30:00Z");
+		await fs.utimes(video, recorded, recorded);
+		const { imported } = await importMediaBatch(recordings, [video]);
+		const project = await fs.stat(imported[0]);
+		expect(project.mtimeMs).toBe(recorded.getTime());
+		const copy = JSON.parse(await fs.readFile(imported[0], "utf8")).videoPath;
+		expect((await fs.stat(copy)).birthtimeMs).toBe(recorded.getTime());
+	});
 });

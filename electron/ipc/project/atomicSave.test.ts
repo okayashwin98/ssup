@@ -109,4 +109,36 @@ describe("writeProjectFileAtomically", () => {
 			expect((await fs.stat(projectPath)).mode & 0o777).toBe(0o666);
 		},
 	);
+
+	it("leaves an unchanged project untouched, including its last-edited time", async () => {
+		await writeProjectFileAtomically(projectPath, '{"a":1}');
+		const old = new Date("2023-03-14T09:30:00Z");
+		await fs.utimes(projectPath, old, old);
+		await writeProjectFileAtomically(projectPath, '{"a":1}', { skipIfUnchanged: true });
+		expect((await fs.stat(projectPath)).mtimeMs).toBe(old.getTime());
+		await writeProjectFileAtomically(projectPath, '{"a":2}', { skipIfUnchanged: true });
+		expect(await fs.readFile(projectPath, "utf8")).toBe('{"a":2}');
+		expect((await fs.stat(projectPath)).mtimeMs).toBeGreaterThan(old.getTime());
+	});
+
+	it("compares against queued writes, not a stale file", async () => {
+		await writeProjectFileAtomically(projectPath, "X");
+		// Y is queued, then X again: X must still be written after Y lands.
+		await Promise.all([
+			writeProjectFileAtomically(projectPath, "Y"),
+			writeProjectFileAtomically(projectPath, "X", { skipIfUnchanged: true }),
+		]);
+		expect(await fs.readFile(projectPath, "utf8")).toBe("X");
+	});
+
+	it("can rewrite a project without changing its last-edited time", async () => {
+		await writeProjectFileAtomically(projectPath, "{}");
+		const old = new Date("2022-01-10T08:00:00Z");
+		await fs.utimes(projectPath, old, old);
+		await writeProjectFileAtomically(projectPath, '{"filled":true}', {
+			keepModifiedTime: true,
+		});
+		expect(await fs.readFile(projectPath, "utf8")).toBe('{"filled":true}');
+		expect((await fs.stat(projectPath)).mtimeMs).toBe(old.getTime());
+	});
 });

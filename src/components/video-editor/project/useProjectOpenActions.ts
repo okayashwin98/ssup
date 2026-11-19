@@ -227,6 +227,8 @@ export function useProjectOpenActions({
 				await saveProject(false, {
 					remountPreviewAfterSave: false,
 					refreshLibraryAfterSave: false,
+					// Refreshes the preview; with no edit, the project keeps its last-edited time.
+					keepModifiedTime: !hasUnsavedChanges,
 				});
 			}
 		} finally {
@@ -242,6 +244,7 @@ export function useProjectOpenActions({
 		saveProject,
 		project.videoPath,
 		project.error,
+		hasUnsavedChanges,
 	]);
 
 	useEffect(() => {

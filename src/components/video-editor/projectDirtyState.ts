@@ -47,7 +47,12 @@ function omitTransientWebcamMediaFields(project: EditorProjectData | null) {
 		return project;
 	}
 
-	const editor = stripProjectUserPreferences(project.editor) as Record<string, unknown>;
+	// The auto-clip bookkeeping is filled in on load but never part of the live editor state.
+	const {
+		autoFullTrackClipId: _autoFullTrackClipId,
+		autoFullTrackClipEndMs: _autoFullTrackClipEndMs,
+		...editor
+	} = stripProjectUserPreferences(project.editor) as Record<string, unknown>;
 	const webcam = editor.webcam;
 	if (!isComparableObject(webcam)) {
 		return { ...project, editor };

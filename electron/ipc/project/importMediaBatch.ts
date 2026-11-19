@@ -74,7 +74,7 @@ export async function importMediaBatch(
 		options.onProgress?.({ done: index, total: files.length, name });
 		let projectPath: string | null = null;
 		try {
-			const { size } = await fs.stat(source);
+			const { size, birthtimeMs, mtimeMs } = await fs.stat(source);
 			const key = `${name.toLowerCase()}|${size}`;
 			if (existing.has(key)) {
 				result.skipped.push(source);
@@ -99,6 +99,9 @@ export async function importMediaBatch(
 				"utf8",
 			);
 			await fs.rename(temporary, projectPath);
+			// Home orders by last edit, so an untouched import sorts by when it was recorded.
+			const recordedAt = birthtimeMs > 0 ? birthtimeMs : mtimeMs;
+			if (recordedAt > 0) await fs.utimes(projectPath, new Date(), recordedAt / 1000);
 			existing.add(key);
 			result.imported.push(projectPath);
 		} catch (error) {

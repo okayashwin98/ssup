@@ -54,6 +54,8 @@ type Input = {
 		editor: Parameters<typeof createProjectData>[1],
 	) => Parameters<typeof createProjectData>[1];
 	resetHistory: () => void;
+	/** Called as a saved project finishes loading, before its baseline is recorded. */
+	onProjectOpened?: () => void;
 	refs: {
 		nextZoomIdRef: MutableRefObject<number>;
 		nextClipIdRef: MutableRefObject<number>;
@@ -210,6 +212,7 @@ export function useProjectLifecycle(input: Input) {
 		refs.nextAnnotationZIndexRef.current =
 			editor.annotationRegions.reduce((max, region) => Math.max(max, region.zIndex), 0) + 1;
 		current.resetHistory();
+		current.onProjectOpened?.();
 		project.setLastSavedSnapshot(
 			cloneStructured(
 				createProjectData(

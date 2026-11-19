@@ -1010,6 +1010,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		suggestedName?: string,
 		existingProjectPath?: string,
 		thumbnailDataUrl?: string | null,
+		options?: { keepModifiedTime?: boolean },
 	) => {
 		return ipcRenderer.invoke(
 			"save-project-file",
@@ -1017,6 +1018,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
 			suggestedName,
 			existingProjectPath,
 			thumbnailDataUrl,
+			options,
 		);
 	},
 	saveProjectFileNamed: (

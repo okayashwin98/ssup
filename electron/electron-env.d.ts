@@ -1000,6 +1000,8 @@ interface Window {
 			suggestedName?: string,
 			existingProjectPath?: string,
 			thumbnailDataUrl?: string | null,
+			/** keepModifiedTime: a save that is not an edit keeps the file's last-edited time. */
+			options?: { keepModifiedTime?: boolean },
 		) => Promise<{
 			success: boolean;
 			path?: string;

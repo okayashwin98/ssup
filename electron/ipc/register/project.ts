@@ -616,6 +616,7 @@ export function registerProjectHandlers() {
 			suggestedName?: string,
 			existingProjectPath?: string,
 			thumbnailDataUrl?: string | null,
+			options?: { keepModifiedTime?: unknown },
 		) => {
 			try {
 				const recordingsDir = await getRecordingsDir();
@@ -632,9 +633,14 @@ export function registerProjectHandlers() {
 						: null;
 
 				if (trustedExistingProjectPath) {
+					// An identical save is not an edit: leave the file, and its last-edited time, alone.
 					await writeProjectFileAtomically(
 						trustedExistingProjectPath,
 						JSON.stringify(preparedProject.projectData, null, 2),
+						{
+							skipIfUnchanged: true,
+							keepModifiedTime: options?.keepModifiedTime === true,
+						},
 					);
 					setCurrentProjectPath(trustedExistingProjectPath);
 					await saveProjectThumbnail(trustedExistingProjectPath, thumbnailDataUrl);
