@@ -124,14 +124,17 @@ test("populated project and preset popovers fit long names and dismiss outside",
 		});
 	});
 	await page.getByRole("button", { name: "Home", exact: true }).click();
-	const projects = page.getByRole("dialog", { name: "Projects", exact: true });
-	await expect(projects.getByRole("button", { name: /A very long project name/ })).toHaveCount(5);
+	// Home is the full projects dashboard now, not a small popover.
+	const projects = page.getByRole("dialog", { name: "Projects dashboard", exact: true });
+	await expect(projects.getByRole("button", { name: /^A very long project name/ })).toHaveCount(
+		5,
+	);
 	await expectButtonsFit(projects);
 	await page.screenshot({
 		path: "test-results/editor-projects-populated.png",
 		animations: "disabled",
 	});
-	await clickOutside(page);
+	await page.keyboard.press("Escape");
 	await expect(projects).toHaveCount(0);
 	await page.getByRole("button", { name: "Open presets", exact: true }).click();
 	const presets = page.getByRole("dialog", { name: "Presets", exact: true });
@@ -153,12 +156,14 @@ test("populated project and preset popovers fit long names and dismiss outside",
 	});
 	await clickOutside(page);
 	await expect(presets).toHaveCount(0);
-	await page.getByRole("button", { name: "Export", exact: true }).click();
-	await expect(page.getByRole("grid", { name: "Format", exact: true })).toBeVisible();
+	await page.getByRole("button", { name: "Publish", exact: true }).click();
+	const publish = page.getByRole("dialog", { name: "Publish" });
+	await expect(publish).toBeVisible();
 	await clickOutside(page);
-	await expect(page.getByRole("grid", { name: "Format", exact: true })).toHaveCount(0);
+	await expect(publish).toHaveCount(0);
 	await page.getByRole("button", { name: "Crop Video", exact: true }).click();
 	await expect(page.getByRole("dialog", { name: "Crop Video" })).toBeVisible();
-	await page.mouse.click(20, 300);
+	// Crop is drawn on the preview now: Done, Enter or Escape closes it, a stray click does not.
+	await page.keyboard.press("Escape");
 	await expect(page.getByRole("dialog", { name: "Crop Video" })).toHaveCount(0);
 });

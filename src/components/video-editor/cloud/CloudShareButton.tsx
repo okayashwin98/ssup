@@ -270,7 +270,7 @@ export function CloudShareButton({
 								value={notes}
 								onChange={(event) => setNotes(event.target.value.slice(0, 2000))}
 								disabled={uploading}
-								className="block h-20 w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+								className="field-look block h-20 w-full resize-none px-3 py-2 text-sm placeholder:text-muted-foreground"
 							/>
 							{!inline && (
 								<p className="text-right text-[11px] text-muted-foreground">

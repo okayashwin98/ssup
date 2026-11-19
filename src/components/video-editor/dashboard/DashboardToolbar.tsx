@@ -34,7 +34,7 @@ export function DashboardToolbar({
 						onChange={(e) => setQuery(e.target.value)}
 						aria-label={isRaw ? "Search raw files" : "Search projects"}
 						placeholder={isRaw ? "Search raw files…" : "Search projects…"}
-						className="h-11 w-full border-0 bg-default/30 pl-10 shadow-none"
+						className="h-11 w-full bg-default/30 pl-10"
 					/>
 				</div>
 				<div>

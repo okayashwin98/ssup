@@ -142,7 +142,7 @@ export function ProjectCard({
 								autoFocus
 								onFocus={(event) => event.currentTarget.select()}
 								aria-label={entry.rawSource ? "Raw file name" : "Project name"}
-								className="inline-project-name h-6 w-[calc(100%+12px)] pr-8 text-[12px] font-medium"
+								className="inline-project-name -my-1.5 block h-8 w-[calc(100%+12px)] text-[12px] font-medium leading-5"
 								value={name}
 								disabled={busy}
 								maxLength={120}
@@ -184,146 +184,150 @@ export function ProjectCard({
 						)}
 					</div>
 				</div>
-				<Dropdown>
-					<Button
-						variant="ghost"
-						size="icon"
-						aria-label={`Options for ${entry.name}`}
-						data-tooltip="Options"
-						className="absolute right-0 top-5 size-6 min-w-6 text-muted-foreground"
-					>
-						<DotsThree weight="bold" className="size-5" />
-					</Button>
-					<Dropdown.Popover>
-						<Dropdown.Menu aria-label="Project options">
-							<Dropdown.Item
-								id="open"
-								isDisabled={Boolean(webUrl) && !webReady}
-								onAction={() => openEntry(entry)}
-							>
-								{webUrl
-									? "Open link"
-									: entry.rawSource
-										? "Preview file"
-										: "Open project"}
-							</Dropdown.Item>
-							<Dropdown.Item
-								id="rename"
-								onAction={() => {
-									setName(entry.name);
-									requestAnimationFrame(() =>
-										requestAnimationFrame(() => setEditing(true)),
-									);
-								}}
-							>
-								Rename
-							</Dropdown.Item>
-							{!webUrl && (
-								<>
-									<Dropdown.SubmenuTrigger>
-										<Dropdown.Item id="folders" textValue="Add to folder">
-											Add to folder
-											<Dropdown.SubmenuIndicator />
-										</Dropdown.Item>
-										<Dropdown.Popover>
-											<Dropdown.Menu aria-label="Assign project folder">
-												{folders.map((item) => (
-													<Dropdown.Item
-														key={item.id}
-														id={item.id}
-														textValue={item.name}
-														onAction={() =>
-															assignFolder(entry.path, item.id)
-														}
-													>
-														<FolderSimple
-															weight="fill"
-															style={{ color: item.color }}
-														/>
-														{item.name}
-														{item.paths.includes(entry.path) && (
-															<Check className="ml-auto size-3" />
-														)}
-													</Dropdown.Item>
-												))}
-												{folder && (
-													<Dropdown.Item
-														id="remove-folders"
-														onAction={() =>
-															assignFolder(entry.path, "none")
-														}
-													>
-														Remove from all folders
-													</Dropdown.Item>
-												)}
-												{!folders.length && (
-													<Dropdown.Item id="no-folders" isDisabled>
-														Create a folder in the sidebar
-													</Dropdown.Item>
-												)}
-											</Dropdown.Menu>
-										</Dropdown.Popover>
-									</Dropdown.SubmenuTrigger>
-									{!entry.rawSource && (
+				{!editing && (
+					<Dropdown>
+						<Button
+							variant="ghost"
+							size="icon"
+							aria-label={`Options for ${entry.name}`}
+							data-tooltip="Options"
+							className="absolute right-0 top-5 size-6 min-w-6 text-muted-foreground"
+						>
+							<DotsThree weight="bold" className="size-5" />
+						</Button>
+						<Dropdown.Popover>
+							<Dropdown.Menu aria-label="Project options">
+								<Dropdown.Item
+									id="open"
+									isDisabled={Boolean(webUrl) && !webReady}
+									onAction={() => openEntry(entry)}
+								>
+									{webUrl
+										? "Open link"
+										: entry.rawSource
+											? "Preview file"
+											: "Open project"}
+								</Dropdown.Item>
+								<Dropdown.Item
+									id="rename"
+									onAction={() => {
+										setName(entry.name);
+										requestAnimationFrame(() =>
+											requestAnimationFrame(() => setEditing(true)),
+										);
+									}}
+								>
+									Rename
+								</Dropdown.Item>
+								{!webUrl && (
+									<>
+										<Dropdown.SubmenuTrigger>
+											<Dropdown.Item id="folders" textValue="Add to folder">
+												Add to folder
+												<Dropdown.SubmenuIndicator />
+											</Dropdown.Item>
+											<Dropdown.Popover>
+												<Dropdown.Menu aria-label="Assign project folder">
+													{folders.map((item) => (
+														<Dropdown.Item
+															key={item.id}
+															id={item.id}
+															textValue={item.name}
+															onAction={() =>
+																assignFolder(entry.path, item.id)
+															}
+														>
+															<FolderSimple
+																weight="fill"
+																style={{ color: item.color }}
+															/>
+															{item.name}
+															{item.paths.includes(entry.path) && (
+																<Check className="ml-auto size-3" />
+															)}
+														</Dropdown.Item>
+													))}
+													{folder && (
+														<Dropdown.Item
+															id="remove-folders"
+															onAction={() =>
+																assignFolder(entry.path, "none")
+															}
+														>
+															Remove from all folders
+														</Dropdown.Item>
+													)}
+													{!folders.length && (
+														<Dropdown.Item id="no-folders" isDisabled>
+															Create a folder in the sidebar
+														</Dropdown.Item>
+													)}
+												</Dropdown.Menu>
+											</Dropdown.Popover>
+										</Dropdown.SubmenuTrigger>
+										{!entry.rawSource && (
+											<Dropdown.Item
+												id="share"
+												onAction={() =>
+													void run(async () => {
+														if (shareUrl)
+															await window.electronAPI.openExternalUrl(
+																shareUrl,
+															);
+														else await onShareProject(entry.path);
+													})
+												}
+											>
+												{shareUrl ? "View in web" : "Share"}
+											</Dropdown.Item>
+										)}
 										<Dropdown.Item
-											id="share"
+											aria-label={
+												entry.rawSource
+													? `Show ${entry.name} in folder`
+													: undefined
+											}
+											id="reveal"
 											onAction={() =>
 												void run(async () => {
-													if (shareUrl)
-														await window.electronAPI.openExternalUrl(
-															shareUrl,
-														);
-													else await onShareProject(entry.path);
+													await window.electronAPI.revealInFolder(
+														entry.path,
+													);
 												})
 											}
 										>
-											{shareUrl ? "View in web" : "Share"}
+											Show in folder
 										</Dropdown.Item>
-									)}
+									</>
+								)}
+								{onDownload && (
 									<Dropdown.Item
-										aria-label={
-											entry.rawSource
-												? `Show ${entry.name} in folder`
-												: undefined
-										}
-										id="reveal"
-										onAction={() =>
-											void run(async () => {
-												await window.electronAPI.revealInFolder(entry.path);
-											})
-										}
+										id="download"
+										isDisabled={busy || !webReady}
+										onAction={onDownload}
 									>
-										Show in folder
+										Download
 									</Dropdown.Item>
-								</>
-							)}
-							{onDownload && (
-								<Dropdown.Item
-									id="download"
-									isDisabled={busy || !webReady}
-									onAction={onDownload}
-								>
-									Download
-								</Dropdown.Item>
-							)}
-							{onDelete && (
-								<Dropdown.Item
-									id="delete"
-									variant="danger"
-									className="text-danger"
-									isDisabled={busy}
-									onAction={onDelete}
-								>
-									{webUrl
-										? "Delete recording"
-										: entry.rawSource
-											? "Remove from library"
-											: "Delete project"}
-								</Dropdown.Item>
-							)}
-						</Dropdown.Menu>
-					</Dropdown.Popover>
-				</Dropdown>
+								)}
+								{onDelete && (
+									<Dropdown.Item
+										id="delete"
+										variant="danger"
+										className="text-danger"
+										isDisabled={busy}
+										onAction={onDelete}
+									>
+										{webUrl
+											? "Delete recording"
+											: entry.rawSource
+												? "Remove from library"
+												: "Delete project"}
+									</Dropdown.Item>
+								)}
+							</Dropdown.Menu>
+						</Dropdown.Popover>
+					</Dropdown>
+				)}
 			</div>
 		</li>
 	);

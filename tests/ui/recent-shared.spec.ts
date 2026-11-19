@@ -28,7 +28,8 @@ for (const theme of ["light", "dark"] as const) {
 		);
 		await expect(row.getByText("Unfinished upload")).toHaveCount(0);
 		await expect(row.getByRole("listitem").first()).toContainText("Product walkthrough");
-		await expect(page.getByRole("heading", { name: "Projects" })).toBeVisible();
+		// The grid's heading carries how many projects it lists.
+		await expect(page.getByRole("heading", { name: "Projects 24" })).toBeVisible();
 		await expect(page.getByText(/sign in/i)).toHaveCount(0);
 		await expect
 			.poll(() =>

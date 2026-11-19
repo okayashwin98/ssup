@@ -161,9 +161,9 @@ export function ShortcutsConfigDialog({ inline = false }: { inline?: boolean } =
 											: t("shortcutsConfig.clickToChange")
 									}
 									className={[
-										"px-2 py-1 text-xs min-w-[90px] text-center select-none",
+										"field-key px-2 py-1 text-xs min-w-[90px] text-center select-none",
 										isCapturing
-											? "animate-pulse"
+											? "field-key--listening animate-pulse"
 											: hasConflict
 												? "text-warning"
 												: "cursor-pointer",

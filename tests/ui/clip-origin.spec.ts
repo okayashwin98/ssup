@@ -68,14 +68,16 @@ test("selecting an untouched clip does not introduce a leading gap", async ({ pa
 	await expect(clip).toHaveAttribute("data-start-ms", "0");
 	await expect(clip).toHaveAttribute("data-end-ms", "6000");
 
-	await page.getByRole("button", { name: "Export", exact: true }).click();
-	const dialog = page.getByRole("dialog", { name: "Export", exact: true });
-	const dialogBox = (await dialog.boundingBox())!;
-	const titleBox = (await dialog
-		.getByRole("heading", { name: "Export", exact: true })
-		.boundingBox())!;
-	expect(titleBox.x - dialogBox.x).toBeGreaterThanOrEqual(16);
-	expect(titleBox.y - dialogBox.y).toBeGreaterThanOrEqual(16);
+	await page.getByRole("button", { name: "Publish", exact: true }).click();
+	const dialog = page.getByRole("dialog", { name: "Publish", exact: true });
+	const title = dialog.getByRole("heading", { name: "Publish", exact: true });
+	// The popover scales in, so read the title's inset once it has settled.
+	const inset = async () => {
+		const dialogBox = (await dialog.boundingBox())!;
+		const titleBox = (await title.boundingBox())!;
+		return Math.min(titleBox.x - dialogBox.x, titleBox.y - dialogBox.y);
+	};
+	await expect.poll(inset).toBeGreaterThanOrEqual(16);
 	await page.screenshot({
 		path: "test-results/export-padding-restored.png",
 		animations: "disabled",

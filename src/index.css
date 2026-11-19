@@ -232,7 +232,9 @@
 .dark {
 	--focus: var(--accent);
 }
-:focus-visible:not([data-rac]):not([role="dialog"]):not([role="alertdialog"]):not([tabindex="-1"]) {
+:focus-visible:not([data-rac]):not([role="dialog"]):not([role="alertdialog"]):not(
+		[tabindex="-1"]
+	):not(.field-look):not(.inline-project-name):not(.field-overlay) {
 	outline: 2px solid var(--focus);
 	outline-offset: 2px;
 }
@@ -408,13 +410,74 @@ textarea {
 	background: transparent;
 }
 
-/* Rename fields look like the app's other fields: a soft fill and the field corner,
-   with the text where the name sat before (the fill reaches 6px past it). */
-.inline-project-name {
-	background: color-mix(in srgb, var(--foreground) 7%, transparent);
+/* ── Text fields: one look everywhere ────────────────────────────────────────────────
+   The share page's comment box, as a rounded rectangle. At rest a hairline; focused, the
+   hairline takes the theme colour and a soft ring of it sits just outside. Change these
+   values and every text field follows: the design kit's fields (.input, .textarea, search
+   fields), the app's own text areas (.field-look), rename fields (.inline-project-name)
+   and the capture picker's size boxes (.field-overlay). */
+:root,
+.dark {
+	--field-stroke-width: 1px;
+	--field-stroke: var(--border);
+	--field-stroke-focus: var(--accent);
+	--field-ring-width: 1.5px;
+	--field-ring: color-mix(in srgb, var(--accent) 25%, transparent);
+	--field-corner: 8px;
+	/* Every single-line field is this tall, the app's standard control height. */
+	--field-height: 32px;
+	--field-focus-ring: 0 0 0 var(--field-ring-width) var(--field-ring);
+	/* For fields with no border of their own: the hairline and the ring, drawn outside. */
+	--field-focus-ring-outside:
+		0 0 0 var(--field-stroke-width) var(--field-stroke-focus),
+		0 0 0 calc(var(--field-stroke-width) + var(--field-ring-width)) var(--field-ring);
+}
+.input,
+.textarea,
+.search-field__group,
+.field-look {
+	border: var(--field-stroke-width) solid var(--field-stroke);
+	border-radius: var(--field-corner);
+	box-shadow: none;
+	outline: none;
+	transition:
+		border-color 150ms ease,
+		box-shadow 150ms ease;
+}
+.input,
+.search-field__group {
+	height: var(--field-height);
+}
+.field-look {
+	background: var(--field-background);
+	color: var(--foreground);
+}
+.input:focus,
+.input[data-focused="true"],
+.textarea:focus,
+.textarea[data-focused="true"],
+.search-field__group:focus-within,
+.search-field__group[data-focus-within="true"],
+.field-look:focus {
+	border-color: var(--field-stroke-focus);
+	box-shadow: var(--field-focus-ring);
+	outline: none;
+}
+/* Inside a search field the group draws the field; the text box itself stays bare. */
+.search-field__group .search-field__input,
+.search-field__group .search-field__input:focus {
 	border: 0;
-	border-radius: var(--field-radius, 12px);
-	box-shadow: 0 0 0 1.5px var(--accent);
+	box-shadow: none;
+}
+
+/* Rename fields appear only while renaming, so they show the focused look. It is drawn
+   outside the text with shadows, and the field reaches 6px past the name on each side,
+   so the name stays exactly where it was when renaming starts. */
+.inline-project-name {
+	background: var(--field-background);
+	border: 0;
+	border-radius: var(--field-corner);
+	box-shadow: var(--field-focus-ring-outside);
 	outline: none;
 	margin-inline: -6px;
 	padding: 0 6px;
@@ -423,7 +486,43 @@ textarea {
 .inline-project-name:focus,
 .inline-project-name:focus-visible {
 	outline: none;
-	box-shadow: 0 0 0 2px var(--accent);
+	box-shadow: var(--field-focus-ring-outside);
+}
+
+/* The capture picker's size boxes sit on the dark overlay with their own fill; they take
+   the shared height, corner, and focused hairline and ring. */
+.field-overlay {
+	height: var(--field-height);
+	border-radius: var(--field-corner);
+}
+.field-overlay:focus,
+.field-overlay:focus-visible {
+	outline: none;
+	box-shadow: var(--field-focus-ring-outside);
+}
+
+/* Shortcut key boxes keep their button fill and take the field's height, corner and hairline;
+   listening for a key or focused, the theme hairline and soft ring replace the button's ring. */
+.field-key {
+	height: var(--field-height);
+	border: var(--field-stroke-width) solid var(--field-stroke);
+	border-radius: var(--field-corner);
+	box-shadow: none;
+	outline: none;
+}
+.field-key.field-key--listening,
+.field-key:focus-visible,
+.field-key[data-focus-visible="true"] {
+	border-color: var(--field-stroke-focus);
+	box-shadow: var(--field-focus-ring);
+	outline: none;
+}
+
+/* In Home's settings the page scrolls, not the panel, so the panel's card and scroll box need
+   not clip: focus rings on controls at the right edge stay whole. */
+.dashboard-settings .card:has(> .custom-scrollbar),
+.dashboard-settings .card > .custom-scrollbar {
+	overflow: visible;
 }
 
 /* The Raw tab's frosted folders (FrostedFolder): light by default, dark with the app. */
@@ -459,6 +558,11 @@ textarea {
 }
 .dark .dashboard-shell > .card {
 	background-color: color-mix(in srgb, var(--background) 92%, var(--foreground) 8%);
+}
+/* Drag areas never pass clicks to the page, so they stop dragging while a Home text field has focus: a click anywhere then ends typing. */
+.dashboard-shell:has(input:is(:not([type]), [type="text"], [type="search"]):focus, textarea:focus)
+[style*="app-region"] {
+	-webkit-app-region: no-drag !important;
 }
 
 .dashboard-settings .custom-scrollbar {

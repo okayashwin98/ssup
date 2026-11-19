@@ -1,4 +1,4 @@
-import { Dropdown, Input } from "@heroui/react";
+import { Dropdown } from "@heroui/react";
 import { DotsThree } from "@/components/ui/icons";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -51,11 +51,12 @@ export function FolderRow({
 						finish();
 					}}
 				>
-					<Input
+					{/* Same inline rename look as project cards and the editor title. */}
+					<input
 						autoFocus
 						onFocus={(event) => event.currentTarget.select()}
 						aria-label="Folder name"
-						className="h-8 w-full min-w-0 text-[13px]"
+						className="inline-project-name h-8 w-[calc(100%+12px)] min-w-0 -translate-y-px text-[13px] font-medium"
 						value={draft}
 						maxLength={80}
 						onChange={(event) => setDraft(event.target.value)}
@@ -79,27 +80,32 @@ export function FolderRow({
 					<span className="truncate">{folder.name}</span>
 				</Button>
 			)}
-			<Dropdown>
-				<Button
-					variant="ghost"
-					size="icon"
-					aria-label={`Options for ${folder.name}`}
-					data-tooltip="Options"
-					className="size-6 min-w-6 text-muted-foreground opacity-0 group-hover:opacity-100 focus:opacity-100"
-				>
-					<DotsThree className="size-4" />
-				</Button>
-				<Dropdown.Popover>
-					<Dropdown.Menu aria-label="Folder options">
-						<Dropdown.Item id="rename" onAction={edit}>
-							Rename
-						</Dropdown.Item>
-						<Dropdown.Item id="remove" onAction={onRemove}>
-							Remove folder
-						</Dropdown.Item>
-					</Dropdown.Menu>
-				</Dropdown.Popover>
-			</Dropdown>
+			{/* No options while renaming; the blank keeps the field the same width. */}
+			{editing ? (
+				<span aria-hidden className="size-6 shrink-0" />
+			) : (
+				<Dropdown>
+					<Button
+						variant="ghost"
+						size="icon"
+						aria-label={`Options for ${folder.name}`}
+						data-tooltip="Options"
+						className="size-6 min-w-6 text-muted-foreground opacity-0 group-hover:opacity-100 focus:opacity-100"
+					>
+						<DotsThree className="size-4" />
+					</Button>
+					<Dropdown.Popover>
+						<Dropdown.Menu aria-label="Folder options">
+							<Dropdown.Item id="rename" onAction={edit}>
+								Rename
+							</Dropdown.Item>
+							<Dropdown.Item id="remove" onAction={onRemove}>
+								Remove folder
+							</Dropdown.Item>
+						</Dropdown.Menu>
+					</Dropdown.Popover>
+				</Dropdown>
+			)}
 		</div>
 	);
 }

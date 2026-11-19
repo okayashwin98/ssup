@@ -124,28 +124,25 @@ test("home dashboard searches, sorts, opens projects and returns to the editor",
 		page.getByRole("button", { name: "Remove custom color", exact: true }),
 	).toBeVisible();
 	await page.keyboard.press("Escape");
-	await home.getByRole("button", { name: "Home", exact: true }).click();
-	await expect(home.locator('[aria-label="Local profile"]')).toHaveCount(3);
+	// The library's own section is called Personal; cards no longer carry an avatar.
+	await home.getByRole("button", { name: "Personal", exact: true }).click();
 
 	await home.getByRole("button", { name: "Options for App walkthrough", exact: true }).click();
 	await expect(page.getByRole("menuitem", { name: "No folder", exact: true })).toHaveCount(0);
-	await page.keyboard.press("Escape");
-	await home.getByRole("button", { name: "Add folder to App walkthrough", exact: true }).click();
+	// Folders are assigned from the card's options menu.
+	await page.getByRole("menuitem", { name: "Add to folder" }).hover();
 	await page.getByRole("menuitem", { name: "Tutorials", exact: true }).click();
-	await expect(
-		home.getByRole("button", { name: "Remove App walkthrough from Tutorials", exact: true }),
-	).toContainText("Tutorials");
 	await home.getByRole("button", { name: "Tutorials", exact: true }).click();
 	await expect(cards).toHaveCount(1);
 	await expect(cards.first()).toHaveAccessibleName("App walkthrough");
-	await home.getByRole("button", { name: "Home", exact: true }).click();
+	await home.getByRole("button", { name: "Personal", exact: true }).click();
 	await home.getByRole("button", { name: "Last 7 days", exact: true }).click();
 	await expect(cards).toHaveCount(0);
 	await home.getByRole("button", { name: "All", exact: true }).click();
 	await expect(cards).toHaveCount(3);
 	await home.getByRole("button", { name: "Settings", exact: true }).click();
 	await expect(home.getByRole("region", { name: "Dashboard settings" })).toBeVisible();
-	await home.getByRole("button", { name: "Home", exact: true }).click();
+	await home.getByRole("button", { name: "Personal", exact: true }).click();
 	await home
 		.getByRole("complementary", { name: "Library navigation" })
 		.getByRole("button", { name: "Capture", exact: true })
@@ -323,7 +320,10 @@ test("cards rename inline, preserve folder chips and use existing share links", 
 	await page.goto("/?windowType=editor");
 	await page.getByRole("button", { name: "Home", exact: true }).click();
 	const home = page.getByRole("dialog", { name: "Projects dashboard" });
-	await expect(home.getByRole("button", { name: "Remove Demo from Work" })).toContainText("Work");
+	// Cards no longer show folder chips; the project is listed under its folder.
+	const work = home.getByRole("button", { name: "Work", exact: true });
+	await work.click();
+	await expect(home.getByRole("button", { name: "Demo", exact: true })).toBeVisible();
 	await home.getByRole("button", { name: "Options for Demo" }).click();
 	await page.getByRole("menuitem", { name: "View in web", exact: true }).click();
 	await expect(page.locator("html")).toHaveAttribute(
@@ -343,9 +343,10 @@ test("cards rename inline, preserve folder chips and use existing share links", 
 	await home.getByRole("textbox", { name: "Project name" }).fill("Renamed");
 	await page.keyboard.press("Enter");
 	await expect(home.getByRole("button", { name: "Renamed", exact: true })).toBeVisible();
-	await expect(home.getByRole("button", { name: "Remove Renamed from Work" })).toContainText(
-		"Work",
-	);
+	// The renamed project stays in its folder.
+	await home.getByRole("button", { name: "Personal", exact: true }).click();
+	await work.click();
+	await expect(home.getByRole("button", { name: "Renamed", exact: true })).toBeVisible();
 	await home.getByRole("button", { name: "Options for Renamed" }).click();
 	await expect(page.getByRole("menuitem", { name: "View in web", exact: true })).toBeVisible();
 });
@@ -397,48 +398,19 @@ test("dashboard supports creation sort, independent folders, shared settings and
 	await expect(
 		home.getByRole("list", { name: "Your projects" }).locator("li > button").first(),
 	).toHaveAccessibleName("Newer");
-	await home.getByRole("button", { name: "Add folder to Old" }).click();
-	await page.getByRole("menuitem", { name: "Personal", exact: true }).click();
-	await expect(home.getByRole("button", { name: "Remove Old from Work" })).toBeVisible();
-	await expect(home.getByRole("button", { name: "Remove Old from Personal" })).toBeVisible();
-	await expect(home.locator('[aria-label="1 more folders: Personal"]')).toHaveCount(0);
+	// Folders are assigned from the card's options menu, and a project can be in several.
+	await home.getByRole("button", { name: "Options for Old" }).click();
+	await page.getByRole("menuitem", { name: "Add to folder" }).hover();
+	await page
+		.getByRole("menu", { name: "Add to folder" })
+		.getByRole("menuitem", { name: "Personal", exact: true })
+		.click();
 	const membership = await page.evaluate(() =>
 		JSON.parse(localStorage.getItem("recordly.project-folders.v1") || "[]"),
 	);
 	expect(
 		membership.every((folder: { paths: string[] }) => folder.paths.includes("/old.recordly")),
 	).toBe(true);
-	const heights = await home
-		.getByRole("list", { name: "Your projects" })
-		.locator("li")
-		.evaluateAll((cards) =>
-			cards.map((card) => [
-				card.querySelector('[aria-label="Local profile"]')!.getBoundingClientRect().height,
-				card.querySelector("[data-project-caption]")!.getBoundingClientRect().height,
-			]),
-		);
-	for (const [avatar, caption] of heights) {
-		expect(avatar).toBe(caption);
-		expect(avatar).toBe(48);
-	}
-	const spacing = await home
-		.locator("[data-project-caption]")
-		.first()
-		.evaluate((element) => {
-			const caption = element.getBoundingClientRect();
-			const avatar = element.previousElementSibling!.getBoundingClientRect();
-			return { gap: caption.left - avatar.right, top: caption.top - avatar.top };
-		});
-	expect(spacing).toEqual({ gap: 16, top: 0 });
-	const avatar = home.locator('[aria-label="Local profile"]').first();
-	const circle = await avatar.evaluate((element) => {
-		const style = getComputedStyle(element);
-		const rect = element.getBoundingClientRect();
-		return { width: rect.width, height: rect.height, radius: parseFloat(style.borderRadius) };
-	});
-	expect(circle.width).toBe(circle.height);
-	expect(circle.radius).toBeGreaterThanOrEqual(circle.width / 2);
-	await expect(avatar).toHaveText("LP");
 	await home.getByRole("button", { name: "Settings", exact: true }).click();
 	await expect(home.getByRole("textbox", { name: "Search projects" })).toHaveCount(0);
 	await expect(home.getByRole("button", { name: "Sort projects" })).toHaveCount(0);
@@ -529,7 +501,9 @@ test("Solar navigation selection, circular initials, and Raw sources are consist
 	await page.mouse.move(200, 40);
 	await page.screenshot({ path: "test-results/dashboard-raw.png", animations: "disabled" });
 	await home.getByRole("button", { name: "New folder", exact: true }).click();
-	await home.getByRole("button", { name: "Add folder to screen.mp4", exact: true }).click();
+	// Folders are assigned from the card's options menu.
+	await home.getByRole("button", { name: "Options for screen.mp4" }).click();
+	await page.getByRole("menuitem", { name: "Add to folder" }).hover();
 	await page.getByRole("menuitem", { name: "Untitled folder", exact: true }).click();
 	await home.getByRole("button", { name: "Untitled folder", exact: true }).click();
 	await expect(home.getByRole("list", { name: "Raw files" }).locator("li")).toHaveCount(1);
@@ -679,52 +653,32 @@ test("folder actions stay inside narrow project cards without clipping", async (
 	await page.getByRole("button", { name: "Home", exact: true }).click();
 	const home = page.getByRole("dialog", { name: "Projects dashboard" });
 	const card = home.getByRole("list", { name: "Your projects" }).locator("li").first();
-	const add = card.getByRole("button", { name: "Add folder to Project 1", exact: true });
+	// Folder chips left the cards; folders live in each card's options menu.
+	const options = card.getByRole("button", { name: "Options for Project 1", exact: true });
 	for (const width of [800, 1280, 1440]) {
 		await page.setViewportSize({ width, height: 1000 });
 		await card.hover();
-		const folderFits = await card
-			.getByRole("button", {
-				name: "Remove Project 1 from A very long folder name",
-				exact: true,
-			})
-			.evaluate((element) => {
-				const chip = element.getBoundingClientRect();
-				const group = element.parentElement!.getBoundingClientRect();
-				return (
-					chip.left >= group.left &&
-					chip.right <= group.right + 1 &&
-					element.scrollWidth <= element.clientWidth + 1
-				);
-			});
-		expect(folderFits).toBe(true);
-		const bounds = await add.evaluate((element) => {
+		const bounds = await options.evaluate((element) => {
 			const button = element.getBoundingClientRect();
-			const caption = element.closest("[data-project-caption]")!.getBoundingClientRect();
-			const hit = document.elementFromPoint(button.right - 3, button.top + button.height / 2);
+			const caption = element.closest("li")!.getBoundingClientRect();
+			const hit = document.elementFromPoint(
+				button.left + button.width / 2,
+				button.top + button.height / 2,
+			);
 			return {
 				inside: button.left >= caption.left && button.right <= caption.right + 1,
-				fullWidth: element.scrollWidth <= element.clientWidth + 1,
 				reachable: hit !== null && element.contains(hit),
 			};
 		});
-		expect(bounds).toEqual({ inside: true, fullWidth: true, reachable: true });
+		expect(bounds).toEqual({ inside: true, reachable: true });
 	}
-	await card.evaluate((element) => {
-		element.style.width = "600px";
-	});
-	await expect(
-		card.getByRole("button", { name: "Remove Project 1 from Work", exact: true }),
-	).toBeVisible();
-	await expect(card.locator('[aria-label="1 more folders: Work"]')).toHaveCount(0);
-	await card.evaluate((element) => {
-		element.style.width = "340px";
-	});
-	await expect(card.locator('[aria-label="1 more folders: Work"]')).toBeVisible();
-	await add.click();
-	await expect(page.getByRole("menuitem", { name: "Work", exact: true })).toBeVisible();
-	await page.keyboard.press("Escape");
+	await options.click();
+	await page.getByRole("menuitem", { name: "Add to folder" }).hover();
+	const folders = page.getByRole("menu", { name: "Add to folder" });
+	await expect(folders.getByRole("menuitem", { name: "A very long folder name" })).toBeVisible();
+	await expect(folders.getByRole("menuitem", { name: "Work", exact: true })).toBeVisible();
 	await page.screenshot({ path: "test-results/folder-actions.png", animations: "disabled" });
+	await page.keyboard.press("Escape");
 });
 
 test("sidebar cards, separate Import, and shortcut settings use the dashboard flow", async ({

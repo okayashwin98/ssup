@@ -16,10 +16,13 @@ export function RecentSharedVideos({
 	token,
 	endpoint,
 	onViewAll,
+	projectCount,
 }: {
 	token: string;
 	endpoint: string;
 	onViewAll: () => void;
+	/** How many projects the grid below lists, shown beside its heading. */
+	projectCount: number;
 }) {
 	const [videos, setVideos] = useState<SharedVideo[]>(
 		() => peekRecentSharedVideos(endpoint) ?? [],
@@ -178,7 +181,12 @@ export function RecentSharedVideos({
 				</ul>
 			</section>
 			{/* With the row above, the project grid needs its own heading. */}
-			<h2 className="mb-4 text-base font-medium text-foreground">Projects</h2>
+			<h2 className="mb-4 flex items-baseline gap-2 text-base font-medium text-foreground">
+				Projects
+				<span className="text-sm font-normal tabular-nums text-muted-foreground">
+					{projectCount}
+				</span>
+			</h2>
 		</>
 	);
 }

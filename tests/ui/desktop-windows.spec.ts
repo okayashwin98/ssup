@@ -27,7 +27,7 @@ test("editor inspector and playback controls fit a smaller desktop", async ({ pa
 	await installDesktopBridge(page);
 	await page.goto("/?windowType=editor");
 	await expect(page.getByRole("slider", { name: "Blur", exact: true })).toBeVisible();
-	await expect(page.getByRole("button", { name: "Export", exact: true })).toBeInViewport();
+	await expect(page.getByRole("button", { name: "Publish", exact: true })).toBeInViewport();
 	await expect(page.getByRole("button", { name: "Play", exact: true })).toBeInViewport();
 	await page.getByRole("radio", { name: "Motion", exact: true }).click();
 	await expect(page.getByRole("grid", { name: "Settings sections" })).toHaveCount(0);
@@ -35,7 +35,8 @@ test("editor inspector and playback controls fit a smaller desktop", async ({ pa
 		page.getByRole("radiogroup", { name: "Motion Presets", exact: true }),
 	).toBeVisible();
 	await page.getByText("Smooth", { exact: true }).click();
-	await expect(page.getByRole("radio", { name: "Smooth", exact: true })).toBeChecked();
+	// Each preset's name now carries its description too.
+	await expect(page.getByRole("radio", { name: /^Smooth\b/ })).toBeChecked();
 	await expect
 		.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth))
 		.toBe(true);

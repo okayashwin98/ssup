@@ -886,7 +886,7 @@ function SizeField({
 			aria-label={label}
 			type="number"
 			min={MIN_AREA_SIZE}
-			className="pointer-events-auto w-20 rounded-md bg-white/20 px-2 py-0.5 text-center text-sm text-white tabular-nums outline-none focus:bg-white/30"
+			className="field-overlay pointer-events-auto w-20 bg-white/20 px-2 text-center text-sm text-white tabular-nums outline-none focus:bg-transparent"
 			style={{ textShadow: "none" }}
 			value={draft ?? String(Math.round(value))}
 			onPointerDown={(event) => event.stopPropagation()}

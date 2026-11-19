@@ -137,6 +137,7 @@ export function DashboardGrid({
 							token={shareToken}
 							endpoint={CLOUD_SHARE_ENDPOINT}
 							onViewAll={() => setSection("shared")}
+							projectCount={visible.length}
 						/>
 					)}
 				{section === "settings" ? (

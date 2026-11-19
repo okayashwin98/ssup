@@ -224,20 +224,15 @@ test("dashboard project list scrolls vertically with long names", async ({ page 
 
 test("HUD source controls have no default gray fill or outline", async ({ page }) => {
 	await installDesktopBridge(page);
-	await installDesktopBridgeOverrides(page, () => {
-		window.electronAPI.getSources = async () => [
-			{ id: "screen:1:0", name: "Built-in Display", thumbnail: "", display_id: "1" },
-			{ id: "window:2:0", name: "Another Window", thumbnail: "", display_id: "" },
-		];
-	});
 	await page.goto("/?windowType=hud-overlay");
-	const source = page.getByRole("button", { name: "Built-in Display", exact: true });
-	expect(await source.evaluate((node) => getComputedStyle(node).borderWidth)).toBe("0px");
-	await source.click();
-	const row = page.locator(".source-selector-item").filter({ hasText: "Another Window" });
-	await expect(row).toBeVisible();
-	await page.mouse.move(1, 1);
-	await expect(row).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+	// The source list became the Display, Window and Area buttons that open the picker.
+	for (const name of ["Record a display", "Record a window", "Record an area"]) {
+		const mode = page.getByRole("button", { name });
+		await expect(mode).toBeVisible();
+		await page.mouse.move(1, 1);
+		expect(await mode.evaluate((node) => getComputedStyle(node).borderWidth)).toBe("0px");
+		await expect(mode).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+	}
 });
 
 test("Clips shows original filenames and truncates long names beside real still previews", async ({

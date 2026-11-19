@@ -136,35 +136,42 @@ export function EditorHeader(props: Props) {
 					{isEditingProjectName ? (
 						<form
 							onSubmit={(event) => void handleProjectNameSubmit(event)}
-							className="flex w-full min-w-0 items-center gap-1.5 px-1"
+							className="flex w-full min-w-0 items-center gap-1.5 px-2"
 						>
-							<input
-								ref={projectNameInputRef}
-								type="text"
-								value={projectNameDraft}
-								onChange={(event) => setProjectNameDraft(event.target.value)}
-								onBlur={() => {
-									if (
-										!isSavingProjectName &&
-										projectNameDraft.trim() !== projectDisplayName
-									)
-										void handleProjectNameSubmit();
-									else if (!isSavingProjectName) closeProjectNameEditor();
-								}}
-								onKeyDown={(event) => {
-									if (event.key === "Escape") {
-										event.preventDefault();
-										closeProjectNameEditor();
-									}
-								}}
-								disabled={isSavingProjectName}
-								className="inline-project-name h-9 min-w-0 max-w-full text-sm font-semibold tracking-tight text-foreground/90 disabled:cursor-wait"
-								// The field's 6px of padding each side sits outside the text.
-								style={{
-									width: `calc(${Math.max(12, projectNameDraft.length + 1)}ch + 12px)`,
-								}}
-								aria-label={t("editor.project.renameInput", "Project name")}
-							/>
+							{/* Exactly as wide as the name (an invisible copy sets the width), so nothing
+							    beside the title moves when renaming starts. */}
+							<span className="inline-grid min-w-0 max-w-full">
+								<span
+									aria-hidden="true"
+									className="invisible col-start-1 row-start-1 overflow-hidden whitespace-pre text-sm font-semibold tracking-tight"
+								>
+									{projectNameDraft || " "}
+								</span>
+								<input
+									ref={projectNameInputRef}
+									type="text"
+									value={projectNameDraft}
+									onChange={(event) => setProjectNameDraft(event.target.value)}
+									onBlur={() => {
+										if (
+											!isSavingProjectName &&
+											projectNameDraft.trim() !== projectDisplayName
+										)
+											void handleProjectNameSubmit();
+										else if (!isSavingProjectName) closeProjectNameEditor();
+									}}
+									onKeyDown={(event) => {
+										if (event.key === "Escape") {
+											event.preventDefault();
+											closeProjectNameEditor();
+										}
+									}}
+									disabled={isSavingProjectName}
+									className="inline-project-name col-start-1 row-start-1 h-8 w-[calc(100%+12px)] min-w-0 -translate-y-px text-sm font-semibold tracking-tight text-foreground/90 disabled:cursor-wait"
+									size={1}
+									aria-label={t("editor.project.renameInput", "Project name")}
+								/>
+							</span>
 						</form>
 					) : (
 						<Button

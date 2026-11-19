@@ -66,6 +66,7 @@ createRoot(document.getElementById("root")!).render(
 				<RecentSharedVideos
 					token="fixture-key"
 					endpoint={endpoint}
+					projectCount={24}
 					onViewAll={() => {
 						document.documentElement.dataset.viewAll = "true";
 					}}

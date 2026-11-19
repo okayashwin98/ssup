@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { installDesktopBridge } from "./bridge";
+import { openDashboardSettings } from "./settings";
 test("editor loads video, switches tools and edits export options", async ({ page }) => {
 	test.setTimeout(120000);
 	const errors: string[] = [];
@@ -35,29 +36,35 @@ test("editor loads video, switches tools and edits export options", async ({ pag
 	await page.getByRole("radio", { name: "Cursor", exact: true }).click();
 	await page.getByRole("radio", { name: "Webcam", exact: true }).click();
 	await page.getByRole("radio", { name: "Captions", exact: true }).click();
-	await page.getByRole("radio", { name: "Settings", exact: true }).click();
-	await expect(page.getByText("Appearance", { exact: true })).toBeVisible();
-	await page.getByRole("row", { name: "Dark", exact: true }).click();
+	await page.getByRole("radio", { name: "Motion", exact: true }).click();
+	// The theme moved to Home → Settings when Motion replaced the editor's Settings tab.
+	const home = await openDashboardSettings(page);
+	await home.getByRole("row", { name: "Dark", exact: true }).click();
 	await expect(page.locator("html")).toHaveClass(/dark/);
 	await page.screenshot({
 		path: "test-results/editor-dark.png",
 		fullPage: true,
 		animations: "disabled",
 	});
-	await page.getByRole("row", { name: "Light", exact: true }).click();
+	await home.getByRole("row", { name: "Light", exact: true }).click();
 	await expect(page.locator("html")).not.toHaveClass(/dark/);
+	// Escape inside the theme list stays in the list; from the library it closes Home.
+	await home.getByRole("button", { name: "Personal", exact: true }).click();
+	await page.keyboard.press("Escape");
+	await expect(home).toHaveCount(0);
 	await page.getByRole("radio", { name: "Scene", exact: true }).click();
-	await page.getByRole("button", { name: "Export", exact: true }).click();
-	await expect(page.getByRole("grid", { name: "Format", exact: true })).toBeVisible();
-	await page.getByRole("row", { name: "GIF", exact: true }).click();
-	await expect(page.getByRole("switch", { name: "Loop", exact: false })).toBeVisible();
+	// Exports are always MP4: Publish → Local shows the video options.
+	await page.getByRole("button", { name: "Publish", exact: true }).click();
+	const publish = page.getByRole("dialog", { name: "Publish" });
+	await publish.getByRole("row", { name: "Local" }).click();
+	await expect(publish.getByRole("grid", { name: "Quality", exact: true })).toBeVisible();
 	await page.screenshot({
 		path: "test-results/editor-export-light.png",
 		fullPage: true,
 		animations: "disabled",
 	});
 	await page.keyboard.press("Escape");
-	await expect(page.getByRole("grid", { name: "Format", exact: true })).toHaveCount(0);
+	await expect(publish).toHaveCount(0);
 	await page.screenshot({
 		path: "test-results/editor-light.png",
 		fullPage: true,
@@ -77,7 +84,7 @@ test("editor loads video, switches tools and edits export options", async ({ pag
 	await expect(
 		page.getByRole("button", { name: "Aspect ratio: 1:1", exact: true }),
 	).toBeVisible();
-	await expect(page.getByRole("button", { name: "Open presets", exact: true })).toHaveCount(0);
+	await expect(page.getByRole("button", { name: "Open presets", exact: true })).toBeVisible();
 	await page
 		.getByRole("toolbar", { name: "Annotation tools" })
 		.getByRole("button", { name: "Text", exact: true })
@@ -102,20 +109,31 @@ test("editor loads video, switches tools and edits export options", async ({ pag
 	});
 	expect(errors).toEqual([]);
 });
-test("recorder opens device and source popovers", async ({ page }) => {
+test("recorder bar offers capture modes, countdown and device menus", async ({ page }) => {
 	const errors: string[] = [];
 	page.on("pageerror", (e) => {
 		errors.push(e.message);
 	});
 	await installDesktopBridge(page);
 	await page.goto("/?windowType=hud-overlay");
-	await expect(page.getByRole("button", { name: "Record", exact: true })).toBeVisible();
-	await page.getByRole("button", { name: "Countdown delay", exact: false }).click();
-	await page.getByRole("button", { name: "5s", exact: true }).click();
-	await expect(page.getByRole("dialog")).toHaveCount(0);
-	await page.getByRole("button", { name: "Built-in Display", exact: true }).click();
-	await expect(page.getByRole("dialog")).toBeVisible();
-	await page.keyboard.press("Escape");
+	// The bar's menus are the Mac's own; record what each offers and pick the 5s countdown.
+	await page.evaluate(() => {
+		const shown: string[][] = [];
+		(window as unknown as { shownMenus: string[][] }).shownMenus = shown;
+		window.electronAPI.hudShowMenu = async ({ items }) => {
+			const labels = items.map((item) => ("label" in item ? String(item.label) : ""));
+			shown.push(labels);
+			return labels.includes("5s") ? "5" : null;
+		};
+	});
+	const shownMenus = () =>
+		page.evaluate(() => (window as unknown as { shownMenus: string[][] }).shownMenus);
+	// Recording starts from the capture picker, so the bar leads with the capture modes.
+	await expect(page.getByRole("button", { name: "Record a display" })).toBeVisible();
+	await page.getByRole("button", { name: "3s", exact: true }).click();
+	await expect(page.getByRole("button", { name: "5s", exact: true })).toBeVisible();
+	await page.getByRole("button", { name: "No microphone", exact: true }).click();
+	await expect.poll(async () => (await shownMenus()).length).toBe(2);
 	await expect(page.getByRole("button", { name: "More", exact: true })).toHaveCount(0);
 	await page.getByRole("button", { name: "Home", exact: true }).click();
 	await expect(page.locator("html")).toHaveAttribute("data-dashboard-opened", "true");

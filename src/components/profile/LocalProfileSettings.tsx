@@ -1,5 +1,6 @@
 import { useRef, useState, type FormEvent } from "react";
-import { TextField, Label, Input } from "@heroui/react";
+import { TextField, Label } from "@heroui/react";
+import { Input } from "@/components/ui/input";
 import { AccountAvatar } from "@/components/ui/account-avatar";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toast";
@@ -102,7 +103,7 @@ export function LocalProfileSettings() {
 			</div>
 			<TextField name="displayName" value={name} onChange={setName} isDisabled={busy}>
 				<Label>Your name</Label>
-				<Input maxLength={80} autoComplete="name" className="w-full" />
+				<Input maxLength={80} autoComplete="name" className="w-full max-w-80" />
 			</TextField>
 			<p className="text-xs leading-relaxed text-muted">
 				Shown on your dashboard cards and on your share links.

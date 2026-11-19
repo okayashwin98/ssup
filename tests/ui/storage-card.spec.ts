@@ -15,7 +15,8 @@ test("sidebar shows how much space the app's data takes on this computer", async
 	await page.goto("/?windowType=editor");
 	await page.getByRole("button", { name: "Home", exact: true }).click();
 	const local = page.getByRole("region", { name: "Local storage" });
-	await expect(local).toHaveText("Local storage2.6 GB");
+	// The box also offers "Free up space…" since unused recordings can be cleared from it.
+	await expect(local).toHaveText("Local storage2.6 GBFree up space…");
 	// When the cloud meter is on, both sit in one box with a line between them.
 	const cloud = page.getByRole("region", { name: "Cloud storage" });
 	if (await cloud.count()) {

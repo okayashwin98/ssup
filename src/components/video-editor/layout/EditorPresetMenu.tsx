@@ -105,7 +105,9 @@ export function EditorPresetMenu({ t, presets }: Props) {
 						<p className="text-xs font-medium text-foreground">
 							{t("editor.presets.savedList", "Saved presets")}
 						</p>
-						<div className="flex max-h-56 flex-col gap-1 overflow-y-auto custom-scrollbar">
+						{/* 4px of room on every side (cancelled by the negative margin, so nothing moves) keeps
+							    the rename field's outline from being cut off by the scrolling list. */}
+						<div className="-m-1 flex max-h-[232px] flex-col gap-1 overflow-y-auto p-1 custom-scrollbar">
 							{editorPresets.length === 0 ? (
 								<div className="rounded-lg bg-default px-3 py-4 text-center text-[11px] text-muted-foreground">
 									{t("editor.presets.empty", "No presets yet.")}
@@ -125,13 +127,14 @@ export function EditorPresetMenu({ t, presets }: Props) {
 										>
 											{editingId === preset.id ? (
 												<form
-													className="min-w-0 flex-1"
+													className="min-w-0 flex-1 px-2.5"
 													onSubmit={(event) => {
 														event.preventDefault();
 														finishRename(true);
 													}}
 												>
-													<Input
+													{/* Same inline rename look as project cards and folders, so the name stays put. */}
+													<input
 														autoFocus
 														onFocus={(event) =>
 															event.currentTarget.select()
@@ -140,7 +143,7 @@ export function EditorPresetMenu({ t, presets }: Props) {
 															"editor.presets.namePlaceholder",
 															"Preset name",
 														)}
-														className="h-8 w-full min-w-0 text-[13px]"
+														className="inline-project-name h-8 w-[calc(100%+12px)] min-w-0 text-[13px] text-foreground"
 														value={nameDraft}
 														onChange={(event) =>
 															setNameDraft(event.target.value)

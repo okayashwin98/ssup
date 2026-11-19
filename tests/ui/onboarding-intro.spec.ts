@@ -94,15 +94,32 @@ test("reduced motion shows the lockup without movement and fades quickly", async
 	await page.emulateMedia({ reducedMotion: "reduce" });
 	await freshInstall(page);
 	await page.goto("/?windowType=editor");
-	await expect(intro(page)).toBeVisible();
-	await expect(intro(page)).toHaveAttribute("data-reduced-motion", "true");
-	const moving = await intro(page).evaluate(
-		(node) =>
-			node
-				.getAnimations({ subtree: true })
-				.filter((animation) => animation.playState === "running").length,
-	);
-	expect(moving).toBe(0);
+	// Read the intro in the first frame it shows: the reduced-motion version is brief, and a
+	// busy machine can miss it between separate checks. Its quick fade only changes opacity,
+	// so only animations that move or resize anything count as movement.
+	const seen = await (
+		await page.waitForFunction(
+			() => {
+				const node = document.querySelector<HTMLElement>("[data-onboarding-intro]");
+				if (!node) return null;
+				const bookkeeping = ["offset", "computedOffset", "easing", "composite", "opacity"];
+				const moving = node
+					.getAnimations({ subtree: true })
+					.filter((animation) => animation.playState === "running")
+					.filter((animation) =>
+						(animation.effect as KeyframeEffect)
+							.getKeyframes()
+							.some((frame) =>
+								Object.keys(frame).some((key) => !bookkeeping.includes(key)),
+							),
+					).length;
+				return { reducedMotion: node.dataset.reducedMotion, moving };
+			},
+			undefined,
+			{ polling: 10 },
+		)
+	).jsonValue();
+	expect(seen).toEqual({ reducedMotion: "true", moving: 0 });
 	await expect(intro(page)).toHaveCount(0, { timeout: 1600 });
 	await expect(welcome(page)).toBeVisible();
 });

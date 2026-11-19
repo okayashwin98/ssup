@@ -113,7 +113,7 @@ test("header breadcrumb fits long names, native chrome and compact windows", asy
 					).toBe(true);
 				}
 			await expect(
-				page.getByRole("button", { name: "Export", exact: true }),
+				page.getByRole("button", { name: "Publish", exact: true }),
 			).toBeInViewport();
 			await expect(page.getByRole("button", { name: "Play", exact: true })).toBeInViewport();
 		}
@@ -140,10 +140,11 @@ test("header name edits in place as a rounded field and saves on blur", async ({
 	);
 	await page.getByRole("button", { name: "Rename project" }).click();
 	const input = page.getByRole("textbox", { name: "Project name" });
-	// A soft fill, the app's field corner and an accent ring, with no hard border.
+	// The shared field look, drawn outside the text: the field fill, the 8px field corner,
+	// a hairline in the theme colour and a soft ring beyond it, with no border to shift the name.
 	await expect(input).toHaveCSS("border-top-width", "0px");
-	await expect(input).toHaveCSS("border-top-left-radius", "12px");
-	await expect(input).toHaveCSS("box-shadow", /2px/);
+	await expect(input).toHaveCSS("border-top-left-radius", "8px");
+	await expect(input).toHaveCSS("box-shadow", /0px 0px 0px 1px, .* 0px 0px 0px 2\.5px$/);
 	expect(await input.evaluate((element) => getComputedStyle(element).backgroundColor)).not.toBe(
 		"rgba(0, 0, 0, 0)",
 	);
