@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import { PROJECT_LIBRARY_CHANGED_EVENT } from "../project/useProjectLibraryController";
 import type { MediaBatchPick } from "../project/useProjectOpenActions";
-import { FOLDER_COLORS, PROJECT_FOLDERS_KEY, type ProjectFolder } from "./useProjectFolders";
+import { FOLDER_COLORS, loadProjectFolders, type ProjectFolder } from "./useProjectFolders";
 
 const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? "" : "s"}`;
 
@@ -99,10 +99,7 @@ export function BulkImportDialog({
 		let folderName: string | null = null;
 		if (imported.length && destination !== "none") {
 			// Read the latest folders: they may have changed while the import ran.
-			const current = JSON.parse(localStorage.getItem(PROJECT_FOLDERS_KEY) || "null") as
-				| ProjectFolder[]
-				| null;
-			const list = Array.isArray(current) ? current : folders;
+			const list = loadProjectFolders();
 			if (destination === "new") {
 				const used = new Set(list.map((folder) => folder.color));
 				const folder: ProjectFolder = {

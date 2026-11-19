@@ -40,3 +40,34 @@ export function saveAppSetting(key: string, value: unknown): boolean {
 		return false;
 	}
 }
+
+/**
+ * For data that must survive a restart. The packaged screens are served from a new local
+ * address each launch, and browser storage belongs to that address, so it starts empty
+ * every time. App settings live in the main process. Browser storage is read only when no
+ * app setting exists yet (tests, or data written by an older build this launch).
+ */
+export function loadLastingValue(key: string): unknown {
+	const persisted = loadAppSetting<unknown>(key);
+	if (persisted !== null) return persisted;
+	try {
+		const stored = globalThis.localStorage?.getItem(key);
+		return stored ? JSON.parse(stored) : null;
+	} catch {
+		return null;
+	}
+}
+
+/** True when the value was kept: in app settings in the app, in browser storage elsewhere. */
+export function saveLastingValue(key: string, value: unknown): boolean {
+	const inApp = getElectronSettingsApi() !== null;
+	const saved = saveAppSetting(key, value);
+	let mirrored = false;
+	try {
+		globalThis.localStorage?.setItem(key, JSON.stringify(value));
+		mirrored = true;
+	} catch {
+		// App settings are the store that matters in the app.
+	}
+	return inApp ? saved : mirrored;
+}
